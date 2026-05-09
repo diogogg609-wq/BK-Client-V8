@@ -1,10 +1,11 @@
 -- ====================================================================
--- BK CLIENT - VERSÃO OFICIAL V2.3 (CORREÇÃO DE CAMADA DE INPUT - TOUCH)
+-- BK CLIENT - VERSÃO OFICIAL V2.4 (O RETORNO DOS EFEITOS ESPECIAIS)
 -- ====================================================================
 
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 
 local LocalPlayer = Players.LocalPlayer
@@ -34,15 +35,15 @@ local function playSound(id, volume)
 end
 
 -- ==========================================
--- INTERFACE BASE (AJUSTADA PARA CAMADA PADRÃO)
+-- INTERFACE BASE (CAMADA DE TOQUE CORRETA)
 -- ==========================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "BK_Official_UI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.DisplayOrder = 0 -- CAMADA PADRÃO: Evita que o Roblox bloqueie os toques por segurança
+ScreenGui.DisplayOrder = 0
 
--- Prioriza colocar na PlayerGui para garantir que os toques funcionem no Android
+-- Parent seguro na PlayerGui para garantir toques no mobile
 local successParent = pcall(function() 
     ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") 
 end)
@@ -58,17 +59,18 @@ local AccentColor = Color3.fromRGB(110, 60, 220)
 local BorderColor = Color3.fromRGB(50, 50, 55)
 
 -- ==========================================
--- CÁPSULA (BOLHA FLUTUANTE) - CORRIGIDA
+-- CÁPSULA (BOLHA FLUTUANTE)
 -- ==========================================
 local Capsule = Instance.new("TextButton")
 Capsule.Name = "BK_Capsule"
 Capsule.Size = UDim2.new(0, 160, 0, 42)
-Capsule.Position = UDim2.new(0.15, 0, 0.15, 0) -- Posição inicial limpa na tela
+Capsule.Position = UDim2.new(0.15, 0, 0.15, 0)
 Capsule.BackgroundColor3 = BGColor
 Capsule.BorderSizePixel = 0
 Capsule.AutoButtonColor = false
 Capsule.Text = ""
 Capsule.Active = true
+Capsule.ClipsDescendants = true
 Capsule.ZIndex = 10
 Capsule.Parent = ScreenGui
 
@@ -81,6 +83,48 @@ CapsuleStroke.Color = BorderColor
 CapsuleStroke.Thickness = 1.5
 CapsuleStroke.Parent = Capsule
 
+-- ==========================================
+-- [EFEITO DE VOLTA] ESTRELAS DESLIZANTES
+-- ==========================================
+local StarContainer = Instance.new("Frame")
+StarContainer.Size = UDim2.new(1, 0, 1, 0)
+StarContainer.BackgroundTransparency = 1
+StarContainer.ZIndex = 1
+StarContainer.Parent = Capsule
+
+local stars = {}
+for i = 1, 6 do
+    local star = Instance.new("Frame")
+    star.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    local size = math.random(1, 2)
+    star.Size = UDim2.new(0, size, 0, size)
+    star.BackgroundTransparency = math.random(3, 7) / 10
+    star.Position = UDim2.new(math.random(), 0, math.random(), 0)
+    star.ZIndex = 2
+    star.Parent = StarContainer
+    
+    local sCorner = Instance.new("UICorner")
+    sCorner.CornerRadius = UDim.new(1, 0)
+    sCorner.Parent = star
+    
+    table.insert(stars, {frame = star, speed = math.random(10, 25) / 1000})
+end
+
+-- Movimento das estrelas sem travar a UI principal
+RunService.RenderStepped:Connect(function(dt)
+    for _, starData in ipairs(stars) do
+        local star = starData.frame
+        local currentX = star.Position.X.Scale
+        local newX = currentX - (starData.speed * dt * 60)
+        if newX < -0.05 then 
+            newX = 1.05 
+            star.Position = UDim2.new(newX, 0, math.random(), 0)
+        else 
+            star.Position = UDim2.new(newX, 0, star.Position.Y.Scale, 0) 
+        end
+    end
+end)
+
 -- Nome na Bolha com o Símbolo †
 local CapsuleLabel = Instance.new("TextLabel")
 CapsuleLabel.Size = UDim2.new(1, 0, 1, 0)
@@ -89,7 +133,7 @@ CapsuleLabel.Text = "BK CLIENT V1 †"
 CapsuleLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
 CapsuleLabel.TextSize = 13
 CapsuleLabel.Font = Enum.Font.GothamBold
-CapsuleLabel.ZIndex = 11
+CapsuleLabel.ZIndex = 3
 CapsuleLabel.Parent = Capsule
 
 -- ==========================================
@@ -103,6 +147,7 @@ CentralMenu.Position = UDim2.new(0.5, 0, 0.5, 0)
 CentralMenu.BackgroundColor3 = MenuBGColor
 CentralMenu.Visible = false
 CentralMenu.Active = true
+CentralMenu.ClipsDescendants = true
 CentralMenu.ZIndex = 5
 CentralMenu.Parent = ScreenGui
 
@@ -249,14 +294,51 @@ createTab("Visual")
 createTab("Mira")
 createTab("Configurações")
 
--- Ativa a primeira aba por padrão
 Tabs["Visual"].Btn.BackgroundTransparency = 0.8
 Tabs["Visual"].Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
 Tabs["Visual"].Stroke.Transparency = 0.3
 Pages["Visual"].Visible = true
 
 -- ==========================================
--- SISTEMA DE ARRASTE ADAPTATIVO (NATIVO MOBILE)
+-- SISTEMA DE ABERTURA E FECHAMENTO ANIMADO
+-- ==========================================
+local isMenuOpen = false
+local menuTransitioning = false
+
+local function toggleMenu()
+    if menuTransitioning then return end
+    menuTransitioning = true
+    isMenuOpen = not isMenuOpen
+    playSound("6895086153", 0.5)
+    
+    if isMenuOpen then
+        -- Torna visível mas começa encolhido no meio
+        CentralMenu.Size = UDim2.new(0, 0, 0, 0)
+        CentralMenu.Visible = true
+        
+        -- Animação de expansão estilosa (Bounce suave)
+        local openTween = TweenService:Create(CentralMenu, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 500, 0, 300)
+        })
+        openTween:Play()
+        openTween.Completed:Connect(function()
+            menuTransitioning = false
+        end)
+    else
+        -- Animação de encolhimento antes de sumir
+        local closeTween = TweenService:Create(CentralMenu, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+            Size = UDim2.new(0, 0, 0, 0)
+        })
+        closeTween:Play()
+        closeTween.Completed:Connect(function()
+            CentralMenu.Visible = false
+            menuTransitioning = false
+        end)
+    end
+end
+
+-- ==========================================
+-- SISTEMA DE ARRASTE ULTRA ESTÁVEL (DIRETO)
 -- ==========================================
 local dragging = false
 local dragStart, startPos
@@ -287,13 +369,11 @@ UserInputService.InputEnded:Connect(function(input)
         if dragging then
             dragging = false
             local moveDistance = (input.Position - dragStart).Magnitude
-            -- Toque rápido e limpo abre o menu
             if moveDistance < dragLimit then
-                playSound("6895086153", 0.5)
-                CentralMenu.Visible = not CentralMenu.Visible
+                toggleMenu()
             end
         end
     end
 end)
 
-print("[BK CLIENT] Versão V2.3 Ativa na camada correta de toque!")
+print("[BK CLIENT] Versão V2.4 com Estrelas de fundo e Pop de abertura ativo!")
