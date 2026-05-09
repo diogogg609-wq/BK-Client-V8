@@ -1,7 +1,3 @@
--- ====================================================================
--- BK CLIENT - VERSÃO OFICIAL V2.8 (STATUS REAIS + ESP BOX PERSONALIZÁVEL)
--- ====================================================================
-
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -11,7 +7,6 @@ local Camera = workspace.CurrentCamera
 
 local LocalPlayer = Players.LocalPlayer
 
--- Limpeza absoluta de versões anteriores
 pcall(function()
     if CoreGui:FindFirstChild("BK_Official_UI") then
         CoreGui:FindFirstChild("BK_Official_UI"):Destroy()
@@ -21,22 +16,21 @@ pcall(function()
     end
 end)
 
--- ==========================================
--- SISTEMA DE CONFIGURAÇÕES SALVÁVEIS DO ESP
--- ==========================================
 local ESP_Config = {
-    Enabled = false,
-    Color = Color3.fromRGB(110, 60, 220), -- Roxo Neon Padrão
-    Thickness = 1.5,
-    SizeMultiplier = 1.0
+    BoxEnabled = false,
+    BoxColor = Color3.fromRGB(110, 60, 220),
+    BoxThickness = 1.5,
+    BoxSizeMultiplier = 1.0,
+    
+    LineEnabled = false,
+    LineColor = Color3.fromRGB(255, 50, 50),
+    LineThickness = 1.5,
+    LineOrigin = "Baixo"
 }
 
--- Armazenamento das caixas de desenho ativas
 local ActiveBoxes = {}
+local ActiveLines = {}
 
--- ==========================================
--- SISTEMA DE SONS SATISFATÓRIOS
--- ==========================================
 local function playSound(id, volume)
     task.spawn(function()
         local sound = Instance.new("Sound")
@@ -48,9 +42,6 @@ local function playSound(id, volume)
     end)
 end
 
--- ==========================================
--- INTERFACE BASE
--- ==========================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "BK_Official_UI"
 ScreenGui.ResetOnSpawn = false
@@ -67,12 +58,9 @@ end
 local BGColor = Color3.fromRGB(10, 10, 12)
 local MenuBGColor = Color3.fromRGB(14, 14, 16)
 local SidebarColor = Color3.fromRGB(8, 8, 10)
-local AccentColor = Color3.fromRGB(110, 60, 220) -- Roxo Neon
+local AccentColor = Color3.fromRGB(110, 60, 220)
 local BorderColor = Color3.fromRGB(50, 50, 55)
 
--- ==========================================
--- CÁPSULA (BOLHA FLUTUANTE)
--- ==========================================
 local Capsule = Instance.new("TextButton")
 Capsule.Name = "BK_Capsule"
 Capsule.Size = UDim2.new(0, 160, 0, 42)
@@ -91,9 +79,6 @@ local CapsuleStroke = Instance.new("UIStroke", Capsule)
 CapsuleStroke.Color = BorderColor
 CapsuleStroke.Thickness = 1.5
 
--- ==========================================
--- CONSTELAÇÃO NEON (BOLHAS + LINHAS SUAVES)
--- ==========================================
 local StarContainer = Instance.new("Frame")
 StarContainer.Size = UDim2.new(1, 0, 1, 0)
 StarContainer.BackgroundTransparency = 1
@@ -190,20 +175,16 @@ RunService.RenderStepped:Connect(function(dt)
     end
 end)
 
--- Nome na Bolha
 local CapsuleLabel = Instance.new("TextLabel")
 CapsuleLabel.Size = UDim2.new(1, 0, 1, 0)
 CapsuleLabel.BackgroundTransparency = 1
-CapsuleLabel.Text = "BK CLIENT V1 †"
+CapsuleLabel.Text = "BK CLIENT V1.2 †"
 CapsuleLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
 CapsuleLabel.TextSize = 13
 CapsuleLabel.Font = Enum.Font.GothamBold
 CapsuleLabel.ZIndex = 5
 CapsuleLabel.Parent = Capsule
 
--- ==========================================
--- MENU CENTRAL FLUTUANTE
--- ==========================================
 local CentralMenuCanvas = Instance.new("CanvasGroup")
 CentralMenuCanvas.Name = "BK_CentralMenu"
 CentralMenuCanvas.Size = UDim2.new(0, 500, 0, 320)
@@ -221,7 +202,6 @@ local MenuStroke = Instance.new("UIStroke", CentralMenuCanvas)
 MenuStroke.Color = BorderColor
 MenuStroke.Thickness = 1.5
 
--- HEADER (PERFIL DO JOGADOR)
 local Header = Instance.new("Frame")
 Header.Size = UDim2.new(1, 0, 0, 55)
 Header.BackgroundColor3 = SidebarColor
@@ -249,7 +229,7 @@ local HeaderTitle = Instance.new("TextLabel")
 HeaderTitle.Position = UDim2.new(0, 65, 0, 0)
 HeaderTitle.Size = UDim2.new(0, 300, 1, 0)
 HeaderTitle.BackgroundTransparency = 1
-HeaderTitle.Text = LocalPlayer.DisplayName .. " | BK CLIENT V1"
+HeaderTitle.Text = LocalPlayer.DisplayName .. " | BK CLIENT V1.2"
 HeaderTitle.TextColor3 = Color3.fromRGB(240, 240, 240)
 HeaderTitle.Font = Enum.Font.GothamBold
 HeaderTitle.TextSize = 14
@@ -257,7 +237,6 @@ HeaderTitle.TextXAlignment = Enum.TextXAlignment.Left
 HeaderTitle.ZIndex = 7
 HeaderTitle.Parent = Header
 
--- ABAS (GAVETA DIREITA)
 local Sidebar = Instance.new("Frame")
 Sidebar.Size = UDim2.new(0, 130, 1, -55)
 Sidebar.Position = UDim2.new(1, -130, 0, 55)
@@ -276,7 +255,6 @@ Instance.new("UIListLayout", TabContainer).Padding = UDim.new(0, 6)
 TabContainer.UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 Instance.new("UIPadding", TabContainer).PaddingTop = UDim.new(0, 10)
 
--- CONTAINER DE CONTEÚDO (ESQUERDA)
 local ContentContainer = Instance.new("Frame")
 ContentContainer.Position = UDim2.new(0, 15, 0, 70)
 ContentContainer.Size = UDim2.new(1, -160, 1, -85)
@@ -284,9 +262,6 @@ ContentContainer.BackgroundTransparency = 1
 ContentContainer.ZIndex = 6
 ContentContainer.Parent = CentralMenuCanvas
 
--- ==========================================
--- CRIADOR DE ABAS E DETECÇÃO EM TEMPO REAL
--- ==========================================
 local Tabs = {}
 local Pages = {}
 
@@ -338,7 +313,6 @@ local function createTab(name)
     Pages[name] = Page
 end
 
--- CRIAÇÃO DAS ABAS OFICIAIS
 createTab("Visual")
 createTab("Mira")
 createTab("Status")
@@ -347,126 +321,122 @@ createTab("Configurações")
 -- ==========================================
 -- SEÇÃO MÓVEL DA BOX (ESTILO PC FLUTUANTE)
 -- ==========================================
-local CustomizerWindow = Instance.new("Frame")
-CustomizerWindow.Name = "BK_BoxCustomizer"
-CustomizerWindow.Size = UDim2.new(0, 220, 0, 190)
-CustomizerWindow.Position = UDim2.new(0.5, -110, 0.5, -210) -- Aparece um pouco acima do menu principal
-CustomizerWindow.BackgroundColor3 = MenuBGColor
-CustomizerWindow.BorderSizePixel = 0
-CustomizerWindow.Active = true
-CustomizerWindow.Visible = false
-CustomizerWindow.ZIndex = 30
-CustomizerWindow.Parent = ScreenGui
+local BoxCustomizerWindow = Instance.new("Frame")
+BoxCustomizerWindow.Name = "BK_BoxCustomizer"
+BoxCustomizerWindow.Size = UDim2.new(0, 220, 0, 190)
+BoxCustomizerWindow.Position = UDim2.new(0.5, -230, 0.5, -210)
+BoxCustomizerWindow.BackgroundColor3 = MenuBGColor
+BoxCustomizerWindow.BorderSizePixel = 0
+BoxCustomizerWindow.Active = true
+BoxCustomizerWindow.Visible = false
+BoxCustomizerWindow.ZIndex = 30
+BoxCustomizerWindow.Parent = ScreenGui
 
-Instance.new("UICorner", CustomizerWindow).CornerRadius = UDim.new(0, 8)
-local CustomizerStroke = Instance.new("UIStroke", CustomizerWindow)
-CustomizerStroke.Color = AccentColor
-CustomizerStroke.Thickness = 1.2
+Instance.new("UICorner", BoxCustomizerWindow).CornerRadius = UDim.new(0, 8)
+local BoxCustomizerStroke = Instance.new("UIStroke", BoxCustomizerWindow)
+BoxCustomizerStroke.Color = AccentColor
+BoxCustomizerStroke.Thickness = 1.2
 
--- Barra de arrasto superior da mini janela
-local CustomHeader = Instance.new("Frame")
-CustomHeader.Size = UDim2.new(1, 0, 0, 28)
-CustomHeader.BackgroundColor3 = SidebarColor
-CustomHeader.BorderSizePixel = 0
-CustomHeader.ZIndex = 31
-CustomHeader.Parent = CustomizerWindow
-Instance.new("UICorner", CustomHeader).CornerRadius = UDim.new(0, 8)
+local BoxCustomHeader = Instance.new("Frame")
+BoxCustomHeader.Size = UDim2.new(1, 0, 0, 28)
+BoxCustomHeader.BackgroundColor3 = SidebarColor
+BoxCustomHeader.BorderSizePixel = 0
+BoxCustomHeader.ZIndex = 31
+BoxCustomHeader.Parent = BoxCustomizerWindow
+Instance.new("UICorner", BoxCustomHeader).CornerRadius = UDim.new(0, 8)
 
-local CustomTitle = Instance.new("TextLabel")
-CustomTitle.Size = UDim2.new(1, -30, 1, 0)
-CustomTitle.Position = UDim2.new(0, 10, 0, 0)
-CustomTitle.BackgroundTransparency = 1
-CustomTitle.Text = "Ajustes da Box"
-CustomTitle.TextColor3 = Color3.fromRGB(200, 200, 205)
-CustomTitle.Font = Enum.Font.GothamBold
-CustomTitle.TextSize = 11
-CustomTitle.TextXAlignment = Enum.TextXAlignment.Left
-CustomTitle.ZIndex = 32
-CustomTitle.Parent = CustomHeader
+local BoxCustomTitle = Instance.new("TextLabel")
+BoxCustomTitle.Size = UDim2.new(1, -30, 1, 0)
+BoxCustomTitle.Position = UDim2.new(0, 10, 0, 0)
+BoxCustomTitle.BackgroundTransparency = 1
+BoxCustomTitle.Text = "Ajustes da Box"
+BoxCustomTitle.TextColor3 = Color3.fromRGB(200, 200, 205)
+BoxCustomTitle.Font = Enum.Font.GothamBold
+BoxCustomTitle.TextSize = 11
+BoxCustomTitle.TextXAlignment = Enum.TextXAlignment.Left
+BoxCustomTitle.ZIndex = 32
+BoxCustomTitle.Parent = BoxCustomHeader
 
-local CustomClose = Instance.new("TextButton")
-CustomClose.Size = UDim2.new(0, 24, 0, 24)
-CustomClose.Position = UDim2.new(1, -26, 0.5, -12)
-CustomClose.BackgroundTransparency = 1
-CustomClose.Text = "×"
-CustomClose.TextColor3 = Color3.fromRGB(150, 150, 150)
-CustomClose.Font = Enum.Font.GothamBold
-CustomClose.TextSize = 18
-CustomClose.ZIndex = 32
-CustomClose.Parent = CustomHeader
+local BoxCustomClose = Instance.new("TextButton")
+BoxCustomClose.Size = UDim2.new(0, 24, 0, 24)
+BoxCustomClose.Position = UDim2.new(1, -26, 0.5, -12)
+BoxCustomClose.BackgroundTransparency = 1
+BoxCustomClose.Text = "×"
+BoxCustomClose.TextColor3 = Color3.fromRGB(150, 150, 150)
+BoxCustomClose.Font = Enum.Font.GothamBold
+BoxCustomClose.TextSize = 18
+BoxCustomClose.ZIndex = 32
+BoxCustomClose.Parent = BoxCustomHeader
 
-CustomClose.MouseButton1Click:Connect(function()
+BoxCustomClose.MouseButton1Click:Connect(function()
     playSound("12222076", 0.3)
-    CustomizerWindow.Visible = false
+    BoxCustomizerWindow.Visible = false
 end)
 
--- Sistema de Arraste da mini janela (Touch de PC funcional no celular)
-local customDragging = false
-local customDragStart, customStartPos
+local boxDragging = false
+local boxDragStart, boxStartPos
 
-CustomHeader.InputBegan:Connect(function(input)
+BoxCustomHeader.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        customDragging = true
-        customDragStart = input.Position
-        customStartPos = CustomizerWindow.Position
+        boxDragging = true
+        boxDragStart = input.Position
+        boxStartPos = BoxCustomizerWindow.Position
     end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-    if customDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local delta = input.Position - customDragStart
-        CustomizerWindow.Position = UDim2.new(
-            customStartPos.X.Scale, 
-            customStartPos.X.Offset + delta.X, 
-            customStartPos.Y.Scale, 
-            customStartPos.Y.Offset + delta.Y
+    if boxDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - boxDragStart
+        BoxCustomizerWindow.Position = UDim2.new(
+            boxStartPos.X.Scale, 
+            boxStartPos.X.Offset + delta.X, 
+            boxStartPos.Y.Scale, 
+            boxStartPos.Y.Offset + delta.Y
         )
     end
 end)
 
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        customDragging = false
+        boxDragging = false
     end
 end)
 
--- CONTEÚDO DOS AJUSTES NA JANELA FLUTUANTE
-local CustomBody = Instance.new("Frame")
-CustomBody.Position = UDim2.new(0, 0, 0, 28)
-CustomBody.Size = UDim2.new(1, 0, 1, -28)
-CustomBody.BackgroundTransparency = 1
-CustomBody.ZIndex = 31
-CustomBody.Parent = CustomizerWindow
+local BoxCustomBody = Instance.new("Frame")
+BoxCustomBody.Position = UDim2.new(0, 0, 0, 28)
+BoxCustomBody.Size = UDim2.new(1, 0, 1, -28)
+BoxCustomBody.BackgroundTransparency = 1
+BoxCustomBody.ZIndex = 31
+BoxCustomBody.Parent = BoxCustomizerWindow
 
-local BodyLayout = Instance.new("UIListLayout", CustomBody)
-BodyLayout.Padding = UDim.new(0, 8)
-BodyLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-Instance.new("UIPadding", CustomBody).PaddingTop = UDim.new(0, 8)
+local BoxBodyLayout = Instance.new("UIListLayout", BoxCustomBody)
+BoxBodyLayout.Padding = UDim.new(0, 8)
+BoxBodyLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+Instance.new("UIPadding", BoxCustomBody).PaddingTop = UDim.new(0, 8)
 
--- 1. Seletor de Cores da Box
-local ColorSection = Instance.new("Frame")
-ColorSection.Size = UDim2.new(0.9, 0, 0, 32)
-ColorSection.BackgroundTransparency = 1
-ColorSection.ZIndex = 32
-ColorSection.Parent = CustomBody
+local BoxColorSection = Instance.new("Frame")
+BoxColorSection.Size = UDim2.new(0.9, 0, 0, 32)
+BoxColorSection.BackgroundTransparency = 1
+BoxColorSection.ZIndex = 32
+BoxColorSection.Parent = BoxCustomBody
 
-local ColorLabel = Instance.new("TextLabel")
-ColorLabel.Size = UDim2.new(0.4, 0, 1, 0)
-ColorLabel.BackgroundTransparency = 1
-ColorLabel.Text = "Cor da Box:"
-ColorLabel.TextColor3 = Color3.fromRGB(180, 180, 185)
-ColorLabel.Font = Enum.Font.GothamSemibold
-ColorLabel.TextSize = 10
-ColorLabel.TextXAlignment = Enum.TextXAlignment.Left
-ColorLabel.ZIndex = 33
-ColorLabel.Parent = ColorSection
+local BoxColorLabel = Instance.new("TextLabel")
+BoxColorLabel.Size = UDim2.new(0.4, 0, 1, 0)
+BoxColorLabel.BackgroundTransparency = 1
+BoxColorLabel.Text = "Cor da Box:"
+BoxColorLabel.TextColor3 = Color3.fromRGB(180, 180, 185)
+BoxColorLabel.Font = Enum.Font.GothamSemibold
+BoxColorLabel.TextSize = 10
+BoxColorLabel.TextXAlignment = Enum.TextXAlignment.Left
+BoxColorLabel.ZIndex = 33
+BoxColorLabel.Parent = BoxColorSection
 
-local ColorBtnContainer = Instance.new("Frame")
-ColorBtnContainer.Size = UDim2.new(0.6, 0, 1, 0)
-ColorBtnContainer.Position = UDim2.new(0.4, 0, 0, 0)
-ColorBtnContainer.BackgroundTransparency = 1
-ColorBtnContainer.ZIndex = 33
-ColorBtnContainer.Parent = ColorSection
+local BoxColorBtnContainer = Instance.new("Frame")
+BoxColorBtnContainer.Size = UDim2.new(0.6, 0, 1, 0)
+BoxColorBtnContainer.Position = UDim2.new(0.4, 0, 0, 0)
+BoxColorBtnContainer.BackgroundTransparency = 1
+BoxColorBtnContainer.ZIndex = 33
+BoxColorBtnContainer.Parent = BoxColorSection
 
 local ColorsList = {
     {Color = Color3.fromRGB(0, 255, 120), Text = "Verde"},
@@ -482,19 +452,18 @@ for idx, colorData in ipairs(ColorsList) do
     cBtn.BorderSizePixel = 0
     cBtn.Text = ""
     cBtn.ZIndex = 34
-    cBtn.Parent = ColorBtnContainer
+    cBtn.Parent = BoxColorBtnContainer
     Instance.new("UICorner", cBtn).CornerRadius = UDim.new(0, 4)
     
     local cBtnStroke = Instance.new("UIStroke", cBtn)
     cBtnStroke.Color = Color3.fromRGB(255, 255, 255)
     cBtnStroke.Thickness = 1.2
-    cBtnStroke.Transparency = (ESP_Config.Color == colorData.Color) and 0 or 1
+    cBtnStroke.Transparency = (ESP_Config.BoxColor == colorData.Color) and 0 or 1
     
     cBtn.MouseButton1Click:Connect(function()
         playSound("12222076", 0.35)
-        ESP_Config.Color = colorData.Color
-        -- Atualiza as bordas de seleção
-        for _, child in ipairs(ColorBtnContainer:GetChildren()) do
+        ESP_Config.BoxColor = colorData.Color
+        for _, child in ipairs(BoxColorBtnContainer:GetChildren()) do
             if child:IsA("TextButton") and child:FindFirstChildOfClass("UIStroke") then
                 child:FindFirstChildOfClass("UIStroke").Transparency = 1
             end
@@ -503,155 +472,429 @@ for idx, colorData in ipairs(ColorsList) do
     end)
 end
 
--- 2. Ajustador de Espessura
-local ThickSection = Instance.new("Frame")
-ThickSection.Size = UDim2.new(0.9, 0, 0, 32)
-ThickSection.BackgroundTransparency = 1
-ThickSection.ZIndex = 32
-ThickSection.Parent = CustomBody
+local BoxThickSection = Instance.new("Frame")
+BoxThickSection.Size = UDim2.new(0.9, 0, 0, 32)
+BoxThickSection.BackgroundTransparency = 1
+BoxThickSection.ZIndex = 32
+BoxThickSection.Parent = BoxCustomBody
 
-local ThickLabel = Instance.new("TextLabel")
-ThickLabel.Size = UDim2.new(0.4, 0, 1, 0)
-ThickLabel.BackgroundTransparency = 1
-ThickLabel.Text = "Espessura:"
-ThickLabel.TextColor3 = Color3.fromRGB(180, 180, 185)
-ThickLabel.Font = Enum.Font.GothamSemibold
-ThickLabel.TextSize = 10
-ThickLabel.TextXAlignment = Enum.TextXAlignment.Left
-ThickLabel.ZIndex = 33
-ThickLabel.Parent = ThickSection
+local BoxThickLabel = Instance.new("TextLabel")
+BoxThickLabel.Size = UDim2.new(0.4, 0, 1, 0)
+BoxThickLabel.BackgroundTransparency = 1
+BoxThickLabel.Text = "Espessura:"
+BoxThickLabel.TextColor3 = Color3.fromRGB(180, 180, 185)
+BoxThickLabel.Font = Enum.Font.GothamSemibold
+BoxThickLabel.TextSize = 10
+BoxThickLabel.TextXAlignment = Enum.TextXAlignment.Left
+BoxThickLabel.ZIndex = 33
+BoxThickLabel.Parent = BoxThickSection
 
-local ThickValLabel = Instance.new("TextLabel")
-ThickValLabel.Size = UDim2.new(0.2, 0, 1, 0)
-ThickValLabel.Position = UDim2.new(0.4, 0, 0, 0)
-ThickValLabel.BackgroundTransparency = 1
-ThickValLabel.Text = tostring(ESP_Config.Thickness)
-ThickValLabel.TextColor3 = Color3.fromRGB(240, 240, 245)
-ThickValLabel.Font = Enum.Font.GothamBold
-ThickValLabel.TextSize = 11
-ThickValLabel.ZIndex = 33
-ThickValLabel.Parent = ThickSection
+local BoxThickValLabel = Instance.new("TextLabel")
+BoxThickValLabel.Size = UDim2.new(0.2, 0, 1, 0)
+BoxThickValLabel.Position = UDim2.new(0.4, 0, 0, 0)
+BoxThickValLabel.BackgroundTransparency = 1
+BoxThickValLabel.Text = tostring(ESP_Config.BoxThickness)
+BoxThickValLabel.TextColor3 = Color3.fromRGB(240, 240, 245)
+BoxThickValLabel.Font = Enum.Font.GothamBold
+BoxThickValLabel.TextSize = 11
+BoxThickValLabel.ZIndex = 33
+BoxThickValLabel.Parent = BoxThickSection
 
-local ThickLess = Instance.new("TextButton")
-ThickLess.Size = UDim2.new(0, 24, 0, 24)
-ThickLess.Position = UDim2.new(0.65, 0, 0.5, -12)
-ThickLess.BackgroundColor3 = SidebarColor
-ThickLess.Text = "-"
-ThickLess.TextColor3 = Color3.fromRGB(240, 240, 240)
-ThickLess.Font = Enum.Font.GothamBold
-ThickLess.TextSize = 12
-ThickLess.ZIndex = 34
-ThickLess.Parent = ThickSection
-Instance.new("UICorner", ThickLess).CornerRadius = UDim.new(0, 4)
+local BoxThickLess = Instance.new("TextButton")
+BoxThickLess.Size = UDim2.new(0, 24, 0, 24)
+BoxThickLess.Position = UDim2.new(0.65, 0, 0.5, -12)
+BoxThickLess.BackgroundColor3 = SidebarColor
+BoxThickLess.Text = "-"
+BoxThickLess.TextColor3 = Color3.fromRGB(240, 240, 240)
+BoxThickLess.Font = Enum.Font.GothamBold
+BoxThickLess.TextSize = 12
+BoxThickLess.ZIndex = 34
+BoxThickLess.Parent = BoxThickSection
+Instance.new("UICorner", BoxThickLess).CornerRadius = UDim.new(0, 4)
 
-local ThickMore = Instance.new("TextButton")
-ThickMore.Size = UDim2.new(0, 24, 0, 24)
-ThickMore.Position = UDim2.new(0.85, 0, 0.5, -12)
-ThickMore.BackgroundColor3 = SidebarColor
-ThickMore.Text = "+"
-ThickMore.TextColor3 = Color3.fromRGB(240, 240, 240)
-ThickMore.Font = Enum.Font.GothamBold
-ThickMore.TextSize = 12
-ThickMore.ZIndex = 34
-ThickMore.Parent = ThickSection
-Instance.new("UICorner", ThickMore).CornerRadius = UDim.new(0, 4)
+local BoxThickMore = Instance.new("TextButton")
+BoxThickMore.Size = UDim2.new(0, 24, 0, 24)
+BoxThickMore.Position = UDim2.new(0.85, 0, 0.5, -12)
+BoxThickMore.BackgroundColor3 = SidebarColor
+BoxThickMore.Text = "+"
+BoxThickMore.TextColor3 = Color3.fromRGB(240, 240, 240)
+BoxThickMore.Font = Enum.Font.GothamBold
+BoxThickMore.TextSize = 12
+BoxThickMore.ZIndex = 34
+BoxThickMore.Parent = BoxThickSection
+Instance.new("UICorner", BoxThickMore).CornerRadius = UDim.new(0, 4)
 
-ThickLess.MouseButton1Click:Connect(function()
+BoxThickLess.MouseButton1Click:Connect(function()
     playSound("12222076", 0.3)
-    ESP_Config.Thickness = math.clamp(ESP_Config.Thickness - 0.5, 1, 5)
-    ThickValLabel.Text = tostring(ESP_Config.Thickness)
+    ESP_Config.BoxThickness = math.clamp(ESP_Config.BoxThickness - 0.5, 1, 5)
+    BoxThickValLabel.Text = tostring(ESP_Config.BoxThickness)
 end)
 
-ThickMore.MouseButton1Click:Connect(function()
+BoxThickMore.MouseButton1Click:Connect(function()
     playSound("12222076", 0.3)
-    ESP_Config.Thickness = math.clamp(ESP_Config.Thickness + 0.5, 1, 5)
-    ThickValLabel.Text = tostring(ESP_Config.Thickness)
+    ESP_Config.BoxThickness = math.clamp(ESP_Config.BoxThickness + 0.5, 1, 5)
+    BoxThickValLabel.Text = tostring(ESP_Config.BoxThickness)
 end)
 
--- 3. Ajustador de Tamanho de Escala
-local SizeSection = Instance.new("Frame")
-SizeSection.Size = UDim2.new(0.9, 0, 0, 32)
-SizeSection.BackgroundTransparency = 1
-SizeSection.ZIndex = 32
-SizeSection.Parent = CustomBody
+local BoxSizeSection = Instance.new("Frame")
+BoxSizeSection.Size = UDim2.new(0.9, 0, 0, 32)
+BoxSizeSection.BackgroundTransparency = 1
+BoxSizeSection.ZIndex = 32
+BoxSizeSection.Parent = BoxCustomBody
 
-local SizeLabel = Instance.new("TextLabel")
-SizeLabel.Size = UDim2.new(0.4, 0, 1, 0)
-SizeLabel.BackgroundTransparency = 1
-SizeLabel.Text = "Tamanho:"
-SizeLabel.TextColor3 = Color3.fromRGB(180, 180, 185)
-SizeLabel.Font = Enum.Font.GothamSemibold
-SizeLabel.TextSize = 10
-SizeLabel.TextXAlignment = Enum.TextXAlignment.Left
-SizeLabel.ZIndex = 33
-SizeLabel.Parent = SizeSection
+local BoxSizeLabel = Instance.new("TextLabel")
+BoxSizeLabel.Size = UDim2.new(0.4, 0, 1, 0)
+BoxSizeLabel.BackgroundTransparency = 1
+BoxSizeLabel.Text = "Tamanho:"
+BoxSizeLabel.TextColor3 = Color3.fromRGB(180, 180, 185)
+BoxSizeLabel.Font = Enum.Font.GothamSemibold
+BoxSizeLabel.TextSize = 10
+BoxSizeLabel.TextXAlignment = Enum.TextXAlignment.Left
+BoxSizeLabel.ZIndex = 33
+BoxSizeLabel.Parent = BoxSizeSection
 
-local SizeValLabel = Instance.new("TextLabel")
-SizeValLabel.Size = UDim2.new(0.2, 0, 1, 0)
-SizeValLabel.Position = UDim2.new(0.4, 0, 0, 0)
-SizeValLabel.BackgroundTransparency = 1
-SizeValLabel.Text = string.format("%.1fx", ESP_Config.SizeMultiplier)
-SizeValLabel.TextColor3 = Color3.fromRGB(240, 240, 245)
-SizeValLabel.Font = Enum.Font.GothamBold
-SizeValLabel.TextSize = 11
-SizeValLabel.ZIndex = 33
-SizeValLabel.Parent = SizeSection
+local BoxSizeValLabel = Instance.new("TextLabel")
+BoxSizeValLabel.Size = UDim2.new(0.2, 0, 1, 0)
+BoxSizeValLabel.Position = UDim2.new(0.4, 0, 0, 0)
+BoxSizeValLabel.BackgroundTransparency = 1
+BoxSizeValLabel.Text = string.format("%.1fx", ESP_Config.BoxSizeMultiplier)
+BoxSizeValLabel.TextColor3 = Color3.fromRGB(240, 240, 245)
+BoxSizeValLabel.Font = Enum.Font.GothamBold
+BoxSizeValLabel.TextSize = 11
+BoxSizeValLabel.ZIndex = 33
+BoxSizeValLabel.Parent = BoxSizeSection
 
-local SizeLess = Instance.new("TextButton")
-SizeLess.Size = UDim2.new(0, 24, 0, 24)
-SizeLess.Position = UDim2.new(0.65, 0, 0.5, -12)
-SizeLess.BackgroundColor3 = SidebarColor
-SizeLess.Text = "-"
-SizeLess.TextColor3 = Color3.fromRGB(240, 240, 240)
-SizeLess.Font = Enum.Font.GothamBold
-SizeLess.TextSize = 12
-SizeLess.ZIndex = 34
-SizeLess.Parent = SizeSection
-Instance.new("UICorner", SizeLess).CornerRadius = UDim.new(0, 4)
+local BoxSizeLess = Instance.new("TextButton")
+BoxSizeLess.Size = UDim2.new(0, 24, 0, 24)
+BoxSizeLess.Position = UDim2.new(0.65, 0, 0.5, -12)
+BoxSizeLess.BackgroundColor3 = SidebarColor
+BoxSizeLess.Text = "-"
+BoxSizeLess.TextColor3 = Color3.fromRGB(240, 240, 240)
+BoxSizeLess.Font = Enum.Font.GothamBold
+BoxSizeLess.TextSize = 12
+BoxSizeLess.ZIndex = 34
+BoxSizeLess.Parent = BoxSizeSection
+Instance.new("UICorner", BoxSizeLess).CornerRadius = UDim.new(0, 4)
 
-local SizeMore = Instance.new("TextButton")
-SizeMore.Size = UDim2.new(0, 24, 0, 24)
-SizeMore.Position = UDim2.new(0.85, 0, 0.5, -12)
-SizeMore.BackgroundColor3 = SidebarColor
-SizeMore.Text = "+"
-SizeMore.TextColor3 = Color3.fromRGB(240, 240, 240)
-SizeMore.Font = Enum.Font.GothamBold
-SizeMore.TextSize = 12
-SizeMore.ZIndex = 34
-SizeMore.Parent = SizeSection
-Instance.new("UICorner", SizeMore).CornerRadius = UDim.new(0, 4)
+local BoxSizeMore = Instance.new("TextButton")
+BoxSizeMore.Size = UDim2.new(0, 24, 0, 24)
+BoxSizeMore.Position = UDim2.new(0.85, 0, 0.5, -12)
+BoxSizeMore.BackgroundColor3 = SidebarColor
+BoxSizeMore.Text = "+"
+BoxSizeMore.TextColor3 = Color3.fromRGB(240, 240, 240)
+BoxSizeMore.Font = Enum.Font.GothamBold
+BoxSizeMore.TextSize = 12
+BoxSizeMore.ZIndex = 34
+BoxSizeMore.Parent = BoxSizeSection
+Instance.new("UICorner", BoxSizeMore).CornerRadius = UDim.new(0, 4)
 
-SizeLess.MouseButton1Click:Connect(function()
+BoxSizeLess.MouseButton1Click:Connect(function()
     playSound("12222076", 0.3)
-    ESP_Config.SizeMultiplier = math.clamp(ESP_Config.SizeMultiplier - 0.1, 0.5, 2.0)
-    SizeValLabel.Text = string.format("%.1fx", ESP_Config.SizeMultiplier)
+    ESP_Config.BoxSizeMultiplier = math.clamp(ESP_Config.BoxSizeMultiplier - 0.1, 0.5, 2.0)
+    BoxSizeValLabel.Text = string.format("%.1fx", ESP_Config.BoxSizeMultiplier)
 end)
 
-SizeMore.MouseButton1Click:Connect(function()
+BoxSizeMore.MouseButton1Click:Connect(function()
     playSound("12222076", 0.3)
-    ESP_Config.SizeMultiplier = math.clamp(ESP_Config.SizeMultiplier + 0.1, 0.5, 2.0)
-    SizeValLabel.Text = string.format("%.1fx", ESP_Config.SizeMultiplier)
+    ESP_Config.BoxSizeMultiplier = math.clamp(ESP_Config.BoxSizeMultiplier + 0.1, 0.5, 2.0)
+    BoxSizeValLabel.Text = string.format("%.1fx", ESP_Config.BoxSizeMultiplier)
 end)
 
--- 4. Botão de Salvar Configurações
-local SaveBtn = Instance.new("TextButton")
-SaveBtn.Size = UDim2.new(0.9, 0, 0, 32)
-SaveBtn.BackgroundColor3 = AccentColor
-SaveBtn.Text = "Salvar Configurações"
-SaveBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-SaveBtn.Font = Enum.Font.GothamBold
-SaveBtn.TextSize = 11
-SaveBtn.ZIndex = 33
-SaveBtn.Parent = CustomBody
-Instance.new("UICorner", SaveBtn).CornerRadius = UDim.new(0, 6)
+local BoxSaveBtn = Instance.new("TextButton")
+BoxSaveBtn.Size = UDim2.new(0.9, 0, 0, 32)
+BoxSaveBtn.BackgroundColor3 = AccentColor
+BoxSaveBtn.Text = "Salvar Configurações"
+BoxSaveBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+BoxSaveBtn.Font = Enum.Font.GothamBold
+BoxSaveBtn.TextSize = 11
+BoxSaveBtn.ZIndex = 33
+BoxSaveBtn.Parent = BoxCustomBody
+Instance.new("UICorner", BoxSaveBtn).CornerRadius = UDim.new(0, 6)
 
-SaveBtn.MouseButton1Click:Connect(function()
+BoxSaveBtn.MouseButton1Click:Connect(function()
     playSound("12222076", 0.5)
-    SaveBtn.Text = "Configurações Salvas! ✔"
-    SaveBtn.BackgroundColor3 = Color3.fromRGB(50, 220, 110)
+    BoxSaveBtn.Text = "Configurações Salvas! ✔"
+    BoxSaveBtn.BackgroundColor3 = Color3.fromRGB(50, 220, 110)
     task.wait(1.5)
-    SaveBtn.Text = "Salvar Configurações"
-    SaveBtn.BackgroundColor3 = AccentColor
+    BoxSaveBtn.Text = "Salvar Configurações"
+    BoxSaveBtn.BackgroundColor3 = AccentColor
+end)
+
+-- ==========================================
+-- SEÇÃO MÓVEL DA LINE (ESTILO PC FLUTUANTE)
+-- ==========================================
+local LineCustomizerWindow = Instance.new("Frame")
+LineCustomizerWindow.Name = "BK_LineCustomizer"
+LineCustomizerWindow.Size = UDim2.new(0, 220, 0, 190)
+LineCustomizerWindow.Position = UDim2.new(0.5, 10, 0.5, -210)
+LineCustomizerWindow.BackgroundColor3 = MenuBGColor
+LineCustomizerWindow.BorderSizePixel = 0
+LineCustomizerWindow.Active = true
+LineCustomizerWindow.Visible = false
+LineCustomizerWindow.ZIndex = 30
+LineCustomizerWindow.Parent = ScreenGui
+
+Instance.new("UICorner", LineCustomizerWindow).CornerRadius = UDim.new(0, 8)
+local LineCustomizerStroke = Instance.new("UIStroke", LineCustomizerWindow)
+LineCustomizerStroke.Color = AccentColor
+LineCustomizerStroke.Thickness = 1.2
+
+local LineCustomHeader = Instance.new("Frame")
+LineCustomHeader.Size = UDim2.new(1, 0, 0, 28)
+LineCustomHeader.BackgroundColor3 = SidebarColor
+LineCustomHeader.BorderSizePixel = 0
+LineCustomHeader.ZIndex = 31
+LineCustomHeader.Parent = LineCustomizerWindow
+Instance.new("UICorner", LineCustomHeader).CornerRadius = UDim.new(0, 8)
+
+local LineCustomTitle = Instance.new("TextLabel")
+LineCustomTitle.Size = UDim2.new(1, -30, 1, 0)
+LineCustomTitle.Position = UDim2.new(0, 10, 0, 0)
+LineCustomTitle.BackgroundTransparency = 1
+LineCustomTitle.Text = "Ajustes da Line"
+LineCustomTitle.TextColor3 = Color3.fromRGB(200, 200, 205)
+LineCustomTitle.Font = Enum.Font.GothamBold
+LineCustomTitle.TextSize = 11
+LineCustomTitle.TextXAlignment = Enum.TextXAlignment.Left
+LineCustomTitle.ZIndex = 32
+LineCustomTitle.Parent = LineCustomHeader
+
+local LineCustomClose = Instance.new("TextButton")
+LineCustomClose.Size = UDim2.new(0, 24, 0, 24)
+LineCustomClose.Position = UDim2.new(1, -26, 0.5, -12)
+LineCustomClose.BackgroundTransparency = 1
+LineCustomClose.Text = "×"
+LineCustomClose.TextColor3 = Color3.fromRGB(150, 150, 150)
+LineCustomClose.Font = Enum.Font.GothamBold
+LineCustomClose.TextSize = 18
+LineCustomClose.ZIndex = 32
+LineCustomClose.Parent = LineCustomHeader
+
+LineCustomClose.MouseButton1Click:Connect(function()
+    playSound("12222076", 0.3)
+    LineCustomizerWindow.Visible = false
+end)
+
+local lineDragging = false
+local lineDragStart, lineStartPos
+
+LineCustomHeader.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        lineDragging = true
+        lineDragStart = input.Position
+        lineStartPos = LineCustomizerWindow.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if lineDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - lineDragStart
+        LineCustomizerWindow.Position = UDim2.new(
+            lineStartPos.X.Scale, 
+            lineStartPos.X.Offset + delta.X, 
+            lineStartPos.Y.Scale, 
+            lineStartPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        lineDragging = false
+    end
+end)
+
+local LineCustomBody = Instance.new("Frame")
+LineCustomBody.Position = UDim2.new(0, 0, 0, 28)
+LineCustomBody.Size = UDim2.new(1, 0, 1, -28)
+LineCustomBody.BackgroundTransparency = 1
+LineCustomBody.ZIndex = 31
+LineCustomBody.Parent = LineCustomizerWindow
+
+local LineBodyLayout = Instance.new("UIListLayout", LineCustomBody)
+LineBodyLayout.Padding = UDim.new(0, 8)
+LineBodyLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+Instance.new("UIPadding", LineCustomBody).PaddingTop = UDim.new(0, 8)
+
+local LineColorSection = Instance.new("Frame")
+LineColorSection.Size = UDim2.new(0.9, 0, 0, 32)
+LineColorSection.BackgroundTransparency = 1
+LineColorSection.ZIndex = 32
+LineColorSection.Parent = LineCustomBody
+
+local LineColorLabel = Instance.new("TextLabel")
+LineColorLabel.Size = UDim2.new(0.4, 0, 1, 0)
+LineColorLabel.BackgroundTransparency = 1
+LineColorLabel.Text = "Cor da Line:"
+LineColorLabel.TextColor3 = Color3.fromRGB(180, 180, 185)
+LineColorLabel.Font = Enum.Font.GothamSemibold
+LineColorLabel.TextSize = 10
+LineColorLabel.TextXAlignment = Enum.TextXAlignment.Left
+LineColorLabel.ZIndex = 33
+LineColorLabel.Parent = LineColorSection
+
+local LineColorBtnContainer = Instance.new("Frame")
+LineColorBtnContainer.Size = UDim2.new(0.6, 0, 1, 0)
+LineColorBtnContainer.Position = UDim2.new(0.4, 0, 0, 0)
+LineColorBtnContainer.BackgroundTransparency = 1
+LineColorBtnContainer.ZIndex = 33
+LineColorBtnContainer.Parent = LineColorSection
+
+local LineColorsList = {
+    {Color = Color3.fromRGB(0, 255, 120), Text = "Verde"},
+    {Color = Color3.fromRGB(110, 60, 220), Text = "Roxo"},
+    {Color = Color3.fromRGB(255, 50, 50), Text = "Verm."}
+}
+
+for idx, colorData in ipairs(LineColorsList) do
+    local cBtn = Instance.new("TextButton")
+    cBtn.Size = UDim2.new(0, 35, 0, 22)
+    cBtn.Position = UDim2.new(0, (idx - 1) * 40, 0.5, -11)
+    cBtn.BackgroundColor3 = colorData.Color
+    cBtn.BorderSizePixel = 0
+    cBtn.Text = ""
+    cBtn.ZIndex = 34
+    cBtn.Parent = LineColorBtnContainer
+    Instance.new("UICorner", cBtn).CornerRadius = UDim.new(0, 4)
+    
+    local cBtnStroke = Instance.new("UIStroke", cBtn)
+    cBtnStroke.Color = Color3.fromRGB(255, 255, 255)
+    cBtnStroke.Thickness = 1.2
+    cBtnStroke.Transparency = (ESP_Config.LineColor == colorData.Color) and 0 or 1
+    
+    cBtn.MouseButton1Click:Connect(function()
+        playSound("12222076", 0.35)
+        ESP_Config.LineColor = colorData.Color
+        for _, child in ipairs(LineColorBtnContainer:GetChildren()) do
+            if child:IsA("TextButton") and child:FindFirstChildOfClass("UIStroke") then
+                child:FindFirstChildOfClass("UIStroke").Transparency = 1
+            end
+        end
+        cBtnStroke.Transparency = 0
+    end)
+end
+
+local LineThickSection = Instance.new("Frame")
+LineThickSection.Size = UDim2.new(0.9, 0, 0, 32)
+LineThickSection.BackgroundTransparency = 1
+LineThickSection.ZIndex = 32
+LineThickSection.Parent = LineCustomBody
+
+local LineThickLabel = Instance.new("TextLabel")
+LineThickLabel.Size = UDim2.new(0.4, 0, 1, 0)
+LineThickLabel.BackgroundTransparency = 1
+LineThickLabel.Text = "Espessura:"
+LineThickLabel.TextColor3 = Color3.fromRGB(180, 180, 185)
+LineThickLabel.Font = Enum.Font.GothamSemibold
+LineThickLabel.TextSize = 10
+LineThickLabel.TextXAlignment = Enum.TextXAlignment.Left
+LineThickLabel.ZIndex = 33
+LineThickLabel.Parent = LineThickSection
+
+local LineThickValLabel = Instance.new("TextLabel")
+LineThickValLabel.Size = UDim2.new(0.2, 0, 1, 0)
+LineThickValLabel.Position = UDim2.new(0.4, 0, 0, 0)
+LineThickValLabel.BackgroundTransparency = 1
+LineThickValLabel.Text = tostring(ESP_Config.LineThickness)
+LineThickValLabel.TextColor3 = Color3.fromRGB(240, 240, 245)
+LineThickValLabel.Font = Enum.Font.GothamBold
+LineThickValLabel.TextSize = 11
+LineThickValLabel.ZIndex = 33
+LineThickValLabel.Parent = LineThickSection
+
+local LineThickLess = Instance.new("TextButton")
+LineThickLess.Size = UDim2.new(0, 24, 0, 24)
+LineThickLess.Position = UDim2.new(0.65, 0, 0.5, -12)
+LineThickLess.BackgroundColor3 = SidebarColor
+LineThickLess.Text = "-"
+LineThickLess.TextColor3 = Color3.fromRGB(240, 240, 240)
+LineThickLess.Font = Enum.Font.GothamBold
+LineThickLess.TextSize = 12
+LineThickLess.ZIndex = 34
+LineThickLess.Parent = LineThickSection
+Instance.new("UICorner", LineThickLess).CornerRadius = UDim.new(0, 4)
+
+local LineThickMore = Instance.new("TextButton")
+LineThickMore.Size = UDim2.new(0, 24, 0, 24)
+LineThickMore.Position = UDim2.new(0.85, 0, 0.5, -12)
+LineThickMore.BackgroundColor3 = SidebarColor
+LineThickMore.Text = "+"
+LineThickMore.TextColor3 = Color3.fromRGB(240, 240, 240)
+LineThickMore.Font = Enum.Font.GothamBold
+LineThickMore.TextSize = 12
+LineThickMore.ZIndex = 34
+LineThickMore.Parent = LineThickSection
+Instance.new("UICorner", LineThickMore).CornerRadius = UDim.new(0, 4)
+
+LineThickLess.MouseButton1Click:Connect(function()
+    playSound("12222076", 0.3)
+    ESP_Config.LineThickness = math.clamp(ESP_Config.LineThickness - 0.5, 1, 5)
+    LineThickValLabel.Text = tostring(ESP_Config.LineThickness)
+end)
+
+LineThickMore.MouseButton1Click:Connect(function()
+    playSound("12222076", 0.3)
+    ESP_Config.LineThickness = math.clamp(ESP_Config.LineThickness + 0.5, 1, 5)
+    LineThickValLabel.Text = tostring(ESP_Config.LineThickness)
+end)
+
+local OriginSection = Instance.new("Frame")
+OriginSection.Size = UDim2.new(0.9, 0, 0, 32)
+OriginSection.BackgroundTransparency = 1
+OriginSection.ZIndex = 32
+OriginSection.Parent = LineCustomBody
+
+local OriginLabel = Instance.new("TextLabel")
+OriginLabel.Size = UDim2.new(0.4, 0, 1, 0)
+OriginLabel.BackgroundTransparency = 1
+OriginLabel.Text = "Origem:"
+OriginLabel.TextColor3 = Color3.fromRGB(180, 180, 185)
+OriginLabel.Font = Enum.Font.GothamSemibold
+OriginLabel.TextSize = 10
+OriginLabel.TextXAlignment = Enum.TextXAlignment.Left
+OriginLabel.ZIndex = 33
+OriginLabel.Parent = OriginSection
+
+local OriginBtn = Instance.new("TextButton")
+OriginBtn.Size = UDim2.new(0.5, 0, 0, 24)
+OriginBtn.Position = UDim2.new(0.45, 0, 0.5, -12)
+OriginBtn.BackgroundColor3 = SidebarColor
+OriginBtn.Text = "De: " .. ESP_Config.LineOrigin
+OriginBtn.TextColor3 = Color3.fromRGB(240, 240, 240)
+OriginBtn.Font = Enum.Font.GothamBold
+OriginBtn.TextSize = 10
+OriginBtn.ZIndex = 34
+OriginBtn.Parent = OriginSection
+Instance.new("UICorner", OriginBtn).CornerRadius = UDim.new(0, 4)
+
+OriginBtn.MouseButton1Click:Connect(function()
+    playSound("12222076", 0.3)
+    if ESP_Config.LineOrigin == "Baixo" then
+        ESP_Config.LineOrigin = "Cima"
+    else
+        ESP_Config.LineOrigin = "Baixo"
+    end
+    OriginBtn.Text = "De: " .. ESP_Config.LineOrigin
+end)
+
+local LineSaveBtn = Instance.new("TextButton")
+LineSaveBtn.Size = UDim2.new(0.9, 0, 0, 32)
+LineSaveBtn.BackgroundColor3 = AccentColor
+LineSaveBtn.Text = "Salvar Configurações"
+LineSaveBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+LineSaveBtn.Font = Enum.Font.GothamBold
+LineSaveBtn.TextSize = 11
+LineSaveBtn.ZIndex = 33
+LineSaveBtn.Parent = LineCustomBody
+Instance.new("UICorner", LineSaveBtn).CornerRadius = UDim.new(0, 6)
+
+LineSaveBtn.MouseButton1Click:Connect(function()
+    playSound("12222076", 0.5)
+    LineSaveBtn.Text = "Configurações Salvas! ✔"
+    LineSaveBtn.BackgroundColor3 = Color3.fromRGB(50, 220, 110)
+    task.wait(1.5)
+    LineSaveBtn.Text = "Salvar Configurações"
+    LineSaveBtn.BackgroundColor3 = AccentColor
 end)
 
 -- ==========================================
@@ -663,97 +906,186 @@ local VisualLayout = Instance.new("UIListLayout", VisualPage)
 VisualLayout.Padding = UDim.new(0, 12)
 VisualLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
-local VisualFrame = Instance.new("Frame")
-VisualFrame.Size = UDim2.new(1, -10, 0, 65)
-VisualFrame.BackgroundColor3 = SidebarColor
-VisualFrame.ZIndex = 8
-VisualFrame.Parent = VisualPage
-Instance.new("UICorner", VisualFrame).CornerRadius = UDim.new(0, 8)
-local FrameStroke = Instance.new("UIStroke", VisualFrame)
-FrameStroke.Color = Color3.fromRGB(35, 35, 40)
-FrameStroke.Thickness = 1.2
+-- CONTAINER BOX
+local BoxFrame = Instance.new("Frame")
+BoxFrame.Size = UDim2.new(1, -10, 0, 52)
+BoxFrame.BackgroundColor3 = SidebarColor
+BoxFrame.ZIndex = 8
+BoxFrame.Parent = VisualPage
+Instance.new("UICorner", BoxFrame).CornerRadius = UDim.new(0, 8)
+local BoxFrameStroke = Instance.new("UIStroke", BoxFrame)
+BoxFrameStroke.Color = Color3.fromRGB(35, 35, 40)
+BoxFrameStroke.Thickness = 1.2
 
-local VisualTitle = Instance.new("TextLabel")
-VisualTitle.Position = UDim2.new(0, 15, 0, 12)
-VisualTitle.Size = UDim2.new(0, 150, 0, 20)
-VisualTitle.BackgroundTransparency = 1
-VisualTitle.Text = "ESP Box"
-VisualTitle.TextColor3 = Color3.fromRGB(240, 240, 245)
-VisualTitle.Font = Enum.Font.GothamBold
-VisualTitle.TextSize = 13
-VisualTitle.TextXAlignment = Enum.TextXAlignment.Left
-VisualTitle.ZIndex = 9
-VisualTitle.Parent = VisualFrame
+local BoxTitle = Instance.new("TextLabel")
+BoxTitle.Position = UDim2.new(0, 15, 0, 8)
+BoxTitle.Size = UDim2.new(0, 150, 0, 20)
+BoxTitle.BackgroundTransparency = 1
+BoxTitle.Text = "ESP Box"
+BoxTitle.TextColor3 = Color3.fromRGB(240, 240, 245)
+BoxTitle.Font = Enum.Font.GothamBold
+BoxTitle.TextSize = 12
+BoxTitle.TextXAlignment = Enum.TextXAlignment.Left
+BoxTitle.ZIndex = 9
+BoxTitle.Parent = BoxFrame
 
-local VisualDesc = Instance.new("TextLabel")
-VisualDesc.Position = UDim2.new(0, 15, 0, 32)
-VisualDesc.Size = UDim2.new(0, 180, 0, 20)
-VisualDesc.BackgroundTransparency = 1
-VisualDesc.Text = "Desenha bordas ao redor do inimigo"
-VisualDesc.TextColor3 = Color3.fromRGB(130, 130, 135)
-VisualDesc.Font = Enum.Font.GothamSemibold
-VisualDesc.TextSize = 9
-VisualDesc.TextXAlignment = Enum.TextXAlignment.Left
-VisualDesc.ZIndex = 9
-VisualDesc.Parent = VisualFrame
+local BoxDesc = Instance.new("TextLabel")
+BoxDesc.Position = UDim2.new(0, 15, 0, 26)
+BoxDesc.Size = UDim2.new(0, 180, 0, 20)
+BoxDesc.BackgroundTransparency = 1
+BoxDesc.Text = "Desenha bordas ao redor do inimigo"
+BoxDesc.TextColor3 = Color3.fromRGB(130, 130, 135)
+BoxDesc.Font = Enum.Font.GothamSemibold
+BoxDesc.TextSize = 9
+BoxDesc.TextXAlignment = Enum.TextXAlignment.Left
+BoxDesc.ZIndex = 9
+BoxDesc.Parent = BoxFrame
 
--- INTERRUPTOR DE LIGAR (TOGGLE SWITCH)
-local ToggleBG = Instance.new("TextButton")
-ToggleBG.Size = UDim2.new(0, 44, 0, 22)
-ToggleBG.Position = UDim2.new(1, -115, 0.5, -11)
-ToggleBG.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
-ToggleBG.Text = ""
-ToggleBG.ZIndex = 9
-ToggleBG.Parent = VisualFrame
-Instance.new("UICorner", ToggleBG).CornerRadius = UDim.new(1, 0)
+local BoxToggleBG = Instance.new("TextButton")
+BoxToggleBG.Size = UDim2.new(0, 44, 0, 22)
+BoxToggleBG.Position = UDim2.new(1, -115, 0.5, -11)
+BoxToggleBG.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+BoxToggleBG.Text = ""
+BoxToggleBG.ZIndex = 9
+BoxToggleBG.Parent = BoxFrame
+Instance.new("UICorner", BoxToggleBG).CornerRadius = UDim.new(1, 0)
 
-local ToggleIndicator = Instance.new("Frame")
-ToggleIndicator.Size = UDim2.new(0, 16, 0, 16)
-ToggleIndicator.Position = UDim2.new(0, 3, 0.5, -8)
-ToggleIndicator.BackgroundColor3 = Color3.fromRGB(150, 150, 155)
-ToggleIndicator.BorderSizePixel = 0
-ToggleIndicator.ZIndex = 10
-ToggleIndicator.Parent = ToggleBG
-Instance.new("UICorner", ToggleIndicator).CornerRadius = UDim.new(1, 0)
+local BoxToggleIndicator = Instance.new("Frame")
+BoxToggleIndicator.Size = UDim2.new(0, 16, 0, 16)
+BoxToggleIndicator.Position = UDim2.new(0, 3, 0.5, -8)
+BoxToggleIndicator.BackgroundColor3 = Color3.fromRGB(150, 150, 155)
+BoxToggleIndicator.BorderSizePixel = 0
+BoxToggleIndicator.ZIndex = 10
+BoxToggleIndicator.Parent = BoxToggleBG
+Instance.new("UICorner", BoxToggleIndicator).CornerRadius = UDim.new(1, 0)
 
--- BOTÃO DE CONFIGURAÇÃO (||| INVERTIDO / DEITADO)
-local ConfigTrigger = Instance.new("TextButton")
-ConfigTrigger.Size = UDim2.new(0, 30, 0, 30)
-ConfigTrigger.Position = UDim2.new(1, -50, 0.5, -15)
-ConfigTrigger.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-ConfigTrigger.Text = "|||"
-ConfigTrigger.Rotation = 90 -- Deixa os três risquinhos de lado
-ConfigTrigger.TextColor3 = Color3.fromRGB(200, 200, 205)
-ConfigTrigger.Font = Enum.Font.GothamBold
-ConfigTrigger.TextSize = 10
-ConfigTrigger.ZIndex = 9
-ConfigTrigger.Parent = VisualFrame
-Instance.new("UICorner", ConfigTrigger).CornerRadius = UDim.new(0, 6)
+local BoxConfigTrigger = Instance.new("TextButton")
+BoxConfigTrigger.Size = UDim2.new(0, 30, 0, 30)
+BoxConfigTrigger.Position = UDim2.new(1, -50, 0.5, -15)
+BoxConfigTrigger.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+BoxConfigTrigger.Text = "|||"
+BoxConfigTrigger.Rotation = 90
+BoxConfigTrigger.TextColor3 = Color3.fromRGB(200, 200, 205)
+BoxConfigTrigger.Font = Enum.Font.GothamBold
+BoxConfigTrigger.TextSize = 10
+BoxConfigTrigger.ZIndex = 9
+BoxConfigTrigger.Parent = BoxFrame
+Instance.new("UICorner", BoxConfigTrigger).CornerRadius = UDim.new(0, 6)
 
-local ConfigTriggerStroke = Instance.new("UIStroke", ConfigTrigger)
-ConfigTriggerStroke.Color = Color3.fromRGB(50, 50, 55)
-ConfigTriggerStroke.Thickness = 1
+local BoxConfigTriggerStroke = Instance.new("UIStroke", BoxConfigTrigger)
+BoxConfigTriggerStroke.Color = Color3.fromRGB(50, 50, 55)
+BoxConfigTriggerStroke.Thickness = 1
 
-ConfigTrigger.MouseButton1Click:Connect(function()
+BoxConfigTrigger.MouseButton1Click:Connect(function()
     playSound("12222076", 0.4)
-    CustomizerWindow.Visible = not CustomizerWindow.Visible
+    BoxCustomizerWindow.Visible = not BoxCustomizerWindow.Visible
 end)
 
--- Evento de ligar/desligar o Toggle
-ToggleBG.MouseButton1Click:Connect(function()
-    ESP_Config.Enabled = not ESP_Config.Enabled
+BoxToggleBG.MouseButton1Click:Connect(function()
+    ESP_Config.BoxEnabled = not ESP_Config.BoxEnabled
     playSound("12222076", 0.4)
     
-    if ESP_Config.Enabled then
-        TweenService:Create(ToggleBG, TweenInfo.new(0.2), {BackgroundColor3 = AccentColor}):Play()
-        TweenService:Create(ToggleIndicator, TweenInfo.new(0.2), {Position = UDim2.new(1, -19, 0.5, -8), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+    if ESP_Config.BoxEnabled then
+        TweenService:Create(BoxToggleBG, TweenInfo.new(0.2), {BackgroundColor3 = AccentColor}):Play()
+        TweenService:Create(BoxToggleIndicator, TweenInfo.new(0.2), {Position = UDim2.new(1, -19, 0.5, -8), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}):Play()
     else
-        TweenService:Create(ToggleBG, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(35, 35, 40)}):Play()
-        TweenService:Create(ToggleIndicator, TweenInfo.new(0.2), {Position = UDim2.new(0, 3, 0.5, -8), BackgroundColor3 = Color3.fromRGB(150, 150, 155)}):Play()
-        -- Limpa desenhos na tela ao desligar
+        TweenService:Create(BoxToggleBG, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(35, 35, 40)}):Play()
+        TweenService:Create(BoxToggleIndicator, TweenInfo.new(0.2), {Position = UDim2.new(0, 3, 0.5, -8), BackgroundColor3 = Color3.fromRGB(150, 150, 155)}):Play()
         for player, drawObj in pairs(ActiveBoxes) do
             if drawObj.Box then drawObj.Box:Remove() end
             ActiveBoxes[player] = nil
+        end
+    end
+end)
+
+-- CONTAINER LINE
+local LineFrame = Instance.new("Frame")
+LineFrame.Size = UDim2.new(1, -10, 0, 52)
+LineFrame.BackgroundColor3 = SidebarColor
+LineFrame.ZIndex = 8
+LineFrame.Parent = VisualPage
+Instance.new("UICorner", LineFrame).CornerRadius = UDim.new(0, 8)
+local LineFrameStroke = Instance.new("UIStroke", LineFrame)
+LineFrameStroke.Color = Color3.fromRGB(35, 35, 40)
+LineFrameStroke.Thickness = 1.2
+
+local LineTitle = Instance.new("TextLabel")
+LineTitle.Position = UDim2.new(0, 15, 0, 8)
+LineTitle.Size = UDim2.new(0, 150, 0, 20)
+LineTitle.BackgroundTransparency = 1
+LineTitle.Text = "ESP Line"
+LineTitle.TextColor3 = Color3.fromRGB(240, 240, 245)
+LineTitle.Font = Enum.Font.GothamBold
+LineTitle.TextSize = 12
+LineTitle.TextXAlignment = Enum.TextXAlignment.Left
+LineTitle.ZIndex = 9
+LineTitle.Parent = LineFrame
+
+local LineDesc = Instance.new("TextLabel")
+LineDesc.Position = UDim2.new(0, 15, 0, 26)
+LineDesc.Size = UDim2.new(0, 180, 0, 20)
+LineDesc.BackgroundTransparency = 1
+LineDesc.Text = "Liga uma linha guia até o inimigo"
+LineDesc.TextColor3 = Color3.fromRGB(130, 130, 135)
+LineDesc.Font = Enum.Font.GothamSemibold
+LineDesc.TextSize = 9
+LineDesc.TextXAlignment = Enum.TextXAlignment.Left
+LineDesc.ZIndex = 9
+LineDesc.Parent = LineFrame
+
+local LineToggleBG = Instance.new("TextButton")
+LineToggleBG.Size = UDim2.new(0, 44, 0, 22)
+LineToggleBG.Position = UDim2.new(1, -115, 0.5, -11)
+LineToggleBG.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+LineToggleBG.Text = ""
+LineToggleBG.ZIndex = 9
+LineToggleBG.Parent = LineFrame
+Instance.new("UICorner", LineToggleBG).CornerRadius = UDim.new(1, 0)
+
+local LineToggleIndicator = Instance.new("Frame")
+LineToggleIndicator.Size = UDim2.new(0, 16, 0, 16)
+LineToggleIndicator.Position = UDim2.new(0, 3, 0.5, -8)
+LineToggleIndicator.BackgroundColor3 = Color3.fromRGB(150, 150, 155)
+LineToggleIndicator.BorderSizePixel = 0
+LineToggleIndicator.ZIndex = 10
+LineToggleIndicator.Parent = LineToggleBG
+Instance.new("UICorner", LineToggleIndicator).CornerRadius = UDim.new(1, 0)
+
+local LineConfigTrigger = Instance.new("TextButton")
+LineConfigTrigger.Size = UDim2.new(0, 30, 0, 30)
+LineConfigTrigger.Position = UDim2.new(1, -50, 0.5, -15)
+LineConfigTrigger.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+LineConfigTrigger.Text = "|||"
+LineConfigTrigger.Rotation = 90
+LineConfigTrigger.TextColor3 = Color3.fromRGB(200, 200, 205)
+LineConfigTrigger.Font = Enum.Font.GothamBold
+LineConfigTrigger.TextSize = 10
+LineConfigTrigger.ZIndex = 9
+LineConfigTrigger.Parent = LineFrame
+Instance.new("UICorner", LineConfigTrigger).CornerRadius = UDim.new(0, 6)
+
+local LineConfigTriggerStroke = Instance.new("UIStroke", LineConfigTrigger)
+LineConfigTriggerStroke.Color = Color3.fromRGB(50, 50, 55)
+LineConfigTriggerStroke.Thickness = 1
+
+LineConfigTrigger.MouseButton1Click:Connect(function()
+    playSound("12222076", 0.4)
+    LineCustomizerWindow.Visible = not LineCustomizerWindow.Visible
+end)
+
+LineToggleBG.MouseButton1Click:Connect(function()
+    ESP_Config.LineEnabled = not ESP_Config.LineEnabled
+    playSound("12222076", 0.4)
+    
+    if ESP_Config.LineEnabled then
+        TweenService:Create(LineToggleBG, TweenInfo.new(0.2), {BackgroundColor3 = AccentColor}):Play()
+        TweenService:Create(LineToggleIndicator, TweenInfo.new(0.2), {Position = UDim2.new(1, -19, 0.5, -8), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+    else
+        TweenService:Create(LineToggleBG, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(35, 35, 40)}):Play()
+        TweenService:Create(LineToggleIndicator, TweenInfo.new(0.2), {Position = UDim2.new(0, 3, 0.5, -8), BackgroundColor3 = Color3.fromRGB(150, 150, 155)}):Play()
+        for player, drawObj in pairs(ActiveLines) do
+            if drawObj.Line then drawObj.Line:Remove() end
+            ActiveLines[player] = nil
         end
     end
 end)
@@ -767,7 +1099,6 @@ local StatusLayout = Instance.new("UIListLayout", StatusPage)
 StatusLayout.Padding = UDim.new(0, 12)
 StatusLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- 1. CARD JOGADORES ATIVOS
 local CardPlayers = Instance.new("Frame")
 CardPlayers.Size = UDim2.new(1, -10, 0, 65)
 CardPlayers.BackgroundColor3 = SidebarColor
@@ -810,7 +1141,6 @@ ValCP.TextXAlignment = Enum.TextXAlignment.Left
 ValCP.ZIndex = 9
 ValCP.Parent = CardPlayers
 
--- 2. CARD FPS
 local CardFPS = Instance.new("Frame")
 CardFPS.Size = UDim2.new(1, -10, 0, 65)
 CardFPS.BackgroundColor3 = SidebarColor
@@ -853,9 +1183,6 @@ ValCF.TextXAlignment = Enum.TextXAlignment.Left
 ValCF.ZIndex = 9
 ValCF.Parent = CardFPS
 
--- ==========================================
--- SCRIPT DE CÁLCULO DE FPS & PLAYERS REAL
--- ==========================================
 local fpsTimer = 0
 local frameCount = 0
 
@@ -887,57 +1214,87 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- ENGINE REAL DO ESP BOX (ROBUSTA & LEVE)
+-- ENGINE REAL DOS ESPs (BOX E LINE)
 -- ==========================================
-local function createEspBox(player)
-    local box = Drawing.new("Square")
-    box.Visible = false
-    box.Filled = false
-    
-    ActiveBoxes[player] = {Box = box}
+local function createEspElements(player)
+    if not ActiveBoxes[player] then
+        local box = Drawing.new("Square")
+        box.Visible = false
+        box.Filled = false
+        ActiveBoxes[player] = {Box = box}
+    end
+    if not ActiveLines[player] then
+        local line = Drawing.new("Line")
+        line.Visible = false
+        ActiveLines[player] = {Line = line}
+    end
 end
 
 local function updateEsp()
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
-            local container = ActiveBoxes[player]
-            if not container then
-                createEspBox(player)
-                container = ActiveBoxes[player]
-            end
+            createEspElements(player)
             
-            local box = container.Box
+            local boxContainer = ActiveBoxes[player]
+            local lineContainer = ActiveLines[player]
             local char = player.Character
             
-            if ESP_Config.Enabled and char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") and char:FindFirstChildOfClass("Humanoid").Health > 0 then
+            if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") and char:FindFirstChildOfClass("Humanoid").Health > 0 then
                 local rootPart = char.HumanoidRootPart
                 local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
                 
                 if onScreen then
-                    -- Calcula altura e largura da box projetada de forma realista com base na distância
-                    local scaleFactor = 1 / (screenPos.Z * math.tan(math.rad(Camera.FieldOfView / 2))) * 1000
-                    local width = (scaleFactor * 1.5) * ESP_Config.SizeMultiplier
-                    local height = (scaleFactor * 2.1) * ESP_Config.SizeMultiplier
+                    if ESP_Config.BoxEnabled then
+                        local scaleFactor = 1 / (screenPos.Z * math.tan(math.rad(Camera.FieldOfView / 2))) * 1000
+                        local width = (scaleFactor * 1.5) * ESP_Config.BoxSizeMultiplier
+                        local height = (scaleFactor * 2.1) * ESP_Config.BoxSizeMultiplier
+                        
+                        boxContainer.Box.Size = Vector2.new(width, height)
+                        boxContainer.Box.Position = Vector2.new(screenPos.X - (width / 2), screenPos.Y - (height / 2))
+                        boxContainer.Box.Color = ESP_Config.BoxColor
+                        boxContainer.Box.Thickness = ESP_Config.BoxThickness
+                        boxContainer.Box.Visible = true
+                    else
+                        boxContainer.Box.Visible = false
+                    end
                     
-                    box.Size = Vector2.new(width, height)
-                    box.Position = Vector2.new(screenPos.X - (width / 2), screenPos.Y - (height / 2))
-                    box.Color = ESP_Config.Color
-                    box.Thickness = ESP_Config.Thickness
-                    box.Visible = true
+                    if ESP_Config.LineEnabled then
+                        local startPoint
+                        if ESP_Config.LineOrigin == "Baixo" then
+                            startPoint = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+                        else
+                            startPoint = Vector2.new(Camera.ViewportSize.X / 2, 0)
+                        end
+                        
+                        lineContainer.Line.From = startPoint
+                        lineContainer.Line.To = Vector2.new(screenPos.X, screenPos.Y)
+                        lineContainer.Line.Color = ESP_Config.LineColor
+                        lineContainer.Line.Thickness = ESP_Config.LineThickness
+                        lineContainer.Line.Visible = true
+                    else
+                        lineContainer.Line.Visible = false
+                    end
                 else
-                    box.Visible = false
+                    boxContainer.Box.Visible = false
+                    lineContainer.Line.Visible = false
                 end
             else
-                box.Visible = false
+                boxContainer.Box.Visible = false
+                lineContainer.Line.Visible = false
             end
         end
     end
     
-    -- Limpa registros de jogadores que saíram da partida
     for player, drawObj in pairs(ActiveBoxes) do
         if not player.Parent then
             if drawObj.Box then drawObj.Box:Remove() end
             ActiveBoxes[player] = nil
+        end
+    end
+    for player, drawObj in pairs(ActiveLines) do
+        if not player.Parent then
+            if drawObj.Line then drawObj.Line:Remove() end
+            ActiveLines[player] = nil
         end
     end
 end
@@ -962,7 +1319,6 @@ end
 setInterdicted(Pages["Mira"], "Mira")
 setInterdicted(Pages["Configurações"], "Configurações")
 
--- Seleciona a aba Status por padrão (Inicialização Limpa)
 Tabs["Status"].Btn.BackgroundTransparency = 0.8
 Tabs["Status"].Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
 Tabs["Status"].Btn.BackgroundColor3 = AccentColor
@@ -1003,7 +1359,8 @@ local function toggleMenu()
         if not isMenuOpen then
             CentralMenuCanvas.Visible = false
         end
-        CustomizerWindow.Visible = false -- Fecha a janelinha de ajustes se fechar o menu
+        BoxCustomizerWindow.Visible = false
+        LineCustomizerWindow.Visible = false
         menuTransitioning = false
     end
 end
@@ -1047,4 +1404,4 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
-print("[BK CLIENT] Versão V2.8 Ativa. Aba Visual atualizada com ESP Box e Customizador flutuante!")
+print("[BK CLIENT] Versão V1.2 Ativa. Abas de Customização Box e Line prontas para uso!")
