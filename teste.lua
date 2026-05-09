@@ -1,5 +1,5 @@
 -- ====================================================================
--- BK CLIENT - VERSÃO OFICIAL V1.9 (MENU CENTRAL, SONS E ANIMAÇÕES)
+-- BK CLIENT - VERSÃO OFICIAL V2.0 (VERSÃO ULTRA ESTÁVEL ANDROID)
 -- ====================================================================
 
 local CoreGui = game:GetService("CoreGui")
@@ -12,7 +12,7 @@ local Stats = game:GetService("Stats")
 
 local LocalPlayer = Players.LocalPlayer
 
--- Limpeza absoluta
+-- Limpeza absoluta de qualquer versão anterior
 pcall(function()
     if CoreGui:FindFirstChild("BK_Official_UI") then
         CoreGui:FindFirstChild("BK_Official_UI"):Destroy()
@@ -20,7 +20,7 @@ pcall(function()
 end)
 
 -- ==========================================
--- SISTEMA DE SONS SATISFATÓRIOS (UI)
+-- SISTEMA DE SONS SATISFATÓRIOS
 -- ==========================================
 local function playSound(id, volume, pitch)
     task.spawn(function()
@@ -37,12 +37,10 @@ end
 local SOUND_CLICK = "6895086153" -- Pop macio
 local SOUND_TAB = "12222076" -- Clique digital
 
--- ==========================================
--- NOTIFICAÇÃO
--- ==========================================
+-- Notificação de inicialização
 pcall(function()
     StarterGui:SetCore("SendNotification", {
-        Title = "BK CLIENT V1",
+        Title = "BK CLIENT V2",
         Text = "MENU CARREGADO COM SUCESSO",
         Icon = "rbxassetid://6031094028",
         Duration = 5
@@ -67,7 +65,7 @@ local AccentColor = Color3.fromRGB(110, 60, 220)
 local BorderColor = Color3.fromRGB(50, 50, 55)
 
 -- ==========================================
--- CÁPSULA FLUTUANTE (CONTROLE REMOTO FIXO)
+-- CÁPSULA FLUTUANTE (BOLHA)
 -- ==========================================
 local Capsule = Instance.new("Frame")
 local CapsuleCorner = Instance.new("UICorner")
@@ -120,7 +118,7 @@ RunService.RenderStepped:Connect(function(dt)
     end
 end)
 
--- Conteúdo da Bolha
+-- Conteúdo interno da Bolha
 local ContentFrame = Instance.new("Frame")
 ContentFrame.Size = UDim2.new(1, 0, 1, 0)
 ContentFrame.BackgroundTransparency = 1
@@ -159,34 +157,28 @@ TextLabel.Parent = ContentFrame
 
 
 -- ==========================================
--- MENU CENTRAL FLUTUANTE
+-- MENU CENTRAL FLUTUANTE ULTRA SIMPLIFICADO
 -- ==========================================
 local CentralMenu = Instance.new("Frame")
 CentralMenu.Name = "BK_CentralMenu"
 CentralMenu.Size = UDim2.new(0, 520, 0, 320)
 CentralMenu.AnchorPoint = Vector2.new(0.5, 0.5)
-CentralMenu.Position = UDim2.new(0.5, 0, 0.5, 0) -- Bem no meio da tela
+CentralMenu.Position = UDim2.new(0.5, 0, 0.5, 0) -- Centralizado na Tela
 CentralMenu.BackgroundColor3 = MenuBGColor
-CentralMenu.BackgroundTransparency = 1 -- Inicia invisível
-CentralMenu.Visible = false
+CentralMenu.BackgroundTransparency = 0 -- Sólido direto para evitar falhas de renderização
+CentralMenu.Visible = false -- Controlado apenas pela visibilidade direta
+CentralMenu.Active = true
 CentralMenu.ClipsDescendants = true
 CentralMenu.Parent = ScreenGui
 
 local CentralCorner = Instance.new("UICorner")
-CentralCorner.CornerRadius = UDim.new(0, 12) -- Bordas levemente arredondadas
+CentralCorner.CornerRadius = UDim.new(0, 12)
 CentralCorner.Parent = CentralMenu
 
 local CentralStroke = Instance.new("UIStroke")
 CentralStroke.Color = BorderColor
 CentralStroke.Thickness = 1.5
-CentralStroke.Transparency = 1
 CentralStroke.Parent = CentralMenu
-
-local MenuCanvas = Instance.new("CanvasGroup") -- Facilita o fade geral
-MenuCanvas.Size = UDim2.new(1, 0, 1, 0)
-MenuCanvas.BackgroundTransparency = 1
-MenuCanvas.GroupTransparency = 1
-MenuCanvas.Parent = CentralMenu
 
 -- ==========================================
 -- HEADER DO MENU (PERFIL + NOME + BK CLIENT)
@@ -195,12 +187,13 @@ local Header = Instance.new("Frame")
 Header.Size = UDim2.new(1, 0, 0, 50)
 Header.BackgroundColor3 = SidebarColor
 Header.BorderSizePixel = 0
-Header.Parent = MenuCanvas
+Header.Parent = CentralMenu
 
 local HeaderCorner = Instance.new("UICorner")
 HeaderCorner.CornerRadius = UDim.new(0, 12)
 HeaderCorner.Parent = Header
-local HeaderFix = Instance.new("Frame") -- Para deixar a base reta
+
+local HeaderFix = Instance.new("Frame")
 HeaderFix.Size = UDim2.new(1, 0, 0, 10)
 HeaderFix.Position = UDim2.new(0, 0, 1, -10)
 HeaderFix.BackgroundColor3 = SidebarColor
@@ -212,7 +205,7 @@ HeaderAvatar.Position = UDim2.new(0, 15, 0.5, -16)
 HeaderAvatar.Parent = Header
 
 local HeaderName = Instance.new("TextLabel")
-HeaderName.Size = UDim2.new(0, 200, 1, 0)
+HeaderName.Size = UDim2.new(0, 250, 1, 0)
 HeaderName.Position = UDim2.new(0, 55, 0, 0)
 HeaderName.BackgroundTransparency = 1
 HeaderName.Text = LocalPlayer.DisplayName .. " | BK CLIENT V1"
@@ -226,11 +219,11 @@ HeaderName.Parent = Header
 -- ABAS (GAVETA DO LADO DIREITO) E CONTEÚDO
 -- ==========================================
 local SidebarRight = Instance.new("Frame")
-SidebarRight.Size = UDim2.new(0, 140, 1, -80) -- Desconta Header e Telemetria
+SidebarRight.Size = UDim2.new(0, 140, 1, -80)
 SidebarRight.Position = UDim2.new(1, -140, 0, 50)
 SidebarRight.BackgroundColor3 = Color3.fromRGB(12, 12, 14)
 SidebarRight.BorderSizePixel = 0
-SidebarRight.Parent = MenuCanvas
+SidebarRight.Parent = CentralMenu
 
 local SidebarBorder = Instance.new("Frame")
 SidebarBorder.Size = UDim2.new(0, 1, 1, 0)
@@ -257,7 +250,7 @@ local ContentContainer = Instance.new("Frame")
 ContentContainer.Position = UDim2.new(0, 0, 0, 50)
 ContentContainer.Size = UDim2.new(1, -140, 1, -80)
 ContentContainer.BackgroundTransparency = 1
-ContentContainer.Parent = MenuCanvas
+ContentContainer.Parent = CentralMenu
 
 -- ==========================================
 -- BARRA DE TELEMETRIA
@@ -267,7 +260,7 @@ TelemetryFrame.Size = UDim2.new(1, 0, 0, 30)
 TelemetryFrame.Position = UDim2.new(0, 0, 1, -30)
 TelemetryFrame.BackgroundColor3 = SidebarColor
 TelemetryFrame.BorderSizePixel = 0
-TelemetryFrame.Parent = MenuCanvas
+TelemetryFrame.Parent = CentralMenu
 
 local TelLayout = Instance.new("UIListLayout")
 TelLayout.FillDirection = Enum.FillDirection.Horizontal
@@ -349,7 +342,6 @@ local function createTab(name)
     InfoLabel.Font = Enum.Font.GothamBold
     InfoLabel.Parent = Page
 
-    -- Animação de Hover e Click
     TabBtn.MouseButton1Click:Connect(function()
         playSound(SOUND_TAB, 0.4, 1.2)
         for _, otherTab in pairs(Tabs) do
@@ -382,7 +374,7 @@ Tabs["Visual"].Stroke.Transparency = 0
 Pages["Visual"].Visible = true
 
 -- ==========================================
--- LÓGICA DE ABERTURA DO MENU (CENTRALIZADO)
+-- LÓGICA DE INTERRUPTOR DO MENU (DIRETO E SEGURO)
 -- ==========================================
 local isMenuOpen = false
 
@@ -391,29 +383,11 @@ local function toggleMenu()
     playSound(SOUND_CLICK, 0.6)
     
     if isMenuOpen then
+        -- Abre o menu de forma direta e sem frescuras que causam bugs no Delta
         CentralMenu.Visible = true
-        CentralMenu.Size = UDim2.new(0, 480, 0, 300) -- Começa levemente menor para o efeito "Pop"
-        CentralMenu.BackgroundTransparency = 0
-        CentralStroke.Transparency = 0
-        
-        TweenService:Create(CentralMenu, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 520, 0, 320)
-        }):Play()
-        TweenService:Create(MenuCanvas, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            GroupTransparency = 0
-        }):Play()
     else
-        TweenService:Create(CentralMenu, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
-            Size = UDim2.new(0, 480, 0, 300)
-        }):Play()
-        local fadeOut = TweenService:Create(MenuCanvas, TweenInfo.new(0.2), {GroupTransparency = 1})
-        TweenService:Create(CentralMenu, TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
-        TweenService:Create(CentralStroke, TweenInfo.new(0.2), {Transparency = 1}):Play()
-        
-        fadeOut:Play()
-        fadeOut.Completed:Connect(function()
-            if not isMenuOpen then CentralMenu.Visible = false end
-        end)
+        -- Fecha o menu instantaneamente
+        CentralMenu.Visible = false
     end
 end
 
@@ -422,7 +396,7 @@ end
 -- ==========================================
 local dragging = false
 local dragStart, startPos
-local dragLimit = 6 
+local dragLimit = 8 
 
 Capsule.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -445,6 +419,7 @@ UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         if dragging then
             dragging = false
+            -- Calcula se foi apenas um clique rápido sem arrastar o dedo
             if (input.Position - dragStart).Magnitude < dragLimit then
                 toggleMenu()
             end
@@ -452,4 +427,4 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
-print("[BK CLIENT] Passo 3 (V1.9): Menu Flutuante Central Ativo!")
+print("[BK CLIENT] Versão V2.0 Estável Carregada sem CanvasGroup e pronta para Android!")
