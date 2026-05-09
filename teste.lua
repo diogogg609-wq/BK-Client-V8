@@ -1,5 +1,5 @@
 -- ====================================================================
--- BK CLIENT - VERSÃO OFICIAL V2.2 (FIX TOTAL DE TRAVAMENTO NO ANDROID)
+-- BK CLIENT - VERSÃO OFICIAL V2.3 (CORREÇÃO DE CAMADA DE INPUT - TOUCH)
 -- ====================================================================
 
 local CoreGui = game:GetService("CoreGui")
@@ -13,6 +13,9 @@ local LocalPlayer = Players.LocalPlayer
 pcall(function()
     if CoreGui:FindFirstChild("BK_Official_UI") then
         CoreGui:FindFirstChild("BK_Official_UI"):Destroy()
+    end
+    if LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("BK_Official_UI") then
+        LocalPlayer.PlayerGui:FindFirstChild("BK_Official_UI"):Destroy()
     end
 end)
 
@@ -31,17 +34,21 @@ local function playSound(id, volume)
 end
 
 -- ==========================================
--- INTERFACE BASE
+-- INTERFACE BASE (AJUSTADA PARA CAMADA PADRÃO)
 -- ==========================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "BK_Official_UI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.DisplayOrder = 99999
+ScreenGui.DisplayOrder = 0 -- CAMADA PADRÃO: Evita que o Roblox bloqueie os toques por segurança
 
-local successParent = pcall(function() ScreenGui.Parent = CoreGui end)
-if not successParent then 
-    pcall(function() ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end) 
+-- Prioriza colocar na PlayerGui para garantir que os toques funcionem no Android
+local successParent = pcall(function() 
+    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") 
+end)
+
+if not successParent then
+    pcall(function() ScreenGui.Parent = CoreGui end)
 end
 
 local BGColor = Color3.fromRGB(10, 10, 12)
@@ -51,17 +58,18 @@ local AccentColor = Color3.fromRGB(110, 60, 220)
 local BorderColor = Color3.fromRGB(50, 50, 55)
 
 -- ==========================================
--- CÁPSULA (BOLHA FLUTUANTE) - ULTRA LEVE E SEM LOOPS
+-- CÁPSULA (BOLHA FLUTUANTE) - CORRIGIDA
 -- ==========================================
 local Capsule = Instance.new("TextButton")
 Capsule.Name = "BK_Capsule"
 Capsule.Size = UDim2.new(0, 160, 0, 42)
-Capsule.Position = UDim2.new(0.05, 0, 0.3, 0)
+Capsule.Position = UDim2.new(0.15, 0, 0.15, 0) -- Posição inicial limpa na tela
 Capsule.BackgroundColor3 = BGColor
 Capsule.BorderSizePixel = 0
 Capsule.AutoButtonColor = false
 Capsule.Text = ""
 Capsule.Active = true
+Capsule.ZIndex = 10
 Capsule.Parent = ScreenGui
 
 local CapsuleCorner = Instance.new("UICorner")
@@ -81,10 +89,11 @@ CapsuleLabel.Text = "BK CLIENT V1 †"
 CapsuleLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
 CapsuleLabel.TextSize = 13
 CapsuleLabel.Font = Enum.Font.GothamBold
+CapsuleLabel.ZIndex = 11
 CapsuleLabel.Parent = Capsule
 
 -- ==========================================
--- MENU CENTRAL FLUTUANTE (DESIGN LIMPO)
+-- MENU CENTRAL FLUTUANTE
 -- ==========================================
 local CentralMenu = Instance.new("Frame")
 CentralMenu.Name = "BK_CentralMenu"
@@ -94,6 +103,7 @@ CentralMenu.Position = UDim2.new(0.5, 0, 0.5, 0)
 CentralMenu.BackgroundColor3 = MenuBGColor
 CentralMenu.Visible = false
 CentralMenu.Active = true
+CentralMenu.ZIndex = 5
 CentralMenu.Parent = ScreenGui
 
 Instance.new("UICorner", CentralMenu).CornerRadius = UDim.new(0, 12)
@@ -103,11 +113,12 @@ MenuStroke.Color = BorderColor
 MenuStroke.Thickness = 1.5
 MenuStroke.Parent = CentralMenu
 
--- HEADER (ONDE O SEU PERFIL FICA GUARDADO)
+-- HEADER (PERFIL DO JOGADOR)
 local Header = Instance.new("Frame")
 Header.Size = UDim2.new(1, 0, 0, 55)
 Header.BackgroundColor3 = SidebarColor
 Header.BorderSizePixel = 0
+Header.ZIndex = 6
 Header.Parent = CentralMenu
 Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 12)
 
@@ -116,6 +127,7 @@ HeaderAvatar.Size = UDim2.new(0, 38, 0, 38)
 HeaderAvatar.Position = UDim2.new(0, 15, 0.5, -19)
 HeaderAvatar.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
 HeaderAvatar.BorderSizePixel = 0
+HeaderAvatar.ZIndex = 7
 HeaderAvatar.Parent = Header
 Instance.new("UICorner", HeaderAvatar).CornerRadius = UDim.new(1, 0)
 
@@ -134,19 +146,22 @@ HeaderTitle.TextColor3 = Color3.fromRGB(240, 240, 240)
 HeaderTitle.Font = Enum.Font.GothamBold
 HeaderTitle.TextSize = 14
 HeaderTitle.TextXAlignment = Enum.TextXAlignment.Left
+HeaderTitle.ZIndex = 7
 HeaderTitle.Parent = Header
 
 -- ABAS (GAVETA DIREITA)
 local Sidebar = Instance.new("Frame")
-Sidebar.Size = UDim2.new(0, 130, 1, -55) -- Ocupa o espaço livre abaixo do Header
+Sidebar.Size = UDim2.new(0, 130, 1, -55)
 Sidebar.Position = UDim2.new(1, -130, 0, 55)
 Sidebar.BackgroundColor3 = Color3.fromRGB(12, 12, 14)
 Sidebar.BorderSizePixel = 0
+Sidebar.ZIndex = 6
 Sidebar.Parent = CentralMenu
 
 local TabContainer = Instance.new("Frame")
 TabContainer.Size = UDim2.new(1, 0, 1, 0)
 TabContainer.BackgroundTransparency = 1
+TabContainer.ZIndex = 7
 TabContainer.Parent = Sidebar
 
 local SidebarList = Instance.new("UIListLayout")
@@ -163,10 +178,11 @@ local ContentContainer = Instance.new("Frame")
 ContentContainer.Position = UDim2.new(0, 15, 0, 70)
 ContentContainer.Size = UDim2.new(1, -160, 1, -85)
 ContentContainer.BackgroundTransparency = 1
+ContentContainer.ZIndex = 6
 ContentContainer.Parent = CentralMenu
 
 -- ==========================================
--- CRIADOR DE ABAS (CORREÇÃO DE DESIGN)
+-- CRIADOR DE ABAS
 -- ==========================================
 local Tabs = {}
 local Pages = {}
@@ -180,6 +196,7 @@ local function createTab(name)
     TabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
     TabBtn.Font = Enum.Font.GothamSemibold
     TabBtn.TextSize = 12
+    TabBtn.ZIndex = 8
     TabBtn.Parent = TabContainer
     Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 5)
     
@@ -193,6 +210,7 @@ local function createTab(name)
     Page.Size = UDim2.new(1, 0, 1, 0)
     Page.BackgroundTransparency = 1
     Page.Visible = false
+    Page.ZIndex = 7
     Page.Parent = ContentContainer
 
     local InfoLabel = Instance.new("TextLabel")
@@ -202,6 +220,7 @@ local function createTab(name)
     InfoLabel.TextColor3 = Color3.fromRGB(120, 120, 130)
     InfoLabel.TextSize = 13
     InfoLabel.Font = Enum.Font.GothamBold
+    InfoLabel.ZIndex = 8
     InfoLabel.Parent = Page
 
     TabBtn.MouseButton1Click:Connect(function()
@@ -237,11 +256,11 @@ Tabs["Visual"].Stroke.Transparency = 0.3
 Pages["Visual"].Visible = true
 
 -- ==========================================
--- SISTEMA DE ARRASTE ULTRA ESTÁVEL (DIRETO)
+-- SISTEMA DE ARRASTE ADAPTATIVO (NATIVO MOBILE)
 -- ==========================================
 local dragging = false
 local dragStart, startPos
-local dragLimit = 8 -- Limite em pixels para diferenciar clique de movimento
+local dragLimit = 8
 
 Capsule.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -268,7 +287,7 @@ UserInputService.InputEnded:Connect(function(input)
         if dragging then
             dragging = false
             local moveDistance = (input.Position - dragStart).Magnitude
-            -- Se o dedo quase não se moveu, considera como clique puro!
+            -- Toque rápido e limpo abre o menu
             if moveDistance < dragLimit then
                 playSound("6895086153", 0.5)
                 CentralMenu.Visible = not CentralMenu.Visible
@@ -277,4 +296,4 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
-print("[BK CLIENT] Versão V2.2 Estável Sem Telemetria Iniciada!")
+print("[BK CLIENT] Versão V2.3 Ativa na camada correta de toque!")
