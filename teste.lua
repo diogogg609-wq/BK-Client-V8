@@ -1,5 +1,5 @@
 -- ====================================================================
--- BK CLIENT - VERSÃO OFICIAL V2.6 (EFEITO CONSTELAÇÃO DINÂMICA)
+-- BK CLIENT - VERSÃO OFICIAL V2.7 (EDITION PREMIUM: CONSTELAÇÃO NEON)
 -- ====================================================================
 
 local CoreGui = game:GetService("CoreGui")
@@ -53,7 +53,7 @@ end
 local BGColor = Color3.fromRGB(10, 10, 12)
 local MenuBGColor = Color3.fromRGB(14, 14, 16)
 local SidebarColor = Color3.fromRGB(8, 8, 10)
-local AccentColor = Color3.fromRGB(110, 60, 220)
+local AccentColor = Color3.fromRGB(110, 60, 220) -- Roxo Principal Neon
 local BorderColor = Color3.fromRGB(50, 50, 55)
 
 -- ==========================================
@@ -68,7 +68,7 @@ Capsule.BorderSizePixel = 0
 Capsule.AutoButtonColor = false
 Capsule.Text = ""
 Capsule.Active = true
-Capsule.ClipsDescendants = true -- Corta as linhas e bolinhas fora da borda
+Capsule.ClipsDescendants = true 
 Capsule.ZIndex = 10
 Capsule.Parent = ScreenGui
 
@@ -78,7 +78,7 @@ CapsuleStroke.Color = BorderColor
 CapsuleStroke.Thickness = 1.5
 
 -- ==========================================
--- [SISTEMA EXCLUSIVO] CONSTELAÇÃO DINÂMICA
+-- [SISTEMA PREMUM] CONSTELAÇÃO NEON (BOLHAS + LINHAS SUAVES)
 -- ==========================================
 local StarContainer = Instance.new("Frame")
 StarContainer.Size = UDim2.new(1, 0, 1, 0)
@@ -86,47 +86,58 @@ StarContainer.BackgroundTransparency = 1
 StarContainer.ZIndex = 1
 StarContainer.Parent = Capsule
 
-local numNodes = 7 -- Quantidade ideal de pontos para ficar limpo
+local numNodes = 6 -- Quantidade reduzida para ficar mais limpo e bonito
 local nodes = {}
 local connectionLines = {}
+local MAX_CONNECT_DIST = 50 -- Distância máxima para conectar (Aumentei um pouco)
 
--- Cria os nós (bolinhas usando frames nativos redondos)
+-- Cria os nós (bolinhas usando frames nativos redondos com brilho)
 for i = 1, numNodes do
-    local node = Instance.new("Frame")
-    node.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    node.BorderSizePixel = 0
+    local nodeFrame = Instance.new("Frame")
+    nodeFrame.BackgroundColor3 = Color3.fromRGB(230, 200, 255) -- Base roxa muito clara
+    nodeFrame.BorderSizePixel = 0
     
     local size = math.random(3, 5)
-    node.Size = UDim2.new(0, size, 0, size)
-    node.BackgroundTransparency = math.random(3, 6) / 10
+    nodeFrame.Size = UDim2.new(0, size, 0, size)
     
-    -- Posição inicial randômica na tela
-    node.Position = UDim2.new(math.random(), 0, math.random(), 0)
-    node.ZIndex = 2
-    node.Parent = StarContainer
+    -- Efeito de transparência randômico para parecer estrelas vivas
+    nodeFrame.BackgroundTransparency = math.random(2, 5) / 10
     
-    Instance.new("UICorner", node).CornerRadius = UDim.new(1, 0)
+    nodeFrame.Position = UDim2.new(math.random(), 0, math.random(), 0)
+    nodeFrame.ZIndex = 3 -- Nó acima da linha
+    nodeFrame.Parent = StarContainer
+    
+    Instance.new("UICorner", nodeFrame).CornerRadius = UDim.new(1, 0)
+    
+    -- [NOVO] Adiciona um UIStroke para simular um "Glow" (brilho neon suave)
+    local nodeGlow = Instance.new("UIStroke", nodeFrame)
+    nodeGlow.Color = AccentColor
+    nodeGlow.Thickness = 1.2
+    nodeGlow.Transparency = 0.3 -- Brilho neon suave
     
     -- Vetor de velocidade suave e direção aleatória
     local angle = math.random() * math.pi * 2
-    local speed = math.random(5, 12) / 100 -- Bem lento e gostoso de ver
+    local speed = math.random(3, 8) / 100 -- MAIS LENTO E GOSTOSO
     local vx = math.cos(angle) * speed
     local vy = math.sin(angle) * speed
     
-    table.insert(nodes, {frame = node, vx = vx, vy = vy})
+    table.insert(nodes, {frame = nodeFrame, vx = vx, vy = vy, baseTransparency = nodeFrame.BackgroundTransparency})
 end
 
--- Função rápida para desenhar linhas finas entre os nós que se aproximam
+-- Função rápida para desenhar linhas finas e suaves entre os nós
 local function drawLine(posA, posB, distance)
     local line = Instance.new("Frame")
     line.BorderSizePixel = 0
-    line.ZIndex = 1
+    line.ZIndex = 2 -- Linha entre os nós
     
-    -- Gradiente de fade-out baseado na proximidade
-    local maxDist = 45
-    local transparency = 0.4 + (distance / maxDist) * 0.6
-    line.BackgroundTransparency = math.clamp(transparency, 0.4, 1)
-    line.BackgroundColor3 = AccentColor -- Linha roxa estilosa
+    -- [MELHORIA VISUAL] Transparência e Espessura DINÂMICA baseada na distância
+    -- Quanto mais perto, mais forte e grossa é a linha.
+    local rawTransparency = (distance / MAX_CONNECT_DIST)
+    local trans = 0.3 + (rawTransparency * 0.7) -- Fade suave baseado na distância
+    local thickness = 1.2 - (rawTransparency * 0.4) -- Linha fica mais fina conforme se afasta
+    
+    line.BackgroundTransparency = math.clamp(trans, 0.3, 1)
+    line.BackgroundColor3 = AccentColor -- Linha roxa estilosa neon
     
     -- Posicionamento matemático da linha
     local startPos = Vector2.new(posA.X, posA.Y)
@@ -134,7 +145,7 @@ local function drawLine(posA, posB, distance)
     local diff = endPos - startPos
     local angle = math.atan2(diff.Y, diff.X)
     
-    line.Size = UDim2.new(0, diff.Magnitude, 0, 1)
+    line.Size = UDim2.new(0, diff.Magnitude, 0, thickness)
     line.Position = UDim2.new(0, startPos.X, 0, startPos.Y)
     line.Rotation = math.deg(angle)
     line.AnchorPoint = Vector2.new(0, 0.5)
@@ -143,46 +154,49 @@ local function drawLine(posA, posB, distance)
     table.insert(connectionLines, line)
 end
 
--- Loop de física e conexões (Super leve)
+-- Loop de física e conexões (Super leve, otimizado para não travar o toque)
 RunService.RenderStepped:Connect(function(dt)
     if not Capsule.Parent then return end
     
-    -- Limpa as linhas do frame anterior
+    -- Limpa as linhas do frame anterior (essencial para não bugar o Delta)
     for _, line in ipairs(connectionLines) do
         line:Destroy()
     end
     table.clear(connectionLines)
     
-    local sizeX, sizeY = Capsule.AbsoluteSize.X, Capsule.AbsoluteSize.Y
+    local cSizeX, cSizeY = Capsule.AbsoluteSize.X, Capsule.AbsoluteSize.Y
     
-    -- 1. Atualiza a posição de cada bolinha
+    -- 1. Atualiza a posição de cada nó e animação de brilho
+    local time = os.clock()
     for _, data in ipairs(nodes) do
         local node = data.frame
+        
+        -- Movimento
         local newX = node.Position.X.Scale + (data.vx * dt)
         local newY = node.Position.Y.Scale + (data.vy * dt)
         
-        -- Rebate nas bordas horizontais
-        if newX < 0.05 or newX > 0.95 then
-            data.vx = -data.vx
-            newX = math.clamp(newX, 0.05, 0.95)
-        end
-        -- Rebate nas bordas verticais
-        if newY < 0.05 or newY > 0.95 then
-            data.vy = -data.vy
-            newY = math.clamp(newY, 0.05, 0.95)
-        end
+        -- Rebate nas bordas (com margem de segurança)
+        if newX < 0.05 or newX > 0.95 then data.vx = -data.vx newX = math.clamp(newX, 0.05, 0.95) end
+        if newY < 0.05 or newY > 0.95 then data.vy = -data.vy newY = math.clamp(newY, 0.05, 0.95) end
         
         node.Position = UDim2.new(newX, 0, newY, 0)
+        
+        -- [MELHORIA VISUAL] Animação suave de pulsação (Glow)
+        local glowTrans = data.baseTransparency + math.sin(time * 3 + node.AbsolutePosition.X * 0.1) * 0.15
+        node.BackgroundTransparency = math.clamp(glowTrans, 0.2, 0.6)
     end
     
-    -- 2. Calcula as distâncias para desenhar as linhas de conexão
+    -- 2. Calcula as distâncias para desenhar as linhas de conexão (Otimizado)
     for i = 1, #nodes do
+        local nodeA = nodes[i].frame
+        local posA = nodeA.AbsolutePosition - Capsule.AbsolutePosition + (nodeA.AbsoluteSize/2)
+        
         for j = i + 1, #nodes do
-            local posA = nodes[i].frame.AbsolutePosition - Capsule.AbsolutePosition + (nodes[i].frame.AbsoluteSize/2)
-            local posB = nodes[j].frame.AbsolutePosition - Capsule.AbsolutePosition + (nodes[j].frame.AbsoluteSize/2)
+            local nodeB = nodes[j].frame
+            local posB = nodeB.AbsolutePosition - Capsule.AbsolutePosition + (nodeB.AbsoluteSize/2)
             
             local distance = (posA - posB).Magnitude
-            if distance < 45 then -- Distância máxima para conectar
+            if distance < MAX_CONNECT_DIST then -- Distância máxima para conectar
                 drawLine(posA, posB, distance)
             end
         end
@@ -317,7 +331,7 @@ local function createTab(name)
     local InfoLabel = Instance.new("TextLabel")
     InfoLabel.Size = UDim2.new(1, 0, 1, 0)
     InfoLabel.BackgroundTransparency = 1
-    InfoLabel.Text = "ABA [" .. string.upper(name) .. "]\n\n⚡ EM BREVE ⚡\n(INTERDITADA V2.6)"
+    InfoLabel.Text = "ABA [" .. string.upper(name) .. "]\n\n⚡ EM BREVE ⚡\n(INTERDITADA V2.7 PREMIUM)"
     InfoLabel.TextColor3 = Color3.fromRGB(100, 100, 110)
     InfoLabel.TextSize = 13
     InfoLabel.Font = Enum.Font.GothamBold
@@ -327,7 +341,7 @@ local function createTab(name)
     TabBtn.MouseButton1Click:Connect(function()
         playSound("12222076", 0.3)
         for _, otherTab in pairs(Tabs) do
-            TweenService:Create(otherTab.Btn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(150, 150, 150), BackgroundTransparency = 1}):Play()
+            TweenService:Create(otherTab.Btn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(160, 160, 165), BackgroundTransparency = 1}):Play()
             TweenService:Create(otherTab.Stroke, TweenInfo.new(0.2), {Transparency = 1}):Play()
         end
         for _, otherPage in pairs(Pages) do 
@@ -337,7 +351,8 @@ local function createTab(name)
         Page.Visible = true
         TweenService:Create(TabBtn, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             TextColor3 = Color3.fromRGB(255, 255, 255),
-            BackgroundTransparency = 0.8
+            BackgroundTransparency = 0.8,
+            BackgroundColor3 = AccentColor
         }):Play()
         TweenService:Create(BtnStroke, TweenInfo.new(0.25), {Transparency = 0.3}):Play()
     end)
@@ -353,6 +368,7 @@ createTab("Configurações")
 -- Ativa a primeira aba por padrão
 Tabs["Visual"].Btn.BackgroundTransparency = 0.8
 Tabs["Visual"].Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+Tabs["Visual"].Btn.BackgroundColor3 = AccentColor
 Tabs["Visual"].Stroke.Transparency = 0.3
 Pages["Visual"].Visible = true
 
@@ -410,7 +426,7 @@ Capsule.InputBegan:Connect(function(input)
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == InputType.Touch) then
         local delta = input.Position - dragStart
         Capsule.Position = UDim2.new(
             startPos.X.Scale, 
@@ -433,4 +449,4 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
-print("[BK CLIENT] Versão V2.6 Ativa. Constelação Dinâmica Rodando.")
+print("[BK CLIENT] Versão V2.7 PREMIUM: Constelação Neon Ativa.")
