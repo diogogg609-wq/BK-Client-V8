@@ -1,5 +1,5 @@
 -- ====================================================================
--- BK CLIENT - VERSÃO OFICIAL V2.9 (CONFIGURAÇÕES & SUPORTE COPIAR)
+-- BK CLIENT - VERSÃO OFICIAL V2.9.1 (CORREÇÃO DE BUG DE INICIALIZAÇÃO)
 -- ====================================================================
 
 local CoreGui = game:GetService("CoreGui")
@@ -324,7 +324,7 @@ local function createTab(name)
     Pages[name] = Page
 end
 
--- CRIAÇÃO DAS ABAS OFICIAIS (ADICIONADA ABA "STATUS")
+-- CRIAÇÃO DAS ABAS OFICIAIS
 createTab("Visual")
 createTab("Mira")
 createTab("Status")
@@ -535,7 +535,7 @@ local function setInterdicted(page, name)
     local InfoLabel = Instance.new("TextLabel")
     InfoLabel.Size = UDim2.new(1, 0, 1, 0)
     InfoLabel.BackgroundTransparency = 1
-    InfoLabel.Text = "ABA [" .. string.upper(name) .. "]\n\n⚡ EM BREVE ⚡\n(INTERDITADA V2.9)"
+    InfoLabel.Text = "ABA [" .. string.upper(name) .. "]\n\n⚡ EM BREVE ⚡\n(INTERDITADA V2.9.1)"
     InfoLabel.TextColor3 = Color3.fromRGB(100, 100, 110)
     InfoLabel.TextSize = 13
     InfoLabel.Font = Enum.Font.GothamBold
@@ -572,4 +572,4 @@ local function toggleMenu()
         
         TweenService:Create(CentralMenuCanvas, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
             Size = UDim2.new(0, 500, 0, 320),
-           
+            GroupTransparency =
