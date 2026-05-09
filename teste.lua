@@ -1,5 +1,5 @@
 -- ====================================================================
--- BK CLIENT - TITANIUM ENGINE (VERSÃO V8.2 - DARK PC UI & REAL STATS)
+-- BK CLIENT - TITANIUM ENGINE (VERSÃO V8.3 - ANDROID & DELTA STABILITY)
 -- ====================================================================
 
 local CoreGui = game:GetService("CoreGui")
@@ -12,13 +12,15 @@ local Stats = game:GetService("Stats")
 
 local LocalPlayer = Players.LocalPlayer
 
--- Limpeza de instâncias anteriores
-if CoreGui:FindFirstChild("BK_Client_UI") then
-    CoreGui:FindFirstChild("BK_Client_UI"):Destroy()
-end
+-- Limpeza de instâncias anteriores com tratamento de erro
+pcall(function()
+    if CoreGui:FindFirstChild("BK_Client_UI") then
+        CoreGui:FindFirstChild("BK_Client_UI"):Destroy()
+    end
+end)
 
 -- ==========================================
--- SISTEMA DE SONS SATISFATÓRIOS
+-- SISTEMA DE SONS SATISFATÓRIOS (COM FALLBACK)
 -- ==========================================
 local function playSound(soundId, volume, pitch)
     pcall(function()
@@ -32,24 +34,26 @@ local function playSound(soundId, volume, pitch)
     end)
 end
 
-local function playClick() playSound(6042053626, 0.5, 1.1) end -- Som de clique UI moderno
-local function playOpen() playSound(6895079853, 0.6, 1.0) end -- Som de "Sweep" elegante
+local function playClick() playSound(6042053626, 0.5, 1.1) end
+local function playOpen() playSound(6895079853, 0.6, 1.0) end
 
--- Paleta Dark Minimalista (Menos saturada)
-local AccentColor = Color3.fromRGB(90, 60, 160) -- Roxo acinzentado elegante
+-- Paleta Dark Minimalista
+local AccentColor = Color3.fromRGB(90, 60, 160)
 local BGColor = Color3.fromRGB(15, 15, 15)
 local SidebarColor = Color3.fromRGB(10, 10, 10)
 
 -- ==========================================
--- CRIAÇÃO DA INTERFACE V8.2
+-- CRIAÇÃO DA INTERFACE V8.3
 -- ==========================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "BK_Client_UI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.Parent = CoreGui
+pcall(function()
+    ScreenGui.Parent = CoreGui
+end)
 
--- BOLHA FLUTUANTE V8.2 (CAPSULE)
+-- BOLHA FLUTUANTE V8.3 (CAPSULE)
 local Capsule = Instance.new("Frame")
 local CapsuleCorner = Instance.new("UICorner")
 local CapsuleStroke = Instance.new("UIStroke")
@@ -83,7 +87,7 @@ local CapsuleVersion = Instance.new("TextLabel")
 CapsuleVersion.Size = UDim2.new(1, 0, 0.3, 0)
 CapsuleVersion.Position = UDim2.new(0, 0, 0.6, 0)
 CapsuleVersion.BackgroundTransparency = 1
-CapsuleVersion.Text = "V8.2"
+CapsuleVersion.Text = "V8.3"
 CapsuleVersion.TextColor3 = AccentColor
 CapsuleVersion.TextSize = 10
 CapsuleVersion.Font = Enum.Font.GothamSemibold
@@ -95,7 +99,7 @@ local MainCorner = Instance.new("UICorner")
 local MainStroke = Instance.new("UIStroke")
 
 MainFrame.Name = "BK_MainFrame"
-MainFrame.Size = UDim2.new(0, 640, 0, 380) -- Maior e mais espaçoso
+MainFrame.Size = UDim2.new(0, 640, 0, 380)
 MainFrame.Position = UDim2.new(0.5, -320, 0.5, -190)
 MainFrame.BackgroundColor3 = BGColor
 MainFrame.BackgroundTransparency = 1
@@ -132,7 +136,7 @@ local VersionLabel = Instance.new("TextLabel")
 VersionLabel.Size = UDim2.new(1, 0, 0, 15)
 VersionLabel.Position = UDim2.new(0, 0, 0, 35)
 VersionLabel.BackgroundTransparency = 1
-VersionLabel.Text = "Build V8.2"
+VersionLabel.Text = "Build V8.3"
 VersionLabel.TextColor3 = AccentColor
 VersionLabel.TextSize = 11
 VersionLabel.Font = Enum.Font.Gotham
@@ -167,20 +171,24 @@ local AvatarImage = Instance.new("ImageLabel")
 AvatarImage.Size = UDim2.new(0, 36, 0, 36)
 AvatarImage.Position = UDim2.new(0, 12, 0.5, -18)
 AvatarImage.BackgroundColor3 = BGColor
-pcall(function()
-    AvatarImage.Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. LocalPlayer.UserId .. "&width=150&height=150&format=png"
-end)
 AvatarImage.Parent = ProfileFrame
 
 local AvatarCorner = Instance.new("UICorner")
 AvatarCorner.CornerRadius = UDim.new(1, 0)
 AvatarCorner.Parent = AvatarImage
 
+-- Carregamento seguro do Avatar para evitar travamento no Delta
+task.spawn(function()
+    pcall(function()
+        AvatarImage.Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. LocalPlayer.UserId .. "&width=150&height=150&format=png"
+    end)
+end)
+
 local PlayerName = Instance.new("TextLabel")
 PlayerName.Position = UDim2.new(0, 58, 0.2, 0)
 PlayerName.Size = UDim2.new(1, -68, 0, 18)
 PlayerName.BackgroundTransparency = 1
-PlayerName.Text = LocalPlayer.DisplayName
+PlayerName.Text = LocalPlayer.DisplayName or "Usuário"
 PlayerName.TextColor3 = Color3.fromRGB(230, 230, 230)
 PlayerName.TextSize = 13
 PlayerName.Font = Enum.Font.GothamBold
@@ -191,7 +199,7 @@ local PlayerUser = Instance.new("TextLabel")
 PlayerUser.Position = UDim2.new(0, 58, 0.5, 0)
 PlayerUser.Size = UDim2.new(1, -68, 0, 18)
 PlayerUser.BackgroundTransparency = 1
-PlayerUser.Text = "@" .. LocalPlayer.Name
+PlayerUser.Text = "@" .. (LocalPlayer.Name or "Roblox")
 PlayerUser.TextColor3 = Color3.fromRGB(120, 120, 120)
 PlayerUser.TextSize = 10
 PlayerUser.Font = Enum.Font.Gotham
@@ -205,7 +213,7 @@ ContentContainer.Size = UDim2.new(1, -180, 1, -40)
 ContentContainer.BackgroundTransparency = 1
 ContentContainer.Parent = MainFrame
 
--- BARRA DE TELEMETRIA AO VIVO (DADOS REAIS)
+-- BARRA DE TELEMETRIA AO VIVO (DADOS REAIS PROTEGIDOS)
 local StatusFrame = Instance.new("Frame")
 StatusFrame.Size = UDim2.new(1, -180, 0, 40)
 StatusFrame.Position = UDim2.new(0, 180, 0, 0)
@@ -240,7 +248,7 @@ local UsersLabel = createStatusLabel(0.52, "JOGADORES: --", Enum.TextXAlignment.
 local BatteryLabel = createStatusLabel(0.72, "BAT: --%", Enum.TextXAlignment.Right)
 
 -- ==========================================
--- ATUALIZAÇÃO DA TELEMETRIA REAL
+-- ATUALIZAÇÃO DA TELEMETRIA REAL COM PROTEÇÃO
 -- ==========================================
 local lastTime = tick()
 local frameCount = 0
@@ -250,28 +258,33 @@ RunService.RenderStepped:Connect(function(deltaTime)
     local currentTime = tick()
     
     if currentTime - lastTime >= 1 then
-        -- 1. FPS Real
+        -- 1. FPS Real Otimizado
         local realFps = math.floor(frameCount / (currentTime - lastTime))
         FpsLabel.Text = "FPS: " .. tostring(realFps)
         
-        -- 2. Ping Real do Servidor
+        -- 2. Ping Real com Fallback caso API de Stats falhe no Delta
         pcall(function()
             local ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
             PingLabel.Text = "PING: " .. tostring(ping) .. "ms"
         end)
         
-        -- 3. Jogadores no Servidor Real
-        UsersLabel.Text = "JOGADORES: " .. tostring(#Players:GetPlayers())
-        
-        -- 4. Bateria Real (API Nativa)
+        -- 3. Jogadores Seguros
         pcall(function()
+            UsersLabel.Text = "JOGADORES: " .. tostring(#Players:GetPlayers())
+        end)
+        
+        -- 4. Bateria Segura (Super Importante para Android)
+        local batSuccess = pcall(function()
             local batLevel = UserInputService:GetBatteryLevel()
-            if batLevel > 0 then
+            if batLevel and batLevel > 0 then
                 BatteryLabel.Text = "BAT: " .. tostring(math.floor(batLevel * 100)) .. "%"
             else
-                BatteryLabel.Text = "BAT: 100% (PC)"
+                BatteryLabel.Text = "BAT: 100%"
             end
         end)
+        if not batSuccess then
+            BatteryLabel.Text = "BAT: N/A"
+        end
         
         frameCount = 0
         lastTime = currentTime
@@ -279,7 +292,7 @@ RunService.RenderStepped:Connect(function(deltaTime)
 end)
 
 -- ==========================================
--- CRIADOR DE ABAS (ÍCONES VETORIAIS) E CARDS
+-- CRIADOR DE ABAS E CARDS (PROTEGIDO)
 -- ==========================================
 local Tabs = {}
 local Pages = {}
@@ -349,7 +362,7 @@ local function newTab(name, iconId)
     return Page
 end
 
--- Inicializando as Abas com Ícones Roblox (Clean Vectors)
+-- Inicializando as Abas
 local MiraPage = newTab("Mira", "rbxassetid://6031225818")
 local VisualPage = newTab("Visual", "rbxassetid://6031302856")
 local ExtraPage = newTab("Extra", "rbxassetid://6031280882")
@@ -376,7 +389,7 @@ local function createUnderMaintenance(page, titleText)
     Icon.Size = UDim2.new(0, 40, 0, 40)
     Icon.Position = UDim2.new(0.5, -20, 0, 30)
     Icon.BackgroundTransparency = 1
-    Icon.Image = "rbxassetid://6031094028" -- Lock Icon
+    Icon.Image = "rbxassetid://6031094028"
     Icon.ImageColor3 = AccentColor
     Icon.Parent = Frame
 
@@ -384,14 +397,13 @@ local function createUnderMaintenance(page, titleText)
     Label.Size = UDim2.new(1, 0, 0, 50)
     Label.Position = UDim2.new(0, 0, 0, 80)
     Label.BackgroundTransparency = 1
-    Label.Text = titleText .. "\nFUNÇÕES EM DESENVOLVIMENTO PARA A V8.2"
+    Label.Text = titleText .. "\nFUNÇÕES EM DESENVOLVIMENTO PARA A V8.3"
     Label.TextColor3 = Color3.fromRGB(160, 160, 160)
     Label.TextSize = 12
     Label.Font = Enum.Font.GothamSemibold
     Label.Parent = Frame
 end
 
--- Preenchendo Abas sem funções ativas ainda
 createUnderMaintenance(MiraPage, "SISTEMA DE MIRA")
 createUnderMaintenance(VisualPage, "SISTEMA VISUAL (ESP)")
 createUnderMaintenance(ExtraPage, "SISTEMA DE BYPASS E FÍSICA")
@@ -415,7 +427,6 @@ local CCStroke = Instance.new("UIStroke")
 CCStroke.Color = Color3.fromRGB(35, 35, 35)
 CCStroke.Parent = ConfigCard
 
--- Botão de Suporte ao Cliente
 local SupportBtn = Instance.new("TextButton")
 SupportBtn.Size = UDim2.new(0.9, 0, 0, 45)
 SupportBtn.Position = UDim2.new(0.05, 0, 0.15, 0)
@@ -432,20 +443,23 @@ SupportCorner.Parent = SupportBtn
 
 SupportBtn.MouseButton1Click:Connect(function()
     playClick()
-    -- Copia o número para a área de transferência do usuário
     if setclipboard then
         setclipboard("49991510649")
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "BK V8.2 Suporte",
-            Text = "Número copiado com sucesso: 49991510649. Cole no seu WhatsApp!",
-            Duration = 5
-        })
+        pcall(function()
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "BK V8.3 Suporte",
+                Text = "Número copiado com sucesso: 49991510649. Cole no seu WhatsApp!",
+                Duration = 5
+            })
+        end)
     else
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "BK V8.2",
-            Text = "Seu executor não suporta cópia automática. Número: 49991510649",
-            Duration = 7
-        })
+        pcall(function()
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "BK V8.3",
+                Text = "Erro na cópia automática. Salve o contato: 49991510649",
+                Duration = 7
+            })
+        end)
     end
 end)
 
@@ -465,9 +479,11 @@ CACorner.Parent = CloseAllBtn
 
 CloseAllBtn.MouseButton1Click:Connect(function()
     playClick()
-    if CoreGui:FindFirstChild("BK_Client_UI") then
-        CoreGui:FindFirstChild("BK_Client_UI"):Destroy()
-    end
+    pcall(function()
+        if CoreGui:FindFirstChild("BK_Client_UI") then
+            CoreGui:FindFirstChild("BK_Client_UI"):Destroy()
+        end
+    end)
 end)
 
 -- Definindo Aba Inicial
@@ -478,7 +494,7 @@ Tabs["Visual"].Label.TextColor3 = Color3.fromRGB(255, 255, 255)
 Pages["Visual"].Visible = true
 
 -- ==========================================
--- SISTEMA DE ABERTURA E ARRASTE (TRANSIÇÕES FLUIDAS)
+-- SISTEMA DE ABERTURA E ARRASTE (TRANSIÇÕES)
 -- ==========================================
 local isMenuOpen = false
 
@@ -488,18 +504,28 @@ local function toggleMenu()
     if isMenuOpen then
         Capsule.Visible = false
         MainFrame.Visible = true
-        TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {BackgroundTransparency = 0}):Play()
-        TweenService:Create(MainStroke, TweenInfo.new(0.3), {Transparency = 0}):Play()
-    else
-        local tween = TweenService:Create(MainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundTransparency = 1})
-        TweenService:Create(MainStroke, TweenInfo.new(0.2), {Transparency = 1}):Play()
-        tween:Play()
-        tween.Completed:Connect(function()
-            if not isMenuOpen then
-                MainFrame.Visible = false
-                Capsule.Visible = true
-            end
+        pcall(function()
+            TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {BackgroundTransparency = 0}):Play()
+            TweenService:Create(MainStroke, TweenInfo.new(0.3), {Transparency = 0}):Play()
         end)
+    else
+        local tween
+        pcall(function()
+            tween = TweenService:Create(MainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundTransparency = 1})
+            TweenService:Create(MainStroke, TweenInfo.new(0.2), {Transparency = 1}):Play()
+        end)
+        if tween then
+            tween:Play()
+            tween.Completed:Connect(function()
+                if not isMenuOpen then
+                    MainFrame.Visible = false
+                    Capsule.Visible = true
+                end
+            end)
+        else
+            MainFrame.Visible = false
+            Capsule.Visible = true
+        end
     end
 end
 
@@ -515,40 +541,27 @@ CloseBtn.TextSize = 14
 CloseBtn.Parent = MainFrame
 CloseBtn.MouseButton1Click:Connect(toggleMenu)
 
--- Arrastar o Painel Principal
-local dragMain = false
-local mainStart, mainPos
-MainFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragMain = true
-        mainStart = input.Position
-        mainPos = MainFrame.Position
-    end
-end)
-UserInputService.InputChanged:Connect(function(input)
-    if dragMain and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local delta = input.Position - mainStart
-        MainFrame.Position = UDim2.new(mainPos.X.Scale, mainPos.X.Offset + delta.X, mainPos.Y.Scale, mainPos.Y.Offset + delta.Y)
-    end
-end)
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragMain = false end
-end)
-
--- Arrastar a Bolha
-local dragging = false
-local dragStart, startPos
-Capsule.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = Capsule.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-                if (input.Position - dragStart).Magnitude < 7 then toggleMenu() end
-            end
-        end)
-    end
-end)
-UserInputService.InputCha
+-- ARRASTE UNIVERSAL OTIMIZADO PARA CELULAR
+local function makeDraggable(frame)
+    local dragStart, startPos
+    local dragging = false
+    
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            pcall(function()
+                frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            end)
+        end
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInp
