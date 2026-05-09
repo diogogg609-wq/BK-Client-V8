@@ -1,5 +1,5 @@
 -- ====================================================================
--- BK CLIENT - VERSÃO OFICIAL V1.6 (PASSO 2: CONTROLE DE MENU PELA CÁPSULA)
+-- BK CLIENT - VERSÃO OFICIAL V1.7 (PASSO 3: PAINEL INDEPENDENTE & ABAS)
 -- ====================================================================
 
 local CoreGui = game:GetService("CoreGui")
@@ -8,6 +8,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
 local Players = game:GetService("Players")
+local Stats = game:GetService("Stats")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -47,15 +48,18 @@ if not successParent then
     end)
 end
 
--- Configurações de tamanho da Cápsula
+-- Variáveis de Tamanho e Cores
 local CAPSULE_NORMAL_SIZE = UDim2.new(0, 180, 0, 46)
 local CAPSULE_MINI_SIZE = UDim2.new(0, 46, 0, 46)
 
 local BGColor = Color3.fromRGB(10, 10, 12)
-local BorderColor = Color3.fromRGB(50, 50, 50)
+local MenuBGColor = Color3.fromRGB(14, 14, 16)
+local SidebarColor = Color3.fromRGB(8, 8, 10)
+local AccentColor = Color3.fromRGB(110, 60, 220) -- Roxo Principal
+local BorderColor = Color3.fromRGB(50, 50, 55)
 
 -- ==========================================
--- CÁPSULA FLUTUANTE (CONTROLE DO MENU)
+-- CÁPSULA FLUTUANTE (FUNDO SÓLIDO ESPACIAL)
 -- ==========================================
 local Capsule = Instance.new("Frame")
 local CapsuleCorner = Instance.new("UICorner")
@@ -63,7 +67,7 @@ local CapsuleStroke = Instance.new("UIStroke")
 
 Capsule.Name = "BK_Capsule"
 Capsule.Size = CAPSULE_NORMAL_SIZE
-Capsule.Position = UDim2.new(0.05, 0, 0.3, 0) -- Posição inicial
+Capsule.Position = UDim2.new(0.05, 0, 0.3, 0)
 Capsule.BackgroundColor3 = BGColor
 Capsule.BackgroundTransparency = 0
 Capsule.Active = true
@@ -92,18 +96,15 @@ for i = 1, 8 do
     local star = Instance.new("Frame")
     star.Name = "Star" .. i
     star.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    
     local size = math.random(1, 3)
     star.Size = UDim2.new(0, size, 0, size)
     star.BackgroundTransparency = math.random(2, 6) / 10
     star.Position = UDim2.new(math.random(), 0, math.random(), 0)
     star.ZIndex = 1
     star.Parent = StarContainer
-    
     local sCorner = Instance.new("UICorner")
     sCorner.CornerRadius = UDim.new(1, 0)
     sCorner.Parent = star
-    
     local speed = math.random(10, 30) / 1000
     table.insert(stars, {frame = star, speed = speed})
 end
@@ -112,10 +113,8 @@ RunService.RenderStepped:Connect(function(dt)
     for _, starData in ipairs(stars) do
         local star = starData.frame
         local speed = starData.speed
-        
         local currentX = star.Position.X.Scale
         local newX = currentX - (speed * dt * 60)
-        
         if newX < -0.05 then
             newX = 1.05
             star.Position = UDim2.new(newX, 0, math.random(), 0)
@@ -142,10 +141,9 @@ Layout.Padding = UDim.new(0, 10)
 Layout.Parent = ContentFrame
 
 local PaddingL = Instance.new("UIPadding")
-PaddingL.PaddingLeft = UDim.new(0, 7) -- Ajustado para centralizar bem quando mini
+PaddingL.PaddingLeft = UDim.new(0, 7)
 PaddingL.Parent = ContentFrame
 
--- IMAGEM DE PERFIL
 local AvatarImage = Instance.new("ImageLabel")
 AvatarImage.Name = "AvatarImage"
 AvatarImage.Size = UDim2.new(0, 32, 0, 32)
@@ -164,7 +162,6 @@ task.spawn(function()
     end)
 end)
 
--- TEXTO BK CLIENT V1
 local TextLabel = Instance.new("TextLabel")
 TextLabel.Name = "TextLabel"
 TextLabel.Size = UDim2.new(0, 110, 0, 20)
@@ -179,31 +176,208 @@ TextLabel.Parent = ContentFrame
 
 
 -- ==========================================
--- PAINEL PRINCIPAL DE TESTES (SÓ O QUADRADO)
+-- PAINEL PRINCIPAL INDEPENDENTE (PASSO 3)
 -- ==========================================
 local MainMenu = Instance.new("Frame")
 local MenuCorner = Instance.new("UICorner")
 local MenuStroke = Instance.new("UIStroke")
 
 MainMenu.Name = "BK_MainMenu"
--- Quadrado de testes perfeito e otimizado
-MainMenu.Size = UDim2.new(0, 300, 0, 300) 
--- Posição do menu diretamente acoplada logo abaixo da cápsula (dinâmico)
-MainMenu.Position = UDim2.new(0, 0, 1, 10) 
-MainMenu.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
-MainMenu.BackgroundTransparency = 1 -- Invisível ao iniciar
+MainMenu.Size = UDim2.new(0, 480, 0, 280) -- Formato PC / Retangular espaçoso
+MainMenu.Position = UDim2.new(0, 0, 0, 60) -- Posicionado abaixo da bolha, mas livre visualmente
+MainMenu.BackgroundColor3 = MenuBGColor
+MainMenu.BackgroundTransparency = 1
 MainMenu.Visible = false
 MainMenu.Active = true
-MainMenu.Parent = Capsule -- Menu vira "filho" da cápsula para mover junto de forma automática!
+MainMenu.Parent = Capsule -- Segue a cápsula no arraste
 
-MenuCorner.CornerRadius = UDim.new(0, 12)
+MenuCorner.CornerRadius = UDim.new(0, 10)
 MenuCorner.Parent = MainMenu
 
-MenuStroke.Color = Color3.fromRGB(45, 45, 50)
-MenuStroke.Thickness = 1.5
+MenuStroke.Color = BorderColor
+MenuStroke.Thickness = 1.2
 MenuStroke.Transparency = 1
 MenuStroke.Parent = MainMenu
 
+-- GAVETA / SIDEBAR ESQUERDA (BOTÕES DE ABAS)
+local Sidebar = Instance.new("Frame")
+Sidebar.Size = UDim2.new(0, 140, 1, -30) -- Deixa espaço para a telemetria embaixo
+Sidebar.BackgroundColor3 = SidebarColor
+Sidebar.BorderSizePixel = 0
+Sidebar.Parent = MainMenu
+
+local SidebarCorner = Instance.new("UICorner")
+SidebarCorner.CornerRadius = UDim.new(0, 10)
+SidebarCorner.Parent = Sidebar
+
+local TabButtonsContainer = Instance.new("Frame")
+TabButtonsContainer.Size = UDim2.new(1, 0, 1, 0)
+TabButtonsContainer.BackgroundTransparency = 1
+TabButtonsContainer.Parent = Sidebar
+
+local SidebarList = Instance.new("UIListLayout")
+SidebarList.Padding = UDim.new(0, 6)
+SidebarList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+SidebarList.VerticalAlignment = Enum.VerticalAlignment.Center
+SidebarList.Parent = TabButtonsContainer
+
+-- CONTAINER DE CONTEÚDO (DIREITA)
+local ContentContainer = Instance.new("Frame")
+ContentContainer.Position = UDim2.new(0, 150, 0, 10)
+ContentContainer.Size = UDim2.new(1, -160, 1, -50)
+ContentContainer.BackgroundTransparency = 1
+ContentContainer.Parent = MainMenu
+
+-- ==========================================
+-- BARRA DE TELEMETRIA (DADOS REAIS E SEGUROS)
+-- ==========================================
+local TelemetryFrame = Instance.new("Frame")
+TelemetryFrame.Size = UDim2.new(1, 0, 0, 30)
+TelemetryFrame.Position = UDim2.new(0, 0, 1, -30)
+TelemetryFrame.BackgroundColor3 = SidebarColor
+TelemetryFrame.BorderSizePixel = 0
+TelemetryFrame.Parent = MainMenu
+
+local TelemetryCorner = Instance.new("UICorner")
+TelemetryCorner.CornerRadius = UDim.new(0, 10)
+TelemetryCorner.Parent = TelemetryFrame
+
+local TelLayout = Instance.new("UIListLayout")
+TelLayout.FillDirection = Enum.FillDirection.Horizontal
+TelLayout.HorizontalAlignment = Enum.HorizontalAlignment.SpaceAround
+TelLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+TelLayout.Parent = TelemetryFrame
+
+local function createStatLabel(text)
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(0, 100, 1, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = text
+    lbl.TextColor3 = Color3.fromRGB(150, 150, 150)
+    lbl.TextSize = 10
+    lbl.Font = Enum.Font.GothamSemibold
+    lbl.Parent = TelemetryFrame
+    return lbl
+end
+
+local FpsLabel = createStatLabel("FPS: --")
+local PingLabel = createStatLabel("PING: --ms")
+local PlayersLabel = createStatLabel("PLAYERS: --")
+local BatteryLabel = createStatLabel("BAT: --%")
+
+-- Loop de Atualização Otimizado
+local lastTime = tick()
+local frameCount = 0
+RunService.RenderStepped:Connect(function(dt)
+    frameCount = frameCount + 1
+    local curTime = tick()
+    if curTime - lastTime >= 1 then
+        FpsLabel.Text = "FPS: " .. tostring(math.floor(frameCount / (curTime - lastTime)))
+        pcall(function()
+            local ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
+            PingLabel.Text = "PING: " .. tostring(ping) .. "ms"
+        end)
+        pcall(function()
+            PlayersLabel.Text = "PLAYERS: " .. tostring(#Players:GetPlayers())
+        end)
+        local batSuccess = pcall(function()
+            local level = UserInputService:GetBatteryLevel()
+            if level and level > 0 then
+                BatteryLabel.Text = "BAT: " .. tostring(math.floor(level * 100)) .. "%"
+            else
+                BatteryLabel.Text = "BAT: 100%"
+            end
+        end)
+        if not batSuccess then BatteryLabel.Text = "BAT: N/A" end
+        frameCount = 0
+        lastTime = curTime
+    end
+end)
+
+-- ==========================================
+-- CRIADOR DE ABAS E TRANSIÇÃO GOSTOSA (TWEEN)
+-- ==========================================
+local Tabs = {}
+local Pages = {}
+
+local function createTab(name)
+    -- Botão da Gaveta
+    local TabBtn = Instance.new("TextButton")
+    TabBtn.Size = UDim2.new(0.9, 0, 0, 36)
+    TabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+    TabBtn.BackgroundTransparency = 1
+    TabBtn.Text = name
+    TabBtn.TextColor3 = Color3.fromRGB(160, 160, 165)
+    TabBtn.Font = Enum.Font.GothamSemibold
+    TabBtn.TextSize = 12
+    TabBtn.Parent = TabButtonsContainer
+    
+    local BtnCorner = Instance.new("UICorner")
+    BtnCorner.CornerRadius = UDim.new(0, 6)
+    BtnCorner.Parent = TabBtn
+    
+    local BtnStroke = Instance.new("UIStroke")
+    BtnStroke.Color = AccentColor
+    BtnStroke.Thickness = 1.2
+    BtnStroke.Transparency = 1
+    BtnStroke.Parent = TabBtn
+
+    -- Página de Conteúdo correspondente
+    local Page = Instance.new("Frame")
+    Page.Size = UDim2.new(1, 0, 1, 0)
+    Page.BackgroundTransparency = 1
+    Page.Visible = false
+    Page.Parent = ContentContainer
+
+    local InfoLabel = Instance.new("TextLabel")
+    InfoLabel.Size = UDim2.new(1, 0, 1, 0)
+    InfoLabel.BackgroundTransparency = 1
+    InfoLabel.Text = "ABA [" .. string.upper(name) .. "]\n\n⚡ EM BREVE ⚡\n(INTERDITADA NESTA VERSÃO)"
+    InfoLabel.TextColor3 = Color3.fromRGB(120, 120, 130)
+    InfoLabel.TextSize = 12
+    InfoLabel.Font = Enum.Font.GothamBold
+    InfoLabel.Parent = Page
+
+    -- Clique com Animação Suave e Gostosa
+    TabBtn.MouseButton1Click:Connect(function()
+        -- Reseta todas as outras abas
+        for _, otherTab in pairs(Tabs) do
+            TweenService:Create(otherTab.Btn, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                TextColor3 = Color3.fromRGB(160, 160, 165),
+                BackgroundColor3 = Color3.fromRGB(20, 20, 25),
+                BackgroundTransparency = 1
+            }):Play()
+            TweenService:Create(otherTab.Stroke, TweenInfo.new(0.25), {Transparency = 1}):Play()
+        end
+        for _, otherPage in pairs(Pages) do
+            otherPage.Visible = false
+        end
+
+        -- Ativa a aba atual com transição premium
+        Page.Visible = true
+        TweenService:Create(TabBtn, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            BackgroundColor3 = AccentColor,
+            BackgroundTransparency = 0.8
+        }):Play()
+        TweenService:Create(BtnStroke, TweenInfo.new(0.25), {Transparency = 0.3}):Play()
+    end)
+
+    Tabs[name] = {Btn = TabBtn, Stroke = BtnStroke}
+    Pages[name] = Page
+end
+
+-- Criando as Abas solicitadas
+createTab("Visual")
+createTab("Mira")
+createTab("Configurações")
+
+-- Seleciona a primeira aba por padrão ao abrir
+Tabs["Visual"].Btn.BackgroundTransparency = 0.8
+Tabs["Visual"].Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+Tabs["Visual"].Btn.BackgroundColor3 = AccentColor
+Tabs["Visual"].Stroke.Transparency = 0.3
+Pages["Visual"].Visible = true
 
 -- ==========================================
 -- LÓGICA DE ABRIR E FECHAR O MENU (TWEEN)
@@ -214,19 +388,18 @@ local function toggleMenu()
     isMenuOpen = not isMenuOpen
     
     if isMenuOpen then
-        -- 1. Animação de Encolher a Cápsula para o formato mini (apenas a carinha do jogador)
+        -- Encolhe a cápsula para formato mini
         TweenService:Create(Capsule, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
             Size = CAPSULE_MINI_SIZE
         }):Play()
         
-        -- Sumir com o texto do BK CLIENT V1 suavemente
         TweenService:Create(TextLabel, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             TextTransparency = 1
         }):Play()
         
-        -- 2. Mostrar o Menu de Testes
+        -- Abre o painel independente abaixo dela
         MainMenu.Visible = true
-        TweenService:Create(MainMenu, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        TweenService:Create(MainMenu, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
             BackgroundTransparency = 0
         }):Play()
         TweenService:Create(MenuStroke, TweenInfo.new(0.3), {
@@ -234,7 +407,7 @@ local function toggleMenu()
         }):Play()
         
     else
-        -- 1. Esconder o Menu de Testes suavemente
+        -- Fecha o painel independente
         local menuTween = TweenService:Create(MainMenu, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
             BackgroundTransparency = 1
         })
@@ -249,18 +422,16 @@ local function toggleMenu()
             end
         end)
         
-        -- 2. Voltar a Cápsula para o tamanho normal de perfil
+        -- Restaura a cápsula ao tamanho normal
         TweenService:Create(Capsule, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
             Size = CAPSULE_NORMAL_SIZE
         }):Play()
         
-        -- Reaparecer o texto
         TweenService:Create(TextLabel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             TextTransparency = 0
         }):Play()
     end
 end
-
 
 -- ==========================================
 -- SISTEMA DE ARRASTE INTEGRADO (CÁPSULA + MENU)
@@ -274,14 +445,12 @@ Capsule.InputBegan:Connect(function(input)
         dragStart = input.Position
         startPos = Capsule.Position
         
-        -- Captura o clique rápido para abrir/fechar o menu sem bugar o arraste
         local inputEndedConnection
         inputEndedConnection = input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then
                 dragging = false
                 inputEndedConnection:Disconnect()
                 
-                -- Se o movimento foi mínimo, considera um clique
                 if (input.Position - dragStart).Magnitude < 8 then
                     toggleMenu()
                 end
@@ -304,4 +473,4 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
-print("[BK CLIENT] Passo 2: Estrutura do Menu e Controle da Cápsula Ativados!")
+print("[BK CLIENT] Passo 3: Painel Independente, Abas e Telemetria Ativados!")
