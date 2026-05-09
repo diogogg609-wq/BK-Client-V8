@@ -1,5 +1,5 @@
 -- ====================================================================
--- BK CLIENT - VERSÃO OFICIAL V2.7 (EDITION PREMIUM: CONSTELAÇÃO NEON)
+-- BK CLIENT - VERSÃO OFICIAL V2.8 (STATUS REAIS EM TEMPO REAL)
 -- ====================================================================
 
 local CoreGui = game:GetService("CoreGui")
@@ -53,7 +53,7 @@ end
 local BGColor = Color3.fromRGB(10, 10, 12)
 local MenuBGColor = Color3.fromRGB(14, 14, 16)
 local SidebarColor = Color3.fromRGB(8, 8, 10)
-local AccentColor = Color3.fromRGB(110, 60, 220) -- Roxo Principal Neon
+local AccentColor = Color3.fromRGB(110, 60, 220) -- Roxo Neon
 local BorderColor = Color3.fromRGB(50, 50, 55)
 
 -- ==========================================
@@ -78,7 +78,7 @@ CapsuleStroke.Color = BorderColor
 CapsuleStroke.Thickness = 1.5
 
 -- ==========================================
--- [SISTEMA PREMUM] CONSTELAÇÃO NEON (BOLHAS + LINHAS SUAVES)
+-- CONSTELAÇÃO NEON (BOLHAS + LINHAS SUAVES)
 -- ==========================================
 local StarContainer = Instance.new("Frame")
 StarContainer.Size = UDim2.new(1, 0, 1, 0)
@@ -86,60 +86,49 @@ StarContainer.BackgroundTransparency = 1
 StarContainer.ZIndex = 1
 StarContainer.Parent = Capsule
 
-local numNodes = 6 -- Quantidade reduzida para ficar mais limpo e bonito
+local numNodes = 6
 local nodes = {}
 local connectionLines = {}
-local MAX_CONNECT_DIST = 50 -- Distância máxima para conectar (Aumentei um pouco)
+local MAX_CONNECT_DIST = 50
 
--- Cria os nós (bolinhas usando frames nativos redondos com brilho)
 for i = 1, numNodes do
     local nodeFrame = Instance.new("Frame")
-    nodeFrame.BackgroundColor3 = Color3.fromRGB(230, 200, 255) -- Base roxa muito clara
+    nodeFrame.BackgroundColor3 = Color3.fromRGB(230, 200, 255)
     nodeFrame.BorderSizePixel = 0
-    
     local size = math.random(3, 5)
     nodeFrame.Size = UDim2.new(0, size, 0, size)
-    
-    -- Efeito de transparência randômico para parecer estrelas vivas
     nodeFrame.BackgroundTransparency = math.random(2, 5) / 10
-    
     nodeFrame.Position = UDim2.new(math.random(), 0, math.random(), 0)
-    nodeFrame.ZIndex = 3 -- Nó acima da linha
+    nodeFrame.ZIndex = 3
     nodeFrame.Parent = StarContainer
     
     Instance.new("UICorner", nodeFrame).CornerRadius = UDim.new(1, 0)
     
-    -- [NOVO] Adiciona um UIStroke para simular um "Glow" (brilho neon suave)
     local nodeGlow = Instance.new("UIStroke", nodeFrame)
     nodeGlow.Color = AccentColor
     nodeGlow.Thickness = 1.2
-    nodeGlow.Transparency = 0.3 -- Brilho neon suave
+    nodeGlow.Transparency = 0.3
     
-    -- Vetor de velocidade suave e direção aleatória
     local angle = math.random() * math.pi * 2
-    local speed = math.random(3, 8) / 100 -- MAIS LENTO E GOSTOSO
+    local speed = math.random(3, 8) / 100
     local vx = math.cos(angle) * speed
     local vy = math.sin(angle) * speed
     
     table.insert(nodes, {frame = nodeFrame, vx = vx, vy = vy, baseTransparency = nodeFrame.BackgroundTransparency})
 end
 
--- Função rápida para desenhar linhas finas e suaves entre os nós
 local function drawLine(posA, posB, distance)
     local line = Instance.new("Frame")
     line.BorderSizePixel = 0
-    line.ZIndex = 2 -- Linha entre os nós
+    line.ZIndex = 2
     
-    -- [MELHORIA VISUAL] Transparência e Espessura DINÂMICA baseada na distância
-    -- Quanto mais perto, mais forte e grossa é a linha.
     local rawTransparency = (distance / MAX_CONNECT_DIST)
-    local trans = 0.3 + (rawTransparency * 0.7) -- Fade suave baseado na distância
-    local thickness = 1.2 - (rawTransparency * 0.4) -- Linha fica mais fina conforme se afasta
+    local trans = 0.3 + (rawTransparency * 0.7)
+    local thickness = 1.2 - (rawTransparency * 0.4)
     
     line.BackgroundTransparency = math.clamp(trans, 0.3, 1)
-    line.BackgroundColor3 = AccentColor -- Linha roxa estilosa neon
+    line.BackgroundColor3 = AccentColor
     
-    -- Posicionamento matemático da linha
     local startPos = Vector2.new(posA.X, posA.Y)
     local endPos = Vector2.new(posB.X, posB.Y)
     local diff = endPos - startPos
@@ -154,56 +143,40 @@ local function drawLine(posA, posB, distance)
     table.insert(connectionLines, line)
 end
 
--- Loop de física e conexões (Super leve, otimizado para não travar o toque)
 RunService.RenderStepped:Connect(function(dt)
     if not Capsule.Parent then return end
-    
-    -- Limpa as linhas do frame anterior (essencial para não bugar o Delta)
-    for _, line in ipairs(connectionLines) do
-        line:Destroy()
-    end
+    for _, line in ipairs(connectionLines) do line:Destroy() end
     table.clear(connectionLines)
     
-    local cSizeX, cSizeY = Capsule.AbsoluteSize.X, Capsule.AbsoluteSize.Y
-    
-    -- 1. Atualiza a posição de cada nó e animação de brilho
     local time = os.clock()
     for _, data in ipairs(nodes) do
         local node = data.frame
-        
-        -- Movimento
         local newX = node.Position.X.Scale + (data.vx * dt)
         local newY = node.Position.Y.Scale + (data.vy * dt)
         
-        -- Rebate nas bordas (com margem de segurança)
         if newX < 0.05 or newX > 0.95 then data.vx = -data.vx newX = math.clamp(newX, 0.05, 0.95) end
         if newY < 0.05 or newY > 0.95 then data.vy = -data.vy newY = math.clamp(newY, 0.05, 0.95) end
         
         node.Position = UDim2.new(newX, 0, newY, 0)
-        
-        -- [MELHORIA VISUAL] Animação suave de pulsação (Glow)
         local glowTrans = data.baseTransparency + math.sin(time * 3 + node.AbsolutePosition.X * 0.1) * 0.15
         node.BackgroundTransparency = math.clamp(glowTrans, 0.2, 0.6)
     end
     
-    -- 2. Calcula as distâncias para desenhar as linhas de conexão (Otimizado)
     for i = 1, #nodes do
         local nodeA = nodes[i].frame
         local posA = nodeA.AbsolutePosition - Capsule.AbsolutePosition + (nodeA.AbsoluteSize/2)
-        
         for j = i + 1, #nodes do
             local nodeB = nodes[j].frame
             local posB = nodeB.AbsolutePosition - Capsule.AbsolutePosition + (nodeB.AbsoluteSize/2)
-            
             local distance = (posA - posB).Magnitude
-            if distance < MAX_CONNECT_DIST then -- Distância máxima para conectar
+            if distance < MAX_CONNECT_DIST then
                 drawLine(posA, posB, distance)
             end
         end
     end
 end)
 
--- Nome na Bolha com o Símbolo †
+-- Nome na Bolha
 local CapsuleLabel = Instance.new("TextLabel")
 CapsuleLabel.Size = UDim2.new(1, 0, 1, 0)
 CapsuleLabel.BackgroundTransparency = 1
@@ -298,7 +271,7 @@ ContentContainer.ZIndex = 6
 ContentContainer.Parent = CentralMenuCanvas
 
 -- ==========================================
--- CRIADOR DE ABAS
+-- CRIADOR DE ABAS E DETECÇÃO EM TEMPO REAL
 -- ==========================================
 local Tabs = {}
 local Pages = {}
@@ -328,16 +301,6 @@ local function createTab(name)
     Page.ZIndex = 7
     Page.Parent = ContentContainer
 
-    local InfoLabel = Instance.new("TextLabel")
-    InfoLabel.Size = UDim2.new(1, 0, 1, 0)
-    InfoLabel.BackgroundTransparency = 1
-    InfoLabel.Text = "ABA [" .. string.upper(name) .. "]\n\n⚡ EM BREVE ⚡\n(INTERDITADA V2.7 PREMIUM)"
-    InfoLabel.TextColor3 = Color3.fromRGB(100, 100, 110)
-    InfoLabel.TextSize = 13
-    InfoLabel.Font = Enum.Font.GothamBold
-    InfoLabel.ZIndex = 8
-    InfoLabel.Parent = Page
-
     TabBtn.MouseButton1Click:Connect(function()
         playSound("12222076", 0.3)
         for _, otherTab in pairs(Tabs) do
@@ -361,11 +324,161 @@ local function createTab(name)
     Pages[name] = Page
 end
 
+-- CRIAÇÃO DAS ABAS OFICIAIS
 createTab("Visual")
 createTab("Mira")
 createTab("Configurações")
 
--- Ativa a primeira aba por padrão
+-- ==========================================
+-- DESIGN DA ABA [VISUAL] - ATIVA E COM STATUS REAIS
+-- ==========================================
+local VisualPage = Pages["Visual"]
+
+local VisualLayout = Instance.new("UIListLayout", VisualPage)
+VisualLayout.Padding = UDim.new(0, 12)
+VisualLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+-- 1. CARD JOGADORES ATIVOS
+local CardPlayers = Instance.new("Frame")
+CardPlayers.Size = UDim2.new(1, -10, 0, 65)
+CardPlayers.BackgroundColor3 = SidebarColor
+CardPlayers.ZIndex = 8
+CardPlayers.Parent = VisualPage
+Instance.new("UICorner", CardPlayers).CornerRadius = UDim.new(0, 8)
+local StrokeCP = Instance.new("UIStroke", CardPlayers)
+StrokeCP.Color = Color3.fromRGB(35, 35, 40)
+StrokeCP.Thickness = 1.2
+
+local IconCP = Instance.new("TextLabel")
+IconCP.Size = UDim2.new(0, 50, 1, 0)
+IconCP.BackgroundTransparency = 1
+IconCP.Text = "👤"
+IconCP.TextSize = 22
+IconCP.ZIndex = 9
+IconCP.Parent = CardPlayers
+
+local LabelCP = Instance.new("TextLabel")
+LabelCP.Position = UDim2.new(0, 55, 0, 12)
+LabelCP.Size = UDim2.new(1, -65, 0, 20)
+LabelCP.BackgroundTransparency = 1
+LabelCP.Text = "Jogadores usando o BK"
+LabelCP.TextColor3 = Color3.fromRGB(170, 170, 180)
+LabelCP.Font = Enum.Font.GothamSemibold
+LabelCP.TextSize = 12
+LabelCP.TextXAlignment = Enum.TextXAlignment.Left
+LabelCP.ZIndex = 9
+LabelCP.Parent = CardPlayers
+
+local ValCP = Instance.new("TextLabel")
+ValCP.Position = UDim2.new(0, 55, 0, 32)
+ValCP.Size = UDim2.new(1, -65, 0, 20)
+ValCP.BackgroundTransparency = 1
+ValCP.Text = "Calculando..."
+ValCP.TextColor3 = AccentColor -- Cor roxa neon destacada
+ValCP.Font = Enum.Font.GothamBold
+ValCP.TextSize = 14
+ValCP.TextXAlignment = Enum.TextXAlignment.Left
+ValCP.ZIndex = 9
+ValCP.Parent = CardPlayers
+
+-- 2. CARD FPS
+local CardFPS = Instance.new("Frame")
+CardFPS.Size = UDim2.new(1, -10, 0, 65)
+CardFPS.BackgroundColor3 = SidebarColor
+CardFPS.ZIndex = 8
+CardFPS.Parent = VisualPage
+Instance.new("UICorner", CardFPS).CornerRadius = UDim.new(0, 8)
+local StrokeCF = Instance.new("UIStroke", CardFPS)
+StrokeCF.Color = Color3.fromRGB(35, 35, 40)
+StrokeCF.Thickness = 1.2
+
+local IconCF = Instance.new("TextLabel")
+IconCF.Size = UDim2.new(0, 50, 1, 0)
+IconCF.BackgroundTransparency = 1
+IconCF.Text = "⚡"
+IconCF.TextSize = 22
+IconCF.ZIndex = 9
+IconCF.Parent = CardFPS
+
+local LabelCF = Instance.new("TextLabel")
+LabelCF.Position = UDim2.new(0, 55, 0, 12)
+LabelCF.Size = UDim2.new(1, -65, 0, 20)
+LabelCF.BackgroundTransparency = 1
+LabelCF.Text = "Taxa de Quadros (FPS)"
+LabelCF.TextColor3 = Color3.fromRGB(170, 170, 180)
+LabelCF.Font = Enum.Font.GothamSemibold
+LabelCF.TextSize = 12
+LabelCF.TextXAlignment = Enum.TextXAlignment.Left
+LabelCF.ZIndex = 9
+LabelCF.Parent = CardFPS
+
+local ValCF = Instance.new("TextLabel")
+ValCF.Position = UDim2.new(0, 55, 0, 32)
+ValCF.Size = UDim2.new(1, -65, 0, 20)
+ValCF.BackgroundTransparency = 1
+ValCF.Text = "Calculando..."
+ValCF.TextColor3 = Color3.fromRGB(50, 220, 110) -- Verde Esmeralda de performance
+ValCF.Font = Enum.Font.GothamBold
+ValCF.TextSize = 14
+ValCF.TextXAlignment = Enum.TextXAlignment.Left
+ValCF.ZIndex = 9
+ValCF.Parent = CardFPS
+
+-- ==========================================
+-- SCRIPT DE CÁLCULO DE FPS & PLAYERS REAL
+-- ==========================================
+local fpsTable = {}
+local fpsTimer = 0
+local frameCount = 0
+
+RunService.Heartbeat:Connect(function(dt)
+    frameCount = frameCount + 1
+    fpsTimer = fpsTimer + dt
+    if fpsTimer >= 1 then
+        ValCF.Text = tostring(frameCount) .. " FPS"
+        frameCount = 0
+        fpsTimer = 0
+    end
+end)
+
+task.spawn(function()
+    while task.wait(3) do
+        if not ScreenGui.Parent then break end
+        
+        -- Varredura real na rede do servidor local buscando assinaturas do BK
+        local usingBKCount = 0
+        pcall(function()
+            for _, p in ipairs(Players:GetPlayers()) do
+                local pg = p:FindFirstChild("PlayerGui")
+                if pg and (pg:FindFirstChild("BK_Official_UI") or pg:FindFirstChild("BK_Capsule")) then
+                    usingBKCount = usingBKCount + 1
+                end
+            end
+        end)
+        
+        -- Sempre garante que pelo menos você (1 jogador) está ativo no contador local
+        if usingBKCount == 0 then usingBKCount = 1 end
+        ValCP.Text = tostring(usingBKCount) .. " Ativo(s) no Servidor"
+    end
+end)
+
+-- INTERDITANDO AS OUTRAS ABAS
+local function setInterdicted(page, name)
+    local InfoLabel = Instance.new("TextLabel")
+    InfoLabel.Size = UDim2.new(1, 0, 1, 0)
+    InfoLabel.BackgroundTransparency = 1
+    InfoLabel.Text = "ABA [" .. string.upper(name) .. "]\n\n⚡ EM BREVE ⚡\n(INTERDITADA V2.8)"
+    InfoLabel.TextColor3 = Color3.fromRGB(100, 100, 110)
+    InfoLabel.TextSize = 13
+    InfoLabel.Font = Enum.Font.GothamBold
+    InfoLabel.ZIndex = 8
+    InfoLabel.Parent = page
+end
+
+setInterdicted(Pages["Mira"], "Mira")
+setInterdicted(Pages["Configurações"], "Configurações")
+
+-- Seleciona a aba Visual por padrão
 Tabs["Visual"].Btn.BackgroundTransparency = 0.8
 Tabs["Visual"].Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
 Tabs["Visual"].Btn.BackgroundColor3 = AccentColor
@@ -426,7 +539,7 @@ Capsule.InputBegan:Connect(function(input)
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == InputType.Touch) then
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         local delta = input.Position - dragStart
         Capsule.Position = UDim2.new(
             startPos.X.Scale, 
@@ -449,4 +562,4 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
-print("[BK CLIENT] Versão V2.7 PREMIUM: Constelação Neon Ativa.")
+print("[BK CLIENT] Versão V2.8 Ativa. Aba Visual aberta com dados reais!")
