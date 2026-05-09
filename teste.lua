@@ -1,5 +1,5 @@
 -- ====================================================================
--- BK CLIENT - TITANIUM ENGINE (VERSÃO V8.0 - INTERFACE ONLY UPDATE)
+-- BK CLIENT - TITANIUM ENGINE (VERSÃO V8.1 - STABLE INTERACTIVE UPDATE)
 -- ====================================================================
 
 local CoreGui = game:GetService("CoreGui")
@@ -36,7 +36,7 @@ local function playHover() playSound(8612501062, 0.3, 1.5) end
 local function playOpen() playSound(5801257577, 0.7, 1.0) end
 
 -- ==========================================
--- CRIAÇÃO DA INTERFACE V8.0
+-- CRIAÇÃO DA INTERFACE V8.1
 -- ==========================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "BK_Client_UI"
@@ -105,7 +105,7 @@ Sidebar.Parent = MainFrame
 local BrandLabel = Instance.new("TextLabel")
 BrandLabel.Size = UDim2.new(1, 0, 0, 45)
 BrandLabel.BackgroundTransparency = 1
-BrandLabel.Text = "BK CLIENT V8.0"
+BrandLabel.Text = "BK CLIENT V8.1"
 BrandLabel.TextColor3 = Color3.fromRGB(120, 0, 255)
 BrandLabel.TextSize = 16
 BrandLabel.Font = Enum.Font.GothamBold
@@ -140,7 +140,6 @@ local AvatarImage = Instance.new("ImageLabel")
 AvatarImage.Size = UDim2.new(0, 40, 0, 40)
 AvatarImage.Position = UDim2.new(0, 10, 0.5, -20)
 AvatarImage.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
--- Puxa seu avatar real do jogo
 pcall(function()
     AvatarImage.Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. LocalPlayer.UserId .. "&width=150&height=150&format=png"
 end)
@@ -294,7 +293,7 @@ local function createUnderMaintenance(page, titleText)
     Label.Size = UDim2.new(1, 0, 0, 50)
     Label.Position = UDim2.new(0, 0, 0, 80)
     Label.BackgroundTransparency = 1
-    Label.Text = titleText .. "\n🔓 EM BREVE NA VERSÃO V8.0"
+    Label.Text = titleText .. "\n🔓 EM BREVE NA VERSÃO V8.1"
     Label.TextColor3 = Color3.fromRGB(150, 150, 150)
     Label.TextSize = 13
     Label.Font = Enum.Font.GothamBold
@@ -406,19 +405,27 @@ Pages["Visual"].Visible = true
 -- ENGINE RENDERING - INTERACTIVES (90 FPS FLUID)
 -- ==========================================
 local isMenuOpen = false
+
 local function toggleMenu()
     isMenuOpen = not isMenuOpen
     playOpen()
     if isMenuOpen then
         Capsule.Visible = false
+        MainFrame.Size = UDim2.new(0, 560, 0, 340) -- Garante o tamanho correto fixado
+        MainFrame.BackgroundTransparency = 1
         MainFrame.Visible = true
-        MainFrame.Size = UDim2.new(0, 0, 0, 0)
-        TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.OutBack), {Size = UDim2.new(0, 560, 0, 340)}):Play()
+        
+        -- Transição super suave de Fade-In para evitar bugs de Render do Roblox
+        TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.QuadOut), {BackgroundTransparency = 0.05}):Play()
     else
-        TweenService:Create(MainFrame, TweenInfo.new(0.2, Enum.EasingStyle.InQuad), {Size = UDim2.new(0, 0, 0, 0)}):Play()
-        task.wait(0.2)
-        MainFrame.Visible = false
-        Capsule.Visible = true
+        local tween = TweenService:Create(MainFrame, TweenInfo.new(0.2, Enum.EasingStyle.QuadIn), {BackgroundTransparency = 1})
+        tween:Play()
+        tween.Completed:Connect(function()
+            if not isMenuOpen then
+                MainFrame.Visible = false
+                Capsule.Visible = true
+            end
+        end)
     end
 end
 
@@ -477,4 +484,4 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
-print("[BK CLIENT] Interface de Segurança V8.0 carregada com Sucesso!")
+print("[BK CLIENT] Interface Estável V8.1 carregada com Sucesso!")
