@@ -1,5 +1,5 @@
 -- ====================================================================
--- BK CLIENT - VERSÃO OFICIAL V1.3 (PASSO 1: CÁPSULA ESPACIAL & NINJA ROXO)
+-- BK CLIENT - VERSÃO OFICIAL V1.4 (PASSO 1: CÁPSULA ESPACIAL & PERFIL REAL)
 -- ====================================================================
 
 local CoreGui = game:GetService("CoreGui")
@@ -7,6 +7,8 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
+
+local LocalPlayer = Players.LocalPlayer
 
 -- Limpeza absoluta de qualquer versão anterior para evitar conflitos
 pcall(function()
@@ -42,6 +44,9 @@ if not successParent then
     ScreenGui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
 end
 
+-- Paleta Dark Minimalista
+local AccentColor = Color3.fromRGB(90, 60, 160) -- Roxo escuro premium
+
 -- ==========================================
 -- CÁPSULA FLUTUANTE (FUNDO SÓLIDO ESPACIAL)
 -- ==========================================
@@ -50,18 +55,18 @@ local CapsuleCorner = Instance.new("UICorner")
 local CapsuleStroke = Instance.new("UIStroke")
 
 Capsule.Name = "BK_Capsule"
-Capsule.Size = UDim2.new(0, 165, 0, 42)
+Capsule.Size = UDim2.new(0, 180, 0, 46) -- Ajustado para caber o perfil confortavelmente
 Capsule.Position = UDim2.new(0.05, 0, 0.4, 0)
 Capsule.BackgroundColor3 = Color3.fromRGB(10, 10, 12) -- Fundo totalmente sólido
 Capsule.BackgroundTransparency = 0
 Capsule.Active = true
-Capsule.ClipsDescendants = true -- Corta as bolhas para elas não saírem da cápsula
+Capsule.ClipsDescendants = true -- Corta as bolhas
 Capsule.Parent = ScreenGui
 
-CapsuleCorner.CornerRadius = UDim.new(0, 21)
+CapsuleCorner.CornerRadius = UDim.new(0, 23)
 CapsuleCorner.Parent = Capsule
 
-CapsuleStroke.Color = Color3.fromRGB(90, 60, 160) -- Roxo escuro premium
+CapsuleStroke.Color = Color3.fromRGB(50, 50, 50) -- Borda externa mais discreta
 CapsuleStroke.Thickness = 1.5
 CapsuleStroke.Parent = Capsule
 
@@ -75,38 +80,30 @@ StarContainer.BackgroundTransparency = 1
 StarContainer.ZIndex = 1
 StarContainer.Parent = Capsule
 
--- Criar 8 pequenas bolinhas/estrelas flutuantes
 local stars = {}
 for i = 1, 8 do
     local star = Instance.new("Frame")
     star.Name = "Star" .. i
     star.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    
     local size = math.random(1, 3)
     star.Size = UDim2.new(0, size, 0, size)
     star.BackgroundTransparency = math.random(2, 6) / 10
-    
     star.Position = UDim2.new(math.random(), 0, math.random(), 0)
     star.ZIndex = 1
     star.Parent = StarContainer
-    
     local sCorner = Instance.new("UICorner")
     sCorner.CornerRadius = UDim.new(1, 0)
     sCorner.Parent = star
-    
     local speed = math.random(10, 30) / 1000
     table.insert(stars, {frame = star, speed = speed})
 end
 
--- Animação infinita das bolinhas
 RunService.RenderStepped:Connect(function(dt)
     for _, starData in ipairs(stars) do
         local star = starData.frame
         local speed = starData.speed
-        
         local currentX = star.Position.X.Scale
         local newX = currentX - (speed * dt * 60)
-        
         if newX < -0.05 then
             newX = 1.05
             star.Position = UDim2.new(newX, 0, math.random(), 0)
@@ -127,10 +124,41 @@ ContentFrame.Parent = Capsule
 
 local Layout = Instance.new("UIListLayout")
 Layout.FillDirection = Enum.FillDirection.Horizontal
-Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+Layout.HorizontalAlignment = Enum.HorizontalAlignment.Left -- Alinhado à esquerda
 Layout.VerticalAlignment = Enum.VerticalAlignment.Center
-Layout.Padding = UDim.new(0, 8) -- Ajustado espaçamento
+Layout.Padding = UDim.new(0, 10)
 Layout.Parent = ContentFrame
+
+-- Margem esquerda
+local PaddingL = Instance.new("UIPadding")
+PaddingL.PaddingLeft = UDim.new(0, 10)
+PaddingL.Parent = ContentFrame
+
+-- IMAGEM DE PERFIL (HEADSHOT REAL)
+local AvatarImage = Instance.new("ImageLabel")
+AvatarImage.Name = "AvatarImage"
+AvatarImage.Size = UDim2.new(0, 32, 0, 32)
+AvatarImage.BackgroundTransparency = 1
+AvatarImage.ZIndex = 3
+AvatarImage.Parent = ContentFrame
+
+local AvatarCorner = Instance.new("UICorner")
+AvatarCorner.CornerRadius = UDim.new(1, 0) -- Perfeitamente redondo
+AvatarCorner.Parent = AvatarImage
+
+-- Borda Pulsante Roxo Neon na Foto
+local AvatarStroke = Instance.new("UIStroke")
+AvatarStroke.Color = Color3.fromRGB(130, 80, 255)
+AvatarStroke.Thickness = 2
+AvatarStroke.Parent = AvatarImage
+
+-- Carregamento seguro do Avatar Real do Jogador
+task.spawn(function()
+    pcall(function()
+        -- Puxa o headshot do Roblox em 150x150
+        AvatarImage.Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. LocalPlayer.UserId .. "&width=150&height=150&format=png"
+    end)
+end)
 
 -- Texto: BK CLIENT V1
 local TextLabel = Instance.new("TextLabel")
@@ -141,61 +169,29 @@ TextLabel.Text = "BK CLIENT V1"
 TextLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
 TextLabel.TextSize = 13
 TextLabel.Font = Enum.Font.GothamBold
+TextLabel.TextXAlignment = Enum.TextXAlignment.Left -- Alinhado à esquerda ao lado da foto
 TextLabel.ZIndex = 3
 TextLabel.Parent = ContentFrame
 
--- ÍCONE DE MÁSCARA NINJA (ESTILIZADO EM ROXO NEON)
-local NinjaIcon = Instance.new("TextLabel")
-NinjaIcon.Name = "NinjaIcon"
-NinjaIcon.Size = UDim2.new(0, 24, 0, 24)
-NinjaIcon.BackgroundTransparency = 1
-NinjaIcon.Text = "🥷" -- Usando o caractere de ninja base com modificação de cor via código para dar contraste
-NinjaIcon.TextSize = 20
-NinjaIcon.Font = Enum.Font.GothamBold
-NinjaIcon.ZIndex = 3
-NinjaIcon.Parent = ContentFrame
-
--- Sobreposição de Cor Roxo Neon no Ninja (Efeito Silhouette profissional)
-local GlowLabel = Instance.new("TextLabel")
-GlowLabel.Size = UDim2.new(1, 0, 1, 0)
-GlowLabel.BackgroundTransparency = 1
-GlowLabel.Text = "🥷"
-GlowLabel.TextSize = 20
-GlowLabel.Font = Enum.Font.GothamBold
-GlowLabel.TextColor3 = Color3.fromRGB(140, 80, 255) -- Tom Roxo Puro Neon
-GlowLabel.TextTransparency = 0.45 -- Sobreposição sutil que puxa os detalhes do Ninja para o roxo
-GlowLabel.ZIndex = 4
-GlowLabel.Parent = NinjaIcon
-
 -- ==========================================
--- SISTEMA DE ANIMAÇÃO DO NINJA (PULSAÇÃO SUAVE)
+-- SISTEMA DE ANIMAÇÃO DA BORDA DO PERFIL (PULSAÇÃO)
 -- ==========================================
 task.spawn(function()
     while true do
         pcall(function()
-            -- Pulsação suave do tamanho e do brilho roxo
-            local tweenOn = TweenService:Create(GlowLabel, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                TextColor3 = Color3.fromRGB(190, 130, 255),
-                TextSize = 22
+            -- Borda pulsa entre roxo neon brilhante e roxo profundo escuro
+            local tweenOn = TweenService:Create(AvatarStroke, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                Color = Color3.fromRGB(180, 130, 255),
+                Thickness = 2.5
             })
-            local tweenOnBase = TweenService:Create(NinjaIcon, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                TextSize = 22
-            })
-            
             tweenOn:Play()
-            tweenOnBase:Play()
             tweenOn.Completed:Wait()
             
-            local tweenOff = TweenService:Create(GlowLabel, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                TextColor3 = Color3.fromRGB(110, 40, 200),
-                TextSize = 18
+            local tweenOff = TweenService:Create(AvatarStroke, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                Color = Color3.fromRGB(100, 30, 180),
+                Thickness = 1.5
             })
-            local tweenOffBase = TweenService:Create(NinjaIcon, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                TextSize = 18
-            })
-            
             tweenOff:Play()
-            tweenOffBase:Play()
             tweenOff.Completed:Wait()
         end)
         task.wait(0.1)
@@ -236,4 +232,4 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
-print("[BK CLIENT] Passo 1: Capsula Espacial V1.3 (Ninja) Carregada!")
+print("[BK CLIENT] Passo 1: Capsula V1.4 (Perfil VIP) Carregada!")
