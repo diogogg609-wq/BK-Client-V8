@@ -1,51 +1,34 @@
 -- ====================================================================
--- BK CLIENT - VERSÃO COMPLETA E ESTABILIZADA V2.9.2
+-- BK CLIENT - VERSÃO CLÁSSICA COMPLETA E FUNCIONAL
 -- ====================================================================
 
--- Garantia de carregamento inicial (Impede o script de sumir/dar crash no mobile)
-if not game:IsLoaded() then game.Loaded:Wait() end
-task.wait(0.5) 
-
+local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
 
 local LocalPlayer = Players.LocalPlayer
-if not LocalPlayer then LocalPlayer = Players.PlayerAdded:Wait() end
 
 -- Limpeza absoluta de versões anteriores para evitar sobreposição
 pcall(function()
-    for _, child in pairs(CoreGui:GetChildren()) do
-        if child.Name == "BK_Official_UI" then child:Destroy() end
+    if CoreGui:FindFirstChild("BK_Official_UI") then
+        CoreGui:FindFirstChild("BK_Official_UI"):Destroy()
     end
-    local pg = LocalPlayer:FindFirstChild("PlayerGui")
-    if pg then
-        for _, child in pairs(pg:GetChildren()) do
-            if child.Name == "BK_Official_UI" then child:Destroy() end
-        end
+    if LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("BK_Official_UI") then
+        LocalPlayer.PlayerGui:FindFirstChild("BK_Official_UI"):Destroy()
     end
 end)
 
 -- ==========================================
--- INTERFACE BASE (CRIAÇÃO SEGURA)
+-- INTERFACE BASE (PLAYER_GUI DIRETO)
 -- ==========================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "BK_Official_UI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.DisplayOrder = 9999 -- Prioridade máxima para desenhar por cima de tudo
-ScreenGui.Enabled = true
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
--- Tenta inserir no CoreGui (padrão injector), se falhar usa PlayerGui de forma segura
-local parentSuccess = pcall(function() ScreenGui.Parent = CoreGui end)
-if not parentSuccess then
-    local pGui = LocalPlayer:WaitForChild("PlayerGui", 10)
-    if pGui then ScreenGui.Parent = pGui end
-end
-
--- Definição da Paleta de Cores (Dark & Purple Neon)
 local BGColor = Color3.fromRGB(10, 10, 12)
 local MenuBGColor = Color3.fromRGB(14, 14, 16)
 local SidebarColor = Color3.fromRGB(8, 8, 10)
@@ -60,7 +43,7 @@ local function playSound(id, volume)
         local sound = Instance.new("Sound")
         sound.SoundId = "rbxassetid://" .. id
         sound.Volume = volume or 0.5
-        sound.Parent = ScreenGui -- Garante que o som execute tocando dentro da GUI
+        sound.Parent = ScreenGui
         sound:Play()
         sound.Ended:Connect(function() sound:Destroy() end)
     end)
@@ -72,15 +55,14 @@ end
 local Capsule = Instance.new("TextButton")
 Capsule.Name = "BK_Capsule"
 Capsule.Size = UDim2.new(0, 160, 0, 42)
-Capsule.Position = UDim2.new(0.1, 0, 0.4, 0) -- Posição inicial segura na tela
+Capsule.Position = UDim2.new(0.15, 0, 0.15, 0)
 Capsule.BackgroundColor3 = BGColor
 Capsule.BorderSizePixel = 0
 Capsule.AutoButtonColor = false
 Capsule.Text = ""
 Capsule.Active = true
-Capsule.Visible = true
 Capsule.ClipsDescendants = true 
-Capsule.ZIndex = 100
+Capsule.ZIndex = 10
 Capsule.Parent = ScreenGui
 
 Instance.new("UICorner", Capsule).CornerRadius = UDim.new(0, 21)
@@ -88,11 +70,11 @@ local CapsuleStroke = Instance.new("UIStroke", Capsule)
 CapsuleStroke.Color = BorderColor
 CapsuleStroke.Thickness = 1.5
 
--- [CONSTELAÇÃO NEON INTERATIVA NA BOLHA]
+-- [CONSTELAÇÃO NEON REATIVA]
 local StarContainer = Instance.new("Frame")
 StarContainer.Size = UDim2.new(1, 0, 1, 0)
 StarContainer.BackgroundTransparency = 1
-StarContainer.ZIndex = 101
+StarContainer.ZIndex = 1
 StarContainer.Parent = Capsule
 
 local numNodes = 6
@@ -108,7 +90,7 @@ for i = 1, numNodes do
     nodeFrame.Size = UDim2.new(0, size, 0, size)
     nodeFrame.BackgroundTransparency = math.random(2, 5) / 10
     nodeFrame.Position = UDim2.new(math.random(), 0, math.random(), 0)
-    nodeFrame.ZIndex = 103
+    nodeFrame.ZIndex = 3
     nodeFrame.Parent = StarContainer
     
     Instance.new("UICorner", nodeFrame).CornerRadius = UDim.new(1, 0)
@@ -129,7 +111,7 @@ end
 local function drawLine(posA, posB, distance)
     local line = Instance.new("Frame")
     line.BorderSizePixel = 0
-    line.ZIndex = 102
+    line.ZIndex = 2
     
     local rawTransparency = (distance / MAX_CONNECT_DIST)
     local trans = 0.3 + (rawTransparency * 0.7)
@@ -185,7 +167,6 @@ RunService.RenderStepped:Connect(function(dt)
     end
 end)
 
--- Nome Oficial da Bolha
 local CapsuleLabel = Instance.new("TextLabel")
 CapsuleLabel.Size = UDim2.new(1, 0, 1, 0)
 CapsuleLabel.BackgroundTransparency = 1
@@ -193,91 +174,75 @@ CapsuleLabel.Text = "BK CLIENT V1 †"
 CapsuleLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
 CapsuleLabel.TextSize = 13
 CapsuleLabel.Font = Enum.Font.GothamBold
-CapsuleLabel.ZIndex = 105
+CapsuleLabel.ZIndex = 5
 CapsuleLabel.Parent = Capsule
 
 -- ==========================================
--- MENU CENTRAL (PAINEL GERAL)
+-- MENU CENTRAL FLUTUANTE (ESTABILIZADO)
 -- ==========================================
-local CentralMenuCanvas = Instance.new("CanvasGroup")
-CentralMenuCanvas.Name = "BK_CentralMenu"
-CentralMenuCanvas.Size = UDim2.new(0, 500, 0, 320)
-CentralMenuCanvas.AnchorPoint = Vector2.new(0.5, 0.5)
-CentralMenuCanvas.Position = UDim2.new(0.5, 0, 0.5, 0)
-CentralMenuCanvas.BackgroundColor3 = MenuBGColor
-CentralMenuCanvas.Visible = false
-CentralMenuCanvas.Active = true
-CentralMenuCanvas.GroupTransparency = 1
-CentralMenuCanvas.ZIndex = 200
-CentralMenuCanvas.Parent = ScreenGui
+local CentralMenu = Instance.new("Frame")
+CentralMenu.Name = "BK_CentralMenu"
+CentralMenu.Size = UDim2.new(0, 500, 0, 320)
+CentralMenu.AnchorPoint = Vector2.new(0.5, 0.5)
+CentralMenu.Position = UDim2.new(0.5, 0, 0.5, 0)
+CentralMenu.BackgroundColor3 = MenuBGColor
+CentralMenu.Visible = false
+CentralMenu.Active = true
+CentralMenu.ZIndex = 5
+CentralMenu.Parent = ScreenGui
 
-Instance.new("UICorner", CentralMenuCanvas).CornerRadius = UDim.new(0, 12)
-local MenuStroke = Instance.new("UIStroke", CentralMenuCanvas)
+Instance.new("UICorner", CentralMenu).CornerRadius = UDim.new(0, 12)
+local MenuStroke = Instance.new("UIStroke", CentralMenu)
 MenuStroke.Color = BorderColor
 MenuStroke.Thickness = 1.5
 
--- HEADER (BARRA SUPERIOR COM FOTO DE PERFIL)
+-- HEADER (BARRA DO TÍTULO)
 local Header = Instance.new("Frame")
 Header.Size = UDim2.new(1, 0, 0, 55)
 Header.BackgroundColor3 = SidebarColor
 Header.BorderSizePixel = 0
-Header.ZIndex = 201
-Header.Parent = CentralMenuCanvas
+Header.ZIndex = 6
+Header.Parent = CentralMenu
 Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 12)
 
-local HeaderAvatar = Instance.new("ImageLabel")
-HeaderAvatar.Size = UDim2.new(0, 38, 0, 38)
-HeaderAvatar.Position = UDim2.new(0, 15, 0.5, -19)
-HeaderAvatar.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-HeaderAvatar.BorderSizePixel = 0
-HeaderAvatar.ZIndex = 202
-HeaderAvatar.Parent = Header
-Instance.new("UICorner", HeaderAvatar).CornerRadius = UDim.new(1, 0)
-
-task.spawn(function()
-    pcall(function()
-        HeaderAvatar.Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. LocalPlayer.UserId .. "&width=150&height=150&format=png"
-    end)
-end)
-
 local HeaderTitle = Instance.new("TextLabel")
-HeaderTitle.Position = UDim2.new(0, 65, 0, 0)
+HeaderTitle.Position = UDim2.new(0, 20, 0, 0)
 HeaderTitle.Size = UDim2.new(0, 300, 1, 0)
 HeaderTitle.BackgroundTransparency = 1
-HeaderTitle.Text = LocalPlayer.DisplayName .. " | BK CLIENT"
+HeaderTitle.Text = LocalPlayer.DisplayName .. " | BK CLIENT V1"
 HeaderTitle.TextColor3 = Color3.fromRGB(240, 240, 240)
 HeaderTitle.Font = Enum.Font.GothamBold
 HeaderTitle.TextSize = 14
 HeaderTitle.TextXAlignment = Enum.TextXAlignment.Left
-HeaderTitle.ZIndex = 202
+HeaderTitle.ZIndex = 7
 HeaderTitle.Parent = Header
 
--- SIDEBAR (BARRA LATERAL DE SELEÇÃO DE ABAS)
+-- SIDEBAR LATERAL (ABAS)
 local Sidebar = Instance.new("Frame")
 Sidebar.Size = UDim2.new(0, 130, 1, -55)
 Sidebar.Position = UDim2.new(1, -130, 0, 55)
 Sidebar.BackgroundColor3 = Color3.fromRGB(12, 12, 14)
 Sidebar.BorderSizePixel = 0
-Sidebar.ZIndex = 201
-Sidebar.Parent = CentralMenuCanvas
+Sidebar.ZIndex = 6
+Sidebar.Parent = CentralMenu
 
 local TabContainer = Instance.new("Frame")
 TabContainer.Size = UDim2.new(1, 0, 1, 0)
 TabContainer.BackgroundTransparency = 1
-TabContainer.ZIndex = 202
+TabContainer.ZIndex = 7
 TabContainer.Parent = Sidebar
 
 Instance.new("UIListLayout", TabContainer).Padding = UDim.new(0, 6)
 TabContainer.UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 Instance.new("UIPadding", TabContainer).PaddingTop = UDim.new(0, 10)
 
--- CONTAINER DE CONTEÚDO DAS PÁGINAS
+-- CONTAINER DE PÁGINAS
 local ContentContainer = Instance.new("Frame")
 ContentContainer.Position = UDim2.new(0, 15, 0, 70)
 ContentContainer.Size = UDim2.new(1, -160, 1, -85)
 ContentContainer.BackgroundTransparency = 1
-ContentContainer.ZIndex = 201
-ContentContainer.Parent = CentralMenuCanvas
+ContentContainer.ZIndex = 6
+ContentContainer.Parent = CentralMenu
 
 -- ==========================================
 -- CRIADOR DE ABAS SISTÊMICO
@@ -294,7 +259,7 @@ local function createTab(name)
     TabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
     TabBtn.Font = Enum.Font.GothamSemibold
     TabBtn.TextSize = 12
-    TabBtn.ZIndex = 203
+    TabBtn.ZIndex = 8
     TabBtn.Parent = TabContainer
     Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 5)
     
@@ -307,7 +272,7 @@ local function createTab(name)
     Page.Size = UDim2.new(1, 0, 1, 0)
     Page.BackgroundTransparency = 1
     Page.Visible = false
-    Page.ZIndex = 202
+    Page.ZIndex = 7
     Page.Parent = ContentContainer
 
     TabBtn.MouseButton1Click:Connect(function()
@@ -333,177 +298,235 @@ local function createTab(name)
     Pages[name] = Page
 end
 
--- CRIAÇÃO DAS QUATRO ABAS OFICIAIS
 createTab("Visual")
 createTab("Mira")
 createTab("Status")
 createTab("Configurações")
 
 -- ==========================================
--- CONTEÚDO DA ABA [STATUS] (ATIVA)
+-- ABA [STATUS] COMPLETA E ATIVA
 -- ==========================================
 local StatusPage = Pages["Status"]
+
+local StatusLayout = Instance.new("UIListLayout", StatusPage)
+StatusLayout.Padding = UDim.new(0, 12)
+StatusLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+-- 1. CARD JOGADORES ATIVOS
+local CardPlayers = Instance.new("Frame")
+CardPlayers.Size = UDim2.new(1, -10, 0, 65)
+CardPlayers.BackgroundColor3 = SidebarColor
+CardPlayers.ZIndex = 8
+CardPlayers.Parent = StatusPage
+Instance.new("UICorner", CardPlayers).CornerRadius = UDim.new(0, 8)
+local StrokeCP = Instance.new("UIStroke", CardPlayers)
+StrokeCP.Color = Color3.fromRGB(35, 35, 40)
+StrokeCP.Thickness = 1.2
+
+local IconCP = Instance.new("TextLabel")
+IconCP.Size = UDim2.new(0, 50, 1, 0)
+IconCP.BackgroundTransparency = 1
+IconCP.Text = "👤"
+IconCP.TextSize = 22
+IconCP.ZIndex = 9
+IconCP.Parent = CardPlayers
+
+local LabelCP = Instance.new("TextLabel")
+LabelCP.Position = UDim2.new(0, 55, 0, 12)
+LabelCP.Size = UDim2.new(1, -65, 0, 20)
+LabelCP.BackgroundTransparency = 1
+LabelCP.Text = "Jogadores usando o BK"
+LabelCP.TextColor3 = Color3.fromRGB(170, 170, 180)
+LabelCP.Font = Enum.Font.GothamSemibold
+LabelCP.TextSize = 12
+LabelCP.TextXAlignment = Enum.TextXAlignment.Left
+LabelCP.ZIndex = 9
+LabelCP.Parent = CardPlayers
+
 local ValCP = Instance.new("TextLabel")
+ValCP.Position = UDim2.new(0, 55, 0, 32)
+ValCP.Size = UDim2.new(1, -65, 0, 20)
+ValCP.BackgroundTransparency = 1
+ValCP.Text = "Calculando..."
+ValCP.TextColor3 = AccentColor
+ValCP.Font = Enum.Font.GothamBold
+ValCP.TextSize = 14
+ValCP.TextXAlignment = Enum.TextXAlignment.Left
+ValCP.ZIndex = 9
+ValCP.Parent = CardPlayers
+
+-- 2. CARD FPS
+local CardFPS = Instance.new("Frame")
+CardFPS.Size = UDim2.new(1, -10, 0, 65)
+CardFPS.BackgroundColor3 = SidebarColor
+CardFPS.ZIndex = 8
+CardFPS.Parent = StatusPage
+Instance.new("UICorner", CardFPS).CornerRadius = UDim.new(0, 8)
+local StrokeCF = Instance.new("UIStroke", CardFPS)
+StrokeCF.Color = Color3.fromRGB(35, 35, 40)
+StrokeCF.Thickness = 1.2
+
+local IconCF = Instance.new("TextLabel")
+IconCF.Size = UDim2.new(0, 50, 1, 0)
+IconCF.BackgroundTransparency = 1
+IconCF.Text = "⚡"
+IconCF.TextSize = 22
+IconCF.ZIndex = 9
+IconCF.Parent = CardFPS
+
+local LabelCF = Instance.new("TextLabel")
+LabelCF.Position = UDim2.new(0, 55, 0, 12)
+LabelCF.Size = UDim2.new(1, -65, 0, 20)
+LabelCF.BackgroundTransparency = 1
+LabelCF.Text = "Taxa de Quadros (FPS)"
+LabelCF.TextColor3 = Color3.fromRGB(170, 170, 180)
+LabelCF.Font = Enum.Font.GothamSemibold
+LabelCF.TextSize = 12
+LabelCF.TextXAlignment = Enum.TextXAlignment.Left
+LabelCF.ZIndex = 9
+LabelCF.Parent = CardFPS
+
 local ValCF = Instance.new("TextLabel")
-
-local function setupStatusPage()
-    local StatusLayout = Instance.new("UIListLayout", StatusPage)
-    StatusLayout.Padding = UDim.new(0, 12)
-    StatusLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
-    local function createCard(title, icon, parent)
-        local card = Instance.new("Frame")
-        card.Size = UDim2.new(1, -10, 0, 60)
-        card.BackgroundColor3 = SidebarColor
-        card.ZIndex = 203
-        card.Parent = parent
-        
-        Instance.new("UICorner", card).CornerRadius = UDim.new(0, 8)
-        local cardStroke = Instance.new("UIStroke", card)
-        cardStroke.Color = Color3.fromRGB(35, 35, 40)
-        cardStroke.Thickness = 1.2
-        
-        local textTitle = Instance.new("TextLabel")
-        textTitle.Position = UDim2.new(0, 50, 0, 10)
-        textTitle.Size = UDim2.new(1, -60, 0, 20)
-        textTitle.Text = title
-        textTitle.TextColor3 = Color3.fromRGB(170, 170, 180)
-        textTitle.TextSize = 12
-        textTitle.BackgroundTransparency = 1
-        textTitle.TextXAlignment = Enum.TextXAlignment.Left
-        textTitle.Font = Enum.Font.GothamSemibold
-        textTitle.ZIndex = 204
-        textTitle.Parent = card
-        
-        local textVal = Instance.new("TextLabel")
-        textVal.Position = UDim2.new(0, 50, 0, 30)
-        textVal.Size = UDim2.new(1, -60, 0, 20)
-        textVal.Text = "Calculando..."
-        textVal.TextColor3 = AccentColor
-        textVal.TextSize = 14
-        textVal.BackgroundTransparency = 1
-        textVal.TextXAlignment = Enum.TextXAlignment.Left
-        textVal.Font = Enum.Font.GothamBold
-        textVal.ZIndex = 204
-        textVal.Parent = card
-        
-        local emoji = Instance.new("TextLabel")
-        emoji.Size = UDim2.new(0, 50, 1, 0)
-        emoji.Text = icon
-        emoji.TextSize = 20
-        emoji.BackgroundTransparency = 1
-        emoji.ZIndex = 204
-        emoji.Parent = card
-        
-        return textVal
-    end
-    
-    ValCP = createCard("Jogadores usando o BK", "👤", StatusPage)
-    ValCF = createCard("Taxa de Quadros (FPS)", "⚡", StatusPage)
-    ValCF.TextColor3 = Color3.fromRGB(50, 220, 110) -- Cor Verde Sucesso para FPS
-end
-setupStatusPage()
+ValCF.Position = UDim2.new(0, 55, 0, 32)
+ValCF.Size = UDim2.new(1, -65, 0, 20)
+ValCF.BackgroundTransparency = 1
+ValCF.Text = "Calculando..."
+ValCF.TextColor3 = Color3.fromRGB(50, 220, 110)
+ValCF.Font = Enum.Font.GothamBold
+ValCF.TextSize = 14
+ValCF.TextXAlignment = Enum.TextXAlignment.Left
+ValCF.ZIndex = 9
+ValCF.Parent = CardFPS
 
 -- ==========================================
--- CONTEÚDO DA ABA [CONFIGURAÇÕES] (ATIVA)
+-- ABA [CONFIGURAÇÕES] COMPLETA E FUNCIONAL
 -- ==========================================
-local function setupConfigPage()
-    local ConfigPage = Pages["Configurações"]
-    local ConfigLayout = Instance.new("UIListLayout", ConfigPage)
-    ConfigLayout.Padding = UDim.new(0, 12)
-    ConfigLayout.SortOrder = Enum.SortOrder.LayoutOrder
+local ConfigPage = Pages["Configurações"]
 
-    local SupportBtn = Instance.new("TextButton")
-    SupportBtn.Size = UDim2.new(1, -10, 0, 50)
-    SupportBtn.BackgroundColor3 = SidebarColor
-    SupportBtn.Text = "💬  Falar com o Suporte (Copiar Número)"
-    SupportBtn.TextColor3 = Color3.fromRGB(230, 230, 235)
-    SupportBtn.Font = Enum.Font.GothamBold
-    SupportBtn.TextSize = 12
-    SupportBtn.ZIndex = 203
-    SupportBtn.Parent = ConfigPage
+local ConfigLayout = Instance.new("UIListLayout", ConfigPage)
+ConfigLayout.Padding = UDim.new(0, 12)
+ConfigLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+-- BOTÃO DE SUPORTE
+local SupportBtn = Instance.new("TextButton")
+SupportBtn.Size = UDim2.new(1, -10, 0, 50)
+SupportBtn.BackgroundColor3 = SidebarColor
+SupportBtn.Text = ""
+SupportBtn.AutoButtonColor = false
+SupportBtn.ZIndex = 8
+SupportBtn.Parent = ConfigPage
+
+Instance.new("UICorner", SupportBtn).CornerRadius = UDim.new(0, 8)
+local SupportStroke = Instance.new("UIStroke", SupportBtn)
+SupportStroke.Color = Color3.fromRGB(35, 35, 40)
+SupportStroke.Thickness = 1.2
+
+local SupportIcon = Instance.new("TextLabel")
+SupportIcon.Size = UDim2.new(0, 45, 1, 0)
+SupportIcon.BackgroundTransparency = 1
+SupportIcon.Text = "💬"
+SupportIcon.TextSize = 18
+SupportIcon.ZIndex = 9
+SupportIcon.Parent = SupportBtn
+
+local SupportText = Instance.new("TextLabel")
+SupportText.Position = UDim2.new(0, 45, 0, 0)
+SupportText.Size = UDim2.new(1, -55, 1, 0)
+SupportText.BackgroundTransparency = 1
+SupportText.Text = "Falar com o Suporte (Copiar Número)"
+SupportText.TextColor3 = Color3.fromRGB(230, 230, 235)
+SupportText.Font = Enum.Font.GothamBold
+SupportText.TextSize = 12
+SupportText.TextXAlignment = Enum.TextXAlignment.Left
+SupportText.ZIndex = 9
+SupportText.Parent = SupportBtn
+
+-- Sistema de Clique para Copiar Número
+local copied = false
+SupportBtn.MouseButton1Click:Connect(function()
+    if copied then return end
+    copied = true
     
-    Instance.new("UICorner", SupportBtn).CornerRadius = UDim.new(0, 8)
-    local SupportStroke = Instance.new("UIStroke", SupportBtn)
-    SupportStroke.Color = Color3.fromRGB(40, 40, 45)
-    SupportStroke.Thickness = 1.2
-    
-    -- Mecânica de clique que copia o número de telefone
-    local copied = false
-    SupportBtn.MouseButton1Click:Connect(function()
-        if copied then return end
-        copied = true
-        
-        pcall(function() setclipboard("49991510649") end)
-        playSound("12222076", 0.4)
-        
-        SupportBtn.Text = "Número Copiado! ✅"
-        SupportBtn.TextColor3 = Color3.fromRGB(50, 220, 110)
-        SupportStroke.Color = Color3.fromRGB(50, 220, 110)
-        
-        task.wait(2)
-        
-        SupportBtn.Text = "💬  Falar com o Suporte (Copiar Número)"
-        SupportBtn.TextColor3 = Color3.fromRGB(230, 230, 235)
-        SupportStroke.Color = Color3.fromRGB(40, 40, 45)
-        copied = false
+    pcall(function()
+        setclipboard("49991510649")
     end)
-end
-setupConfigPage()
+    
+    playSound("12222076", 0.4) -- Bipe de confirmação
+    
+    TweenService:Create(SupportStroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(50, 220, 110)}):Play()
+    SupportText.Text = "Número Copiado! ✅"
+    SupportText.TextColor3 = Color3.fromRGB(50, 220, 110)
+    
+    task.wait(2)
+    
+    TweenService:Create(SupportStroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(35, 35, 40)}):Play()
+    SupportText.Text = "Falar com o Suporte (Copiar Número)"
+    SupportText.TextColor3 = Color3.fromRGB(230, 230, 235)
+    copied = false
+end)
 
 -- ==========================================
--- SCRIPT DE INTERDIÇÃO (VISUAL & MIRA)
+-- SCRIPT DE CÁLCULO DE FPS & PLAYERS REAL (ESTÁVEL)
+-- ==========================================
+local fpsTimer = 0
+local frameCount = 0
+
+RunService.Heartbeat:Connect(function(dt)
+    frameCount = frameCount + 1
+    fpsTimer = fpsTimer + dt
+    if fpsTimer >= 1 then
+        ValCF.Text = tostring(frameCount) .. " FPS"
+        frameCount = 0
+        fpsTimer = 0
+    end
+end)
+
+task.spawn(function()
+    while task.wait(3) do
+        if not ScreenGui.Parent then break end
+        
+        local usingBKCount = 0
+        pcall(function()
+            for _, p in ipairs(Players:GetPlayers()) do
+                local pg = p:FindFirstChild("PlayerGui")
+                if pg and (pg:FindFirstChild("BK_Official_UI") or pg:FindFirstChild("BK_Capsule")) then
+                    usingBKCount = usingBKCount + 1
+                end
+            end
+        end)
+        
+        if usingBKCount == 0 then usingBKCount = 1 end
+        ValCP.Text = tostring(usingBKCount) .. " Ativo(s) no Servidor"
+    end
+end)
+
+-- ==========================================
+-- INTERDIÇÃO DE ABAS
 -- ==========================================
 local function setInterdicted(page, name)
     local InfoLabel = Instance.new("TextLabel")
     InfoLabel.Size = UDim2.new(1, 0, 1, 0)
     InfoLabel.BackgroundTransparency = 1
-    InfoLabel.Text = "ABA [" .. string.upper(name) .. "]\n\n⚡ EM BREVE ⚡\n(INTERDITADA V2.9.2)"
-    InfoLabel.TextColor3 = Color3.fromRGB(80, 80, 90)
+    InfoLabel.Text = "ABA [" .. string.upper(name) .. "]\n\n⚡ EM BREVE ⚡\n(INTERDITADA V2.9)"
+    InfoLabel.TextColor3 = Color3.fromRGB(100, 100, 110)
     InfoLabel.TextSize = 13
     InfoLabel.Font = Enum.Font.GothamBold
-    InfoLabel.ZIndex = 203
+    InfoLabel.ZIndex = 8
     InfoLabel.Parent = page
 end
+
 setInterdicted(Pages["Visual"], "Visual")
 setInterdicted(Pages["Mira"], "Mira")
 
--- ==========================================
--- LOGICAS EM SEGUNDO PLANO (FPS & JOGADORES)
--- ==========================================
-task.spawn(function()
-    local fpsTimer = 0
-    local frameCount = 0
-    
-    RunService.Heartbeat:Connect(function(dt)
-        frameCount = frameCount + 1
-        fpsTimer = fpsTimer + dt
-        if fpsTimer >= 1 then
-            ValCF.Text = tostring(frameCount) .. " FPS"
-            frameCount = 0
-            fpsTimer = 0
-        end
-    end)
-    
-    while task.wait(4) do
-        if not ScreenGui.Parent then break end
-        local activeBKCount = 0
-        pcall(function()
-            for _, p in pairs(Players:GetPlayers()) do
-                local pg = p:FindFirstChild("PlayerGui")
-                local cg = p:FindFirstChild("CoreGui")
-                if (pg and pg:FindFirstChild("BK_Official_UI")) or (cg and cg:FindFirstChild("BK_Official_UI")) then
-                    activeBKCount = activeBKCount + 1
-                end
-            end
-        end)
-        if activeBKCount == 0 then activeBKCount = 1 end
-        ValCP.Text = tostring(activeBKCount) .. " Ativo(s) no Servidor"
-    end
-end)
+-- Pré-seleção padrão da aba Status
+Tabs["Status"].Btn.BackgroundTransparency = 0.8
+Tabs["Status"].Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+Tabs["Status"].Btn.BackgroundColor3 = AccentColor
+Tabs["Status"].Stroke.Transparency = 0.3
+Pages["Status"].Visible = true
 
 -- ==========================================
--- SISTEMA DE EXPANSÃO (ABRE/FECHA)
+-- SISTEMA DE ABERTURA CLÁSSICA (RÁPIDA)
 -- ==========================================
 local isMenuOpen = false
 local menuTransitioning = false
@@ -515,37 +538,42 @@ local function toggleMenu()
     playSound("6895086153", 0.5)
     
     if isMenuOpen then
-        CentralMenuCanvas.Size = UDim2.new(0, 470, 0, 290)
-        CentralMenuCanvas.GroupTransparency = 1
-        CentralMenuCanvas.Visible = true
-        
-        TweenService:Create(CentralMenuCanvas, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 500, 0, 320),
-            GroupTransparency = 0
+        CentralMenu.Visible = true
+        TweenService:Create(CentralMenu, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 500, 0, 320)
         }):Play()
-        
-        task.wait(0.4)
+        task.wait(0.25)
         menuTransitioning = false
     else
-        TweenService:Create(CentralMenuCanvas, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
-            Size = UDim2.new(0, 470, 0, 290),
-            GroupTransparency = 1
+        TweenService:Create(CentralMenu, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            Size = UDim2.new(0, 0, 0, 0)
         }):Play()
-        
-        task.wait(0.3)
+        task.wait(0.2)
         if not isMenuOpen then
-            CentralMenuCanvas.Visible = false
+            CentralMenu.Visible = false
         end
+        CentralMenu.Size = UDim2.new(0, 500, 0, 320) -- Reseta tamanho para a próxima abertura
         menuTransitioning = false
     end
 end
 
 -- ==========================================
--- SISTEMA DE ARRASTE ULTRA ESTÁVEL (TOUCH)
+-- SISTEMA DE ARRASTE CLÁSSICO E SEGURO
 -- ==========================================
 local dragging = false
 local dragStart, startPos
 local dragLimit = 8
 
 Capsule.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = Capsule.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        Capsule.Position = UDim2.new(
+            startPos.
