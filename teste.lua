@@ -25,11 +25,22 @@ local ESP_Config = {
     LineEnabled = false,
     LineColor = Color3.fromRGB(255, 50, 50),
     LineThickness = 1.5,
-    LineOrigin = "Baixo"
+    LineOrigin = "Baixo",
+
+    NameEnabled = false,
+    NameSize = 12,
+    NameColor = Color3.fromRGB(255, 255, 255),
+    NameRainbow = false,
+
+    DistEnabled = false,
+    DistColor = Color3.fromRGB(200, 200, 200),
+    MaxDistance = 350
 }
 
 local ActiveBoxes = {}
 local ActiveLines = {}
+local ActiveNames = {}
+local ActiveDists = {}
 
 local function playSound(id, volume)
     task.spawn(function()
@@ -319,7 +330,7 @@ createTab("Status")
 createTab("Configurações")
 
 -- ==========================================
--- SEÇÃO MÓVEL DA BOX (ESTILO PC FLUTUANTE)
+-- SEÇÃO MÓVEL DA BOX
 -- ==========================================
 local BoxCustomizerWindow = Instance.new("Frame")
 BoxCustomizerWindow.Name = "BK_BoxCustomizer"
@@ -621,7 +632,7 @@ BoxSaveBtn.MouseButton1Click:Connect(function()
 end)
 
 -- ==========================================
--- SEÇÃO MÓVEL DA LINE (ESTILO PC FLUTUANTE)
+-- SEÇÃO MÓVEL DA LINE
 -- ==========================================
 local LineCustomizerWindow = Instance.new("Frame")
 LineCustomizerWindow.Name = "BK_LineCustomizer"
@@ -664,7 +675,7 @@ LineCustomClose.Size = UDim2.new(0, 24, 0, 24)
 LineCustomClose.Position = UDim2.new(1, -26, 0.5, -12)
 LineCustomClose.BackgroundTransparency = 1
 LineCustomClose.Text = "×"
-LineCustomClose.TextColor3 = Color3.fromRGB(150, 150, 150)
+LineCustomClose.TextColor3 = Color3.fromRGB(150, 150, 155)
 LineCustomClose.Font = Enum.Font.GothamBold
 LineCustomClose.TextSize = 18
 LineCustomClose.ZIndex = 32
@@ -898,20 +909,602 @@ LineSaveBtn.MouseButton1Click:Connect(function()
 end)
 
 -- ==========================================
+-- SEÇÃO MÓVEL DO NAME (ESTILO PC FLUTUANTE)
+-- ==========================================
+local NameCustomizerWindow = Instance.new("Frame")
+NameCustomizerWindow.Name = "BK_NameCustomizer"
+NameCustomizerWindow.Size = UDim2.new(0, 220, 0, 190)
+NameCustomizerWindow.Position = UDim2.new(0.5, -230, 0.5, 10)
+NameCustomizerWindow.BackgroundColor3 = MenuBGColor
+NameCustomizerWindow.BorderSizePixel = 0
+NameCustomizerWindow.Active = true
+NameCustomizerWindow.Visible = false
+NameCustomizerWindow.ZIndex = 30
+NameCustomizerWindow.Parent = ScreenGui
+
+Instance.new("UICorner", NameCustomizerWindow).CornerRadius = UDim.new(0, 8)
+local NameCustomizerStroke = Instance.new("UIStroke", NameCustomizerWindow)
+NameCustomizerStroke.Color = AccentColor
+NameCustomizerStroke.Thickness = 1.2
+
+local NameCustomHeader = Instance.new("Frame")
+NameCustomHeader.Size = UDim2.new(1, 0, 0, 28)
+NameCustomHeader.BackgroundColor3 = SidebarColor
+NameCustomHeader.BorderSizePixel = 0
+NameCustomHeader.ZIndex = 31
+NameCustomHeader.Parent = NameCustomizerWindow
+Instance.new("UICorner", NameCustomHeader).CornerRadius = UDim.new(0, 8)
+
+local NameCustomTitle = Instance.new("TextLabel")
+NameCustomTitle.Size = UDim2.new(1, -30, 1, 0)
+NameCustomTitle.Position = UDim2.new(0, 10, 0, 0)
+NameCustomTitle.BackgroundTransparency = 1
+NameCustomTitle.Text = "Ajustes do Name"
+NameCustomTitle.TextColor3 = Color3.fromRGB(200, 200, 205)
+NameCustomTitle.Font = Enum.Font.GothamBold
+NameCustomTitle.TextSize = 11
+NameCustomTitle.TextXAlignment = Enum.TextXAlignment.Left
+NameCustomTitle.ZIndex = 32
+NameCustomTitle.Parent = NameCustomHeader
+
+local NameCustomClose = Instance.new("TextButton")
+NameCustomClose.Size = UDim2.new(0, 24, 0, 24)
+NameCustomClose.Position = UDim2.new(1, -26, 0.5, -12)
+NameCustomClose.BackgroundTransparency = 1
+NameCustomClose.Text = "×"
+NameCustomClose.TextColor3 = Color3.fromRGB(150, 150, 155)
+NameCustomClose.Font = Enum.Font.GothamBold
+NameCustomClose.TextSize = 18
+NameCustomClose.ZIndex = 32
+NameCustomClose.Parent = NameCustomHeader
+
+NameCustomClose.MouseButton1Click:Connect(function()
+    playSound("12222076", 0.3)
+    NameCustomizerWindow.Visible = false
+end)
+
+local nameDragging = false
+local nameDragStart, nameStartPos
+
+NameCustomHeader.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        nameDragging = true
+        nameDragStart = input.Position
+        nameStartPos = NameCustomizerWindow.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if nameDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - nameDragStart
+        NameCustomizerWindow.Position = UDim2.new(
+            nameStartPos.X.Scale, 
+            nameStartPos.X.Offset + delta.X, 
+            nameStartPos.Y.Scale, 
+            nameStartPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        nameDragging = false
+    end
+end)
+
+local NameCustomBody = Instance.new("Frame")
+NameCustomBody.Position = UDim2.new(0, 0, 0, 28)
+NameCustomBody.Size = UDim2.new(1, 0, 1, -28)
+NameCustomBody.BackgroundTransparency = 1
+NameCustomBody.ZIndex = 31
+NameCustomBody.Parent = NameCustomizerWindow
+
+local NameBodyLayout = Instance.new("UIListLayout", NameCustomBody)
+NameBodyLayout.Padding = UDim.new(0, 8)
+NameBodyLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+Instance.new("UIPadding", NameCustomBody).PaddingTop = UDim.new(0, 8)
+
+local NameColorSection = Instance.new("Frame")
+NameColorSection.Size = UDim2.new(0.9, 0, 0, 32)
+NameColorSection.BackgroundTransparency = 1
+NameColorSection.ZIndex = 32
+NameColorSection.Parent = NameCustomBody
+
+local NameColorLabel = Instance.new("TextLabel")
+NameColorLabel.Size = UDim2.new(0.4, 0, 1, 0)
+NameColorLabel.BackgroundTransparency = 1
+NameColorLabel.Text = "Cor do Name:"
+NameColorLabel.TextColor3 = Color3.fromRGB(180, 180, 185)
+NameColorLabel.Font = Enum.Font.GothamSemibold
+NameColorLabel.TextSize = 10
+NameColorLabel.TextXAlignment = Enum.TextXAlignment.Left
+NameColorLabel.ZIndex = 33
+NameColorLabel.Parent = NameColorSection
+
+local NameColorBtnContainer = Instance.new("Frame")
+NameColorBtnContainer.Size = UDim2.new(0.6, 0, 1, 0)
+NameColorBtnContainer.Position = UDim2.new(0.4, 0, 0, 0)
+NameColorBtnContainer.BackgroundTransparency = 1
+NameColorBtnContainer.ZIndex = 33
+NameColorBtnContainer.Parent = NameColorSection
+
+local NameColorsList = {
+    {Color = Color3.fromRGB(255, 255, 255), Text = "Branco"},
+    {Color = Color3.fromRGB(110, 60, 220), Text = "Roxo"},
+    {Color = Color3.fromRGB(0, 255, 120), Text = "Verde"}
+}
+
+for idx, colorData in ipairs(NameColorsList) do
+    local cBtn = Instance.new("TextButton")
+    cBtn.Size = UDim2.new(0, 35, 0, 22)
+    cBtn.Position = UDim2.new(0, (idx - 1) * 40, 0.5, -11)
+    cBtn.BackgroundColor3 = colorData.Color
+    cBtn.BorderSizePixel = 0
+    cBtn.Text = ""
+    cBtn.ZIndex = 34
+    cBtn.Parent = NameColorBtnContainer
+    Instance.new("UICorner", cBtn).CornerRadius = UDim.new(0, 4)
+    
+    local cBtnStroke = Instance.new("UIStroke", cBtn)
+    cBtnStroke.Color = Color3.fromRGB(255, 255, 255)
+    cBtnStroke.Thickness = 1.2
+    cBtnStroke.Transparency = (ESP_Config.NameColor == colorData.Color and not ESP_Config.NameRainbow) and 0 or 1
+    
+    cBtn.MouseButton1Click:Connect(function()
+        playSound("12222076", 0.35)
+        ESP_Config.NameColor = colorData.Color
+        ESP_Config.NameRainbow = false
+        for _, child in ipairs(NameColorBtnContainer:GetChildren()) do
+            if child:IsA("TextButton") and child:FindFirstChildOfClass("UIStroke") then
+                child:FindFirstChildOfClass("UIStroke").Transparency = 1
+            end
+        end
+        cBtnStroke.Transparency = 0
+    end)
+end
+
+local SizeSliderSection = Instance.new("Frame")
+SizeSliderSection.Size = UDim2.new(0.9, 0, 0, 32)
+SizeSliderSection.BackgroundTransparency = 1
+SizeSliderSection.ZIndex = 32
+SizeSliderSection.Parent = NameCustomBody
+
+local SizeLabel = Instance.new("TextLabel")
+SizeLabel.Size = UDim2.new(0.35, 0, 1, 0)
+SizeLabel.BackgroundTransparency = 1
+SizeLabel.Text = "Tamanho:"
+SizeLabel.TextColor3 = Color3.fromRGB(180, 180, 185)
+SizeLabel.Font = Enum.Font.GothamSemibold
+SizeLabel.TextSize = 10
+SizeLabel.TextXAlignment = Enum.TextXAlignment.Left
+SizeLabel.ZIndex = 33
+SizeLabel.Parent = SizeSliderSection
+
+local SizeValLabel = Instance.new("TextLabel")
+SizeValLabel.Size = UDim2.new(0.15, 0, 1, 0)
+SizeValLabel.Position = UDim2.new(0.35, 0, 0, 0)
+SizeValLabel.BackgroundTransparency = 1
+SizeValLabel.Text = tostring(ESP_Config.NameSize)
+SizeValLabel.TextColor3 = Color3.fromRGB(240, 240, 245)
+SizeValLabel.Font = Enum.Font.GothamBold
+SizeValLabel.TextSize = 11
+SizeValLabel.ZIndex = 33
+SizeValLabel.Parent = SizeSliderSection
+
+local SizeSliderBG = Instance.new("TextButton")
+SizeSliderBG.Size = UDim2.new(0.45, 0, 0, 6)
+SizeSliderBG.Position = UDim2.new(0.52, 0, 0.5, -3)
+SizeSliderBG.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+SizeSliderBG.Text = ""
+SizeSliderBG.BorderSizePixel = 0
+SizeSliderBG.ZIndex = 33
+SizeSliderBG.Parent = SizeSliderSection
+Instance.new("UICorner", SizeSliderBG).CornerRadius = UDim.new(1, 0)
+
+local SizeSliderFill = Instance.new("Frame")
+SizeSliderFill.Size = UDim2.new(0.5, 0, 1, 0)
+SizeSliderFill.BackgroundColor3 = AccentColor
+SizeSliderFill.BorderSizePixel = 0
+SizeSliderFill.ZIndex = 34
+SizeSliderFill.Parent = SizeSliderBG
+Instance.new("UICorner", SizeSliderFill).CornerRadius = UDim.new(1, 0)
+
+local SizeSliderPin = Instance.new("Frame")
+SizeSliderPin.Size = UDim2.new(0, 12, 0, 12)
+SizeSliderPin.Position = UDim2.new(0.5, -6, 0.5, -6)
+SizeSliderPin.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+SizeSliderPin.BorderSizePixel = 0
+SizeSliderPin.ZIndex = 35
+SizeSliderPin.Parent = SizeSliderBG
+Instance.new("UICorner", SizeSliderPin).CornerRadius = UDim.new(1, 0)
+
+local function updateSizeSlider(input)
+    local percentage = math.clamp((input.Position.X - SizeSliderBG.AbsolutePosition.X) / SizeSliderBG.AbsoluteSize.X, 0, 1)
+    SizeSliderFill.Size = UDim2.new(percentage, 0, 1, 0)
+    SizeSliderPin.Position = UDim2.new(percentage, -6, 0.5, -6)
+    
+    local calculated = math.floor(8 + (percentage * 10)) -- 8 a 18
+    ESP_Config.NameSize = calculated
+    SizeValLabel.Text = tostring(calculated)
+end
+
+local sizeSliding = false
+SizeSliderBG.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        sizeSliding = true
+        updateSizeSlider(input)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if sizeSliding and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        updateSizeSlider(input)
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        sizeSliding = false
+    end
+end)
+
+local RainbowSection = Instance.new("Frame")
+RainbowSection.Size = UDim2.new(0.9, 0, 0, 32)
+RainbowSection.BackgroundTransparency = 1
+RainbowSection.ZIndex = 32
+RainbowSection.Parent = NameCustomBody
+
+local RainbowLabel = Instance.new("TextLabel")
+RainbowLabel.Size = UDim2.new(0.5, 0, 1, 0)
+RainbowLabel.BackgroundTransparency = 1
+RainbowLabel.Text = "Efeito RGB:"
+RainbowLabel.TextColor3 = Color3.fromRGB(180, 180, 185)
+RainbowLabel.Font = Enum.Font.GothamSemibold
+RainbowLabel.TextSize = 10
+RainbowLabel.TextXAlignment = Enum.TextXAlignment.Left
+RainbowLabel.ZIndex = 33
+RainbowLabel.Parent = RainbowSection
+
+local RainbowToggleBG = Instance.new("TextButton")
+RainbowToggleBG.Size = UDim2.new(0, 36, 0, 18)
+RainbowToggleBG.Position = UDim2.new(1, -40, 0.5, -9)
+RainbowToggleBG.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+RainbowToggleBG.Text = ""
+RainbowToggleBG.ZIndex = 33
+RainbowToggleBG.Parent = RainbowSection
+Instance.new("UICorner", RainbowToggleBG).CornerRadius = UDim.new(1, 0)
+
+local RainbowToggleIndicator = Instance.new("Frame")
+RainbowToggleIndicator.Size = UDim2.new(0, 12, 0, 12)
+RainbowToggleIndicator.Position = UDim2.new(0, 3, 0.5, -6)
+RainbowToggleIndicator.BackgroundColor3 = Color3.fromRGB(150, 150, 155)
+RainbowToggleIndicator.BorderSizePixel = 0
+RainbowToggleIndicator.ZIndex = 34
+RainbowToggleIndicator.Parent = RainbowToggleBG
+Instance.new("UICorner", RainbowToggleIndicator).CornerRadius = UDim.new(1, 0)
+
+RainbowToggleBG.MouseButton1Click:Connect(function()
+    ESP_Config.NameRainbow = not ESP_Config.NameRainbow
+    playSound("12222076", 0.3)
+    if ESP_Config.NameRainbow then
+        TweenService:Create(RainbowToggleBG, TweenInfo.new(0.2), {BackgroundColor3 = AccentColor}):Play()
+        TweenService:Create(RainbowToggleIndicator, TweenInfo.new(0.2), {Position = UDim2.new(1, -15, 0.5, -6), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+        for _, child in ipairs(NameColorBtnContainer:GetChildren()) do
+            if child:IsA("TextButton") and child:FindFirstChildOfClass("UIStroke") then
+                child:FindFirstChildOfClass("UIStroke").Transparency = 1
+            end
+        end
+    else
+        TweenService:Create(RainbowToggleBG, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45, 45, 50)}):Play()
+        TweenService:Create(RainbowToggleIndicator, TweenInfo.new(0.2), {Position = UDim2.new(0, 3, 0.5, -6), BackgroundColor3 = Color3.fromRGB(150, 150, 155)}):Play()
+    end
+end)
+
+local NameSaveBtn = Instance.new("TextButton")
+NameSaveBtn.Size = UDim2.new(0.9, 0, 0, 32)
+NameSaveBtn.BackgroundColor3 = AccentColor
+NameSaveBtn.Text = "Salvar Configurações"
+NameSaveBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+NameSaveBtn.Font = Enum.Font.GothamBold
+NameSaveBtn.TextSize = 11
+NameSaveBtn.ZIndex = 33
+NameSaveBtn.Parent = NameCustomBody
+Instance.new("UICorner", NameSaveBtn).CornerRadius = UDim.new(0, 6)
+
+NameSaveBtn.MouseButton1Click:Connect(function()
+    playSound("12222076", 0.5)
+    NameSaveBtn.Text = "Configurações Salvas! ✔"
+    NameSaveBtn.BackgroundColor3 = Color3.fromRGB(50, 220, 110)
+    task.wait(1.5)
+    NameSaveBtn.Text = "Salvar Configurações"
+    NameSaveBtn.BackgroundColor3 = AccentColor
+end)
+
+-- ==========================================
+-- SEÇÃO MÓVEL DA DISTÂNCIA (ESTILO PC FLUTUANTE)
+-- ==========================================
+local DistCustomizerWindow = Instance.new("Frame")
+DistCustomizerWindow.Name = "BK_DistCustomizer"
+DistCustomizerWindow.Size = UDim2.new(0, 220, 0, 190)
+DistCustomizerWindow.Position = UDim2.new(0.5, 10, 0.5, 10)
+DistCustomizerWindow.BackgroundColor3 = MenuBGColor
+DistCustomizerWindow.BorderSizePixel = 0
+DistCustomizerWindow.Active = true
+DistCustomizerWindow.Visible = false
+DistCustomizerWindow.ZIndex = 30
+DistCustomizerWindow.Parent = ScreenGui
+
+Instance.new("UICorner", DistCustomizerWindow).CornerRadius = UDim.new(0, 8)
+local DistCustomizerStroke = Instance.new("UIStroke", DistCustomizerWindow)
+DistCustomizerStroke.Color = AccentColor
+DistCustomizerStroke.Thickness = 1.2
+
+local DistCustomHeader = Instance.new("Frame")
+DistCustomHeader.Size = UDim2.new(1, 0, 0, 28)
+DistCustomHeader.BackgroundColor3 = SidebarColor
+DistCustomHeader.BorderSizePixel = 0
+DistCustomHeader.ZIndex = 31
+DistCustomHeader.Parent = DistCustomizerWindow
+Instance.new("UICorner", DistCustomHeader).CornerRadius = UDim.new(0, 8)
+
+local DistCustomTitle = Instance.new("TextLabel")
+DistCustomTitle.Size = UDim2.new(1, -30, 1, 0)
+DistCustomTitle.Position = UDim2.new(0, 10, 0, 0)
+DistCustomTitle.BackgroundTransparency = 1
+DistCustomTitle.Text = "Ajustes de Distância"
+DistCustomTitle.TextColor3 = Color3.fromRGB(200, 200, 205)
+DistCustomTitle.Font = Enum.Font.GothamBold
+DistCustomTitle.TextSize = 11
+DistCustomTitle.TextXAlignment = Enum.TextXAlignment.Left
+DistCustomTitle.ZIndex = 32
+DistCustomTitle.Parent = DistCustomHeader
+
+local DistCustomClose = Instance.new("TextButton")
+DistCustomClose.Size = UDim2.new(0, 24, 0, 24)
+DistCustomClose.Position = UDim2.new(1, -26, 0.5, -12)
+DistCustomClose.BackgroundTransparency = 1
+DistCustomClose.Text = "×"
+DistCustomClose.TextColor3 = Color3.fromRGB(150, 150, 155)
+DistCustomClose.Font = Enum.Font.GothamBold
+DistCustomClose.TextSize = 18
+DistCustomClose.ZIndex = 32
+DistCustomClose.Parent = DistCustomHeader
+
+DistCustomClose.MouseButton1Click:Connect(function()
+    playSound("12222076", 0.3)
+    DistCustomizerWindow.Visible = false
+end)
+
+local distDragging = false
+local distDragStart, distStartPos
+
+DistCustomHeader.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        distDragging = true
+        distDragStart = input.Position
+        distStartPos = DistCustomizerWindow.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if distDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - distDragStart
+        DistCustomizerWindow.Position = UDim2.new(
+            distStartPos.X.Scale, 
+            distStartPos.X.Offset + delta.X, 
+            distStartPos.Y.Scale, 
+            distStartPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        distDragging = false
+    end
+end)
+
+local DistCustomBody = Instance.new("Frame")
+DistCustomBody.Position = UDim2.new(0, 0, 0, 28)
+DistCustomBody.Size = UDim2.new(1, 0, 1, -28)
+DistCustomBody.BackgroundTransparency = 1
+DistCustomBody.ZIndex = 31
+DistCustomBody.Parent = DistCustomizerWindow
+
+local DistBodyLayout = Instance.new("UIListLayout", DistCustomBody)
+DistBodyLayout.Padding = UDim.new(0, 8)
+DistBodyLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+Instance.new("UIPadding", DistCustomBody).PaddingTop = UDim.new(0, 8)
+
+local DistColorSection = Instance.new("Frame")
+DistColorSection.Size = UDim2.new(0.9, 0, 0, 32)
+DistColorSection.BackgroundTransparency = 1
+DistColorSection.ZIndex = 32
+DistColorSection.Parent = DistCustomBody
+
+local DistColorLabel = Instance.new("TextLabel")
+DistColorLabel.Size = UDim2.new(0.4, 0, 1, 0)
+DistColorLabel.BackgroundTransparency = 1
+DistColorLabel.Text = "Cor do ESP:"
+DistColorLabel.TextColor3 = Color3.fromRGB(180, 180, 185)
+DistColorLabel.Font = Enum.Font.GothamSemibold
+DistColorLabel.TextSize = 10
+DistColorLabel.TextXAlignment = Enum.TextXAlignment.Left
+DistColorLabel.ZIndex = 33
+DistColorLabel.Parent = DistColorSection
+
+local DistColorBtnContainer = Instance.new("Frame")
+DistColorBtnContainer.Size = UDim2.new(0.6, 0, 1, 0)
+DistColorBtnContainer.Position = UDim2.new(0.4, 0, 0, 0)
+DistColorBtnContainer.BackgroundTransparency = 1
+DistColorBtnContainer.ZIndex = 33
+DistColorBtnContainer.Parent = DistColorSection
+
+local DistColorsList = {
+    {Color = Color3.fromRGB(200, 200, 200), Text = "Cinza"},
+    {Color = Color3.fromRGB(255, 230, 0), Text = "Amarelo"},
+    {Color = Color3.fromRGB(0, 200, 255), Text = "Azul"}
+}
+
+for idx, colorData in ipairs(DistColorsList) do
+    local cBtn = Instance.new("TextButton")
+    cBtn.Size = UDim2.new(0, 35, 0, 22)
+    cBtn.Position = UDim2.new(0, (idx - 1) * 40, 0.5, -11)
+    cBtn.BackgroundColor3 = colorData.Color
+    cBtn.BorderSizePixel = 0
+    cBtn.Text = ""
+    cBtn.ZIndex = 34
+    cBtn.Parent = DistColorBtnContainer
+    Instance.new("UICorner", cBtn).CornerRadius = UDim.new(0, 4)
+    
+    local cBtnStroke = Instance.new("UIStroke", cBtn)
+    cBtnStroke.Color = Color3.fromRGB(255, 255, 255)
+    cBtnStroke.Thickness = 1.2
+    cBtnStroke.Transparency = (ESP_Config.DistColor == colorData.Color) and 0 or 1
+    
+    cBtn.MouseButton1Click:Connect(function()
+        playSound("12222076", 0.35)
+        ESP_Config.DistColor = colorData.Color
+        for _, child in ipairs(DistColorBtnContainer:GetChildren()) do
+            if child:IsA("TextButton") and child:FindFirstChildOfClass("UIStroke") then
+                child:FindFirstChildOfClass("UIStroke").Transparency = 1
+            end
+        end
+        cBtnStroke.Transparency = 0
+    end)
+end
+
+local MaxDistSection = Instance.new("Frame")
+MaxDistSection.Size = UDim2.new(0.9, 0, 0, 32)
+MaxDistSection.BackgroundTransparency = 1
+MaxDistSection.ZIndex = 32
+MaxDistSection.Parent = DistCustomBody
+
+local MaxDistLabel = Instance.new("TextLabel")
+MaxDistLabel.Size = UDim2.new(0.35, 0, 1, 0)
+MaxDistLabel.BackgroundTransparency = 1
+MaxDistLabel.Text = "Dist. Máx:"
+MaxDistLabel.TextColor3 = Color3.fromRGB(180, 180, 185)
+MaxDistLabel.Font = Enum.Font.GothamSemibold
+MaxDistLabel.TextSize = 10
+MaxDistLabel.TextXAlignment = Enum.TextXAlignment.Left
+MaxDistLabel.ZIndex = 33
+MaxDistLabel.Parent = MaxDistSection
+
+local MaxDistValLabel = Instance.new("TextLabel")
+MaxDistValLabel.Size = UDim2.new(0.2, 0, 1, 0)
+MaxDistValLabel.Position = UDim2.new(0.35, 0, 0, 0)
+MaxDistValLabel.BackgroundTransparency = 1
+MaxDistValLabel.Text = tostring(ESP_Config.MaxDistance) .. "m"
+MaxDistValLabel.TextColor3 = Color3.fromRGB(240, 240, 245)
+MaxDistValLabel.Font = Enum.Font.GothamBold
+MaxDistValLabel.TextSize = 11
+MaxDistValLabel.ZIndex = 33
+MaxDistValLabel.Parent = MaxDistSection
+
+local MaxDistSliderBG = Instance.new("TextButton")
+MaxDistSliderBG.Size = UDim2.new(0.4, 0, 0, 6)
+MaxDistSliderBG.Position = UDim2.new(0.55, 0, 0.5, -3)
+MaxDistSliderBG.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+MaxDistSliderBG.Text = ""
+MaxDistSliderBG.BorderSizePixel = 0
+MaxDistSliderBG.ZIndex = 33
+MaxDistSliderBG.Parent = MaxDistSection
+Instance.new("UICorner", MaxDistSliderBG).CornerRadius = UDim.new(1, 0)
+
+local MaxDistSliderFill = Instance.new("Frame")
+MaxDistSliderFill.Size = UDim2.new(1.0, 0, 1, 0) -- Padrão 350m (Maximo)
+MaxDistSliderFill.BackgroundColor3 = AccentColor
+MaxDistSliderFill.BorderSizePixel = 0
+MaxDistSliderFill.ZIndex = 34
+MaxDistSliderFill.Parent = MaxDistSliderBG
+Instance.new("UICorner", MaxDistSliderFill).CornerRadius = UDim.new(1, 0)
+
+local MaxDistSliderPin = Instance.new("Frame")
+MaxDistSliderPin.Size = UDim2.new(0, 12, 0, 12)
+MaxDistSliderPin.Position = UDim2.new(1.0, -6, 0.5, -6)
+MaxDistSliderPin.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+MaxDistSliderPin.BorderSizePixel = 0
+MaxDistSliderPin.ZIndex = 35
+MaxDistSliderPin.Parent = MaxDistSliderBG
+Instance.new("UICorner", MaxDistSliderPin).CornerRadius = UDim.new(1, 0)
+
+local function updateMaxDistSlider(input)
+    local percentage = math.clamp((input.Position.X - MaxDistSliderBG.AbsolutePosition.X) / MaxDistSliderBG.AbsoluteSize.X, 0, 1)
+    MaxDistSliderFill.Size = UDim2.new(percentage, 0, 1, 0)
+    MaxDistSliderPin.Position = UDim2.new(percentage, -6, 0.5, -6)
+    
+    local calculated = math.floor(50 + (percentage * 300)) -- 50m a 350m
+    ESP_Config.MaxDistance = calculated
+    MaxDistValLabel.Text = tostring(calculated) .. "m"
+end
+
+local distSliding = false
+MaxDistSliderBG.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        distSliding = true
+        updateMaxDistSlider(input)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if distSliding and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        updateMaxDistSlider(input)
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        distSliding = false
+    end
+end)
+
+local DistSaveBtn = Instance.new("TextButton")
+DistSaveBtn.Size = UDim2.new(0.9, 0, 0, 32)
+DistSaveBtn.BackgroundColor3 = AccentColor
+DistSaveBtn.Text = "Salvar Configurações"
+DistSaveBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+DistSaveBtn.Font = Enum.Font.GothamBold
+DistSaveBtn.TextSize = 11
+DistSaveBtn.ZIndex = 33
+DistSaveBtn.Parent = DistCustomBody
+Instance.new("UICorner", DistSaveBtn).CornerRadius = UDim.new(0, 6)
+
+DistSaveBtn.MouseButton1Click:Connect(function()
+    playSound("12222076", 0.5)
+    DistSaveBtn.Text = "Configurações Salvas! ✔"
+    DistSaveBtn.BackgroundColor3 = Color3.fromRGB(50, 220, 110)
+    task.wait(1.5)
+    DistSaveBtn.Text = "Salvar Configurações"
+    DistSaveBtn.BackgroundColor3 = AccentColor
+end)
+
+-- ==========================================
 -- CONTEÚDO DA ABA [VISUAL] - ESP CONTROL
 -- ==========================================
 local VisualPage = Pages["Visual"]
 
-local VisualLayout = Instance.new("UIListLayout", VisualPage)
-VisualLayout.Padding = UDim.new(0, 12)
+local ScrollContainer = Instance.new("ScrollingFrame")
+ScrollContainer.Size = UDim2.new(1, 0, 1, 0)
+ScrollContainer.BackgroundTransparency = 1
+ScrollContainer.BorderSizePixel = 0
+ScrollContainer.CanvasSize = UDim2.new(0, 0, 0, 270)
+ScrollContainer.ScrollBarThickness = 3
+ScrollContainer.ScrollBarImageColor3 = AccentColor
+ScrollContainer.ZIndex = 8
+ScrollContainer.Parent = VisualPage
+
+local VisualLayout = Instance.new("UIListLayout", ScrollContainer)
+VisualLayout.Padding = UDim.new(0, 10)
 VisualLayout.SortOrder = Enum.SortOrder.LayoutOrder
+Instance.new("UIPadding", ScrollContainer).PaddingRight = UDim.new(0, 10)
 
 -- CONTAINER BOX
 local BoxFrame = Instance.new("Frame")
-BoxFrame.Size = UDim2.new(1, -10, 0, 52)
+BoxFrame.Size = UDim2.new(1, 0, 0, 52)
 BoxFrame.BackgroundColor3 = SidebarColor
 BoxFrame.ZIndex = 8
-BoxFrame.Parent = VisualPage
+BoxFrame.Parent = ScrollContainer
 Instance.new("UICorner", BoxFrame).CornerRadius = UDim.new(0, 8)
 local BoxFrameStroke = Instance.new("UIStroke", BoxFrame)
 BoxFrameStroke.Color = Color3.fromRGB(35, 35, 40)
@@ -1000,10 +1593,10 @@ end)
 
 -- CONTAINER LINE
 local LineFrame = Instance.new("Frame")
-LineFrame.Size = UDim2.new(1, -10, 0, 52)
+LineFrame.Size = UDim2.new(1, 0, 0, 52)
 LineFrame.BackgroundColor3 = SidebarColor
 LineFrame.ZIndex = 8
-LineFrame.Parent = VisualPage
+LineFrame.Parent = ScrollContainer
 Instance.new("UICorner", LineFrame).CornerRadius = UDim.new(0, 8)
 local LineFrameStroke = Instance.new("UIStroke", LineFrame)
 LineFrameStroke.Color = Color3.fromRGB(35, 35, 40)
@@ -1090,8 +1683,192 @@ LineToggleBG.MouseButton1Click:Connect(function()
     end
 end)
 
+-- CONTAINER ESP NAME
+local NameFrame = Instance.new("Frame")
+NameFrame.Size = UDim2.new(1, 0, 0, 52)
+NameFrame.BackgroundColor3 = SidebarColor
+NameFrame.ZIndex = 8
+NameFrame.Parent = ScrollContainer
+Instance.new("UICorner", NameFrame).CornerRadius = UDim.new(0, 8)
+local NameFrameStroke = Instance.new("UIStroke", NameFrame)
+NameFrameStroke.Color = Color3.fromRGB(35, 35, 40)
+NameFrameStroke.Thickness = 1.2
+
+local NameTitle = Instance.new("TextLabel")
+NameTitle.Position = UDim2.new(0, 15, 0, 8)
+NameTitle.Size = UDim2.new(0, 150, 0, 20)
+NameTitle.BackgroundTransparency = 1
+NameTitle.Text = "ESP Name"
+NameTitle.TextColor3 = Color3.fromRGB(240, 240, 245)
+NameTitle.Font = Enum.Font.GothamBold
+NameTitle.TextSize = 12
+NameTitle.TextXAlignment = Enum.TextXAlignment.Left
+NameTitle.ZIndex = 9
+NameTitle.Parent = NameFrame
+
+local NameDesc = Instance.new("TextLabel")
+NameDesc.Position = UDim2.new(0, 15, 0, 26)
+NameDesc.Size = UDim2.new(0, 180, 0, 20)
+NameDesc.BackgroundTransparency = 1
+NameDesc.Text = "Mostra o nome limpo do alvo"
+NameDesc.TextColor3 = Color3.fromRGB(130, 130, 135)
+NameDesc.Font = Enum.Font.GothamSemibold
+NameDesc.TextSize = 9
+NameDesc.TextXAlignment = Enum.TextXAlignment.Left
+NameDesc.ZIndex = 9
+NameDesc.Parent = NameFrame
+
+local NameToggleBG = Instance.new("TextButton")
+NameToggleBG.Size = UDim2.new(0, 44, 0, 22)
+NameToggleBG.Position = UDim2.new(1, -115, 0.5, -11)
+NameToggleBG.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+NameToggleBG.Text = ""
+NameToggleBG.ZIndex = 9
+NameToggleBG.Parent = NameFrame
+Instance.new("UICorner", NameToggleBG).CornerRadius = UDim.new(1, 0)
+
+local NameToggleIndicator = Instance.new("Frame")
+NameToggleIndicator.Size = UDim2.new(0, 16, 0, 16)
+NameToggleIndicator.Position = UDim2.new(0, 3, 0.5, -8)
+NameToggleIndicator.BackgroundColor3 = Color3.fromRGB(150, 150, 155)
+NameToggleIndicator.BorderSizePixel = 0
+NameToggleIndicator.ZIndex = 10
+NameToggleIndicator.Parent = NameToggleBG
+Instance.new("UICorner", NameToggleIndicator).CornerRadius = UDim.new(1, 0)
+
+local NameConfigTrigger = Instance.new("TextButton")
+NameConfigTrigger.Size = UDim2.new(0, 30, 0, 30)
+NameConfigTrigger.Position = UDim2.new(1, -50, 0.5, -15)
+NameConfigTrigger.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+NameConfigTrigger.Text = "|||"
+NameConfigTrigger.Rotation = 90
+NameConfigTrigger.TextColor3 = Color3.fromRGB(200, 200, 205)
+NameConfigTrigger.Font = Enum.Font.GothamBold
+NameConfigTrigger.TextSize = 10
+NameConfigTrigger.ZIndex = 9
+NameConfigTrigger.Parent = NameFrame
+Instance.new("UICorner", NameConfigTrigger).CornerRadius = UDim.new(0, 6)
+
+local NameConfigTriggerStroke = Instance.new("UIStroke", NameConfigTrigger)
+NameConfigTriggerStroke.Color = Color3.fromRGB(50, 50, 55)
+NameConfigTriggerStroke.Thickness = 1
+
+NameConfigTrigger.MouseButton1Click:Connect(function()
+    playSound("12222076", 0.4)
+    NameCustomizerWindow.Visible = not NameCustomizerWindow.Visible
+end)
+
+NameToggleBG.MouseButton1Click:Connect(function()
+    ESP_Config.NameEnabled = not ESP_Config.NameEnabled
+    playSound("12222076", 0.4)
+    
+    if ESP_Config.NameEnabled then
+        TweenService:Create(NameToggleBG, TweenInfo.new(0.2), {BackgroundColor3 = AccentColor}):Play()
+        TweenService:Create(NameToggleIndicator, TweenInfo.new(0.2), {Position = UDim2.new(1, -19, 0.5, -8), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+    else
+        TweenService:Create(NameToggleBG, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(35, 35, 40)}):Play()
+        TweenService:Create(NameToggleIndicator, TweenInfo.new(0.2), {Position = UDim2.new(0, 3, 0.5, -8), BackgroundColor3 = Color3.fromRGB(150, 150, 155)}):Play()
+        for player, drawObj in pairs(ActiveNames) do
+            if drawObj.Text then drawObj.Text:Remove() end
+            ActiveNames[player] = nil
+        end
+    end
+end)
+
+-- CONTAINER ESP DISTANCE
+local DistFrame = Instance.new("Frame")
+DistFrame.Size = UDim2.new(1, 0, 0, 52)
+DistFrame.BackgroundColor3 = SidebarColor
+DistFrame.ZIndex = 8
+DistFrame.Parent = ScrollContainer
+Instance.new("UICorner", DistFrame).CornerRadius = UDim.new(0, 8)
+local DistFrameStroke = Instance.new("UIStroke", DistFrame)
+DistFrameStroke.Color = Color3.fromRGB(35, 35, 40)
+DistFrameStroke.Thickness = 1.2
+
+local DistTitle = Instance.new("TextLabel")
+DistTitle.Position = UDim2.new(0, 15, 0, 8)
+DistTitle.Size = UDim2.new(0, 150, 0, 20)
+DistTitle.BackgroundTransparency = 1
+DistTitle.Text = "ESP Distância"
+DistTitle.TextColor3 = Color3.fromRGB(240, 240, 245)
+DistTitle.Font = Enum.Font.GothamBold
+DistTitle.TextSize = 12
+DistTitle.TextXAlignment = Enum.TextXAlignment.Left
+DistTitle.ZIndex = 9
+DistTitle.Parent = DistFrame
+
+local DistDesc = Instance.new("TextLabel")
+DistDesc.Position = UDim2.new(0, 15, 0, 26)
+DistDesc.Size = UDim2.new(0, 180, 0, 20)
+DistDesc.BackgroundTransparency = 1
+DistDesc.Text = "Mostra distância com limite ajustável"
+DistDesc.TextColor3 = Color3.fromRGB(130, 130, 135)
+DistDesc.Font = Enum.Font.GothamSemibold
+DistDesc.TextSize = 9
+DistDesc.TextXAlignment = Enum.TextXAlignment.Left
+DistDesc.ZIndex = 9
+DistDesc.Parent = DistFrame
+
+local DistToggleBG = Instance.new("TextButton")
+DistToggleBG.Size = UDim2.new(0, 44, 0, 22)
+DistToggleBG.Position = UDim2.new(1, -115, 0.5, -11)
+DistToggleBG.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+DistToggleBG.Text = ""
+DistToggleBG.ZIndex = 9
+DistToggleBG.Parent = DistFrame
+Instance.new("UICorner", DistToggleBG).CornerRadius = UDim.new(1, 0)
+
+local DistToggleIndicator = Instance.new("Frame")
+DistToggleIndicator.Size = UDim2.new(0, 16, 0, 16)
+DistToggleIndicator.Position = UDim2.new(0, 3, 0.5, -8)
+DistToggleIndicator.BackgroundColor3 = Color3.fromRGB(150, 150, 155)
+DistToggleIndicator.BorderSizePixel = 0
+DistToggleIndicator.ZIndex = 10
+DistToggleIndicator.Parent = DistToggleBG
+Instance.new("UICorner", DistToggleIndicator).CornerRadius = UDim.new(1, 0)
+
+local DistConfigTrigger = Instance.new("TextButton")
+DistConfigTrigger.Size = UDim2.new(0, 30, 0, 30)
+DistConfigTrigger.Position = UDim2.new(1, -50, 0.5, -15)
+DistConfigTrigger.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+DistConfigTrigger.Text = "|||"
+DistConfigTrigger.Rotation = 90
+DistConfigTrigger.TextColor3 = Color3.fromRGB(200, 200, 205)
+DistConfigTrigger.Font = Enum.Font.GothamBold
+DistConfigTrigger.TextSize = 10
+DistConfigTrigger.ZIndex = 9
+DistConfigTrigger.Parent = DistFrame
+Instance.new("UICorner", DistConfigTrigger).CornerRadius = UDim.new(0, 6)
+
+local DistConfigTriggerStroke = Instance.new("UIStroke", DistConfigTrigger)
+DistConfigTriggerStroke.Color = Color3.fromRGB(50, 50, 55)
+DistConfigTriggerStroke.Thickness = 1
+
+DistConfigTrigger.MouseButton1Click:Connect(function()
+    playSound("12222076", 0.4)
+    DistCustomizerWindow.Visible = not DistCustomizerWindow.Visible
+end)
+
+DistToggleBG.MouseButton1Click:Connect(function()
+    ESP_Config.DistEnabled = not ESP_Config.DistEnabled
+    playSound("12222076", 0.4)
+    
+    if ESP_Config.DistEnabled then
+        TweenService:Create(DistToggleBG, TweenInfo.new(0.2), {BackgroundColor3 = AccentColor}):Play()
+        TweenService:Create(DistToggleIndicator, TweenInfo.new(0.2), {Position = UDim2.new(1, -19, 0.5, -8), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+    else
+        TweenService:Create(DistToggleBG, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(35, 35, 40)}):Play()
+        TweenService:Create(DistToggleIndicator, TweenInfo.new(0.2), {Position = UDim2.new(0, 3, 0.5, -8), BackgroundColor3 = Color3.fromRGB(150, 150, 155)}):Play()
+        for player, drawObj in pairs(ActiveDists) do
+            if drawObj.Text then drawObj.Text:Remove() end
+            ActiveDists[player] = nil
+        end
+    end
+end)
+
 -- ==========================================
--- DESIGN DA ABA [STATUS] - ATIVA E COM STATUS REAIS
+-- DESIGN DA ABA [STATUS] - STATUS REAIS
 -- ==========================================
 local StatusPage = Pages["Status"]
 
@@ -1214,7 +1991,7 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- ENGINE REAL DOS ESPs (BOX E LINE)
+-- ENGINE DOS ESPs (BOX, LINE, NAME, DIST)
 -- ==========================================
 local function createEspElements(player)
     if not ActiveBoxes[player] then
@@ -1228,27 +2005,48 @@ local function createEspElements(player)
         line.Visible = false
         ActiveLines[player] = {Line = line}
     end
+    if not ActiveNames[player] then
+        local text = Drawing.new("Text")
+        text.Visible = false
+        text.Center = true
+        text.Outline = true
+        text.OutlineColor = Color3.fromRGB(0, 0, 0)
+        ActiveNames[player] = {Text = text}
+    end
+    if not ActiveDists[player] then
+        local text = Drawing.new("Text")
+        text.Visible = false
+        text.Center = true
+        text.Outline = true
+        text.OutlineColor = Color3.fromRGB(0, 0, 0)
+        ActiveDists[player] = {Text = text}
+    end
 end
 
-local function updateEsp()
+RunService.RenderStepped:Connect(function()
+    local rainbowColor = Color3.fromHSV(tick() % 5 / 5, 1, 1)
+
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
             createEspElements(player)
             
             local boxContainer = ActiveBoxes[player]
             local lineContainer = ActiveLines[player]
-            local char = player.Character
+            local nameContainer = ActiveNames[player]
+            local distContainer = ActiveDists[player]
             
+            local char = player.Character
             if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") and char:FindFirstChildOfClass("Humanoid").Health > 0 then
                 local rootPart = char.HumanoidRootPart
                 local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
+                local distance = (Camera.CoordinateFrame.p - rootPart.Position).Magnitude
                 
-                if onScreen then
+                if onScreen and distance <= ESP_Config.MaxDistance then
+                    local scaleFactor = 1 / (screenPos.Z * math.tan(math.rad(Camera.FieldOfView / 2))) * 1000
+                    local width = (scaleFactor * 1.5) * ESP_Config.BoxSizeMultiplier
+                    local height = (scaleFactor * 2.1) * ESP_Config.BoxSizeMultiplier
+                    
                     if ESP_Config.BoxEnabled then
-                        local scaleFactor = 1 / (screenPos.Z * math.tan(math.rad(Camera.FieldOfView / 2))) * 1000
-                        local width = (scaleFactor * 1.5) * ESP_Config.BoxSizeMultiplier
-                        local height = (scaleFactor * 2.1) * ESP_Config.BoxSizeMultiplier
-                        
                         boxContainer.Box.Size = Vector2.new(width, height)
                         boxContainer.Box.Position = Vector2.new(screenPos.X - (width / 2), screenPos.Y - (height / 2))
                         boxContainer.Box.Color = ESP_Config.BoxColor
@@ -1265,7 +2063,6 @@ local function updateEsp()
                         else
                             startPoint = Vector2.new(Camera.ViewportSize.X / 2, 0)
                         end
-                        
                         lineContainer.Line.From = startPoint
                         lineContainer.Line.To = Vector2.new(screenPos.X, screenPos.Y)
                         lineContainer.Line.Color = ESP_Config.LineColor
@@ -1274,13 +2071,41 @@ local function updateEsp()
                     else
                         lineContainer.Line.Visible = false
                     end
+                    
+                    if ESP_Config.NameEnabled then
+                        nameContainer.Text.Text = player.DisplayName
+                        nameContainer.Text.Size = ESP_Config.NameSize
+                        nameContainer.Text.Color = ESP_Config.NameRainbow and rainbowColor or ESP_Config.NameColor
+                        
+                        local topOffset = height / 2 + 15
+                        nameContainer.Text.Position = Vector2.new(screenPos.X, screenPos.Y - topOffset)
+                        nameContainer.Text.Visible = true
+                    else
+                        nameContainer.Text.Visible = false
+                    end
+                    
+                    if ESP_Config.DistEnabled then
+                        distContainer.Text.Text = string.format("[ %dM ]", math.floor(distance))
+                        distContainer.Text.Size = ESP_Config.NameSize - 1
+                        distContainer.Text.Color = ESP_Config.DistColor
+                        
+                        local bottomOffset = height / 2 + 2
+                        distContainer.Text.Position = Vector2.new(screenPos.X, screenPos.Y + bottomOffset)
+                        distContainer.Text.Visible = true
+                    else
+                        distContainer.Text.Visible = false
+                    end
                 else
                     boxContainer.Box.Visible = false
                     lineContainer.Line.Visible = false
+                    nameContainer.Text.Visible = false
+                    distContainer.Text.Visible = false
                 end
             else
                 boxContainer.Box.Visible = false
                 lineContainer.Line.Visible = false
+                nameContainer.Text.Visible = false
+                distContainer.Text.Visible = false
             end
         end
     end
@@ -1297,9 +2122,19 @@ local function updateEsp()
             ActiveLines[player] = nil
         end
     end
-end
-
-RunService.RenderStepped:Connect(updateEsp)
+    for player, drawObj in pairs(ActiveNames) do
+        if not player.Parent then
+            if drawObj.Text then drawObj.Text:Remove() end
+            ActiveNames[player] = nil
+        end
+    end
+    for player, drawObj in pairs(ActiveDists) do
+        if not player.Parent then
+            if drawObj.Text then drawObj.Text:Remove() end
+            ActiveDists[player] = nil
+        end
+    end
+end)
 
 -- ==========================================
 -- INTERDITANDO AS OUTRAS ABAS
@@ -1361,6 +2196,8 @@ local function toggleMenu()
         end
         BoxCustomizerWindow.Visible = false
         LineCustomizerWindow.Visible = false
+        NameCustomizerWindow.Visible = false
+        DistCustomizerWindow.Visible = false
         menuTransitioning = false
     end
 end
@@ -1404,4 +2241,4 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
-print("[BK CLIENT] Versão V1.2 Ativa. Abas de Customização Box e Line prontas para uso!")
+print("[BK CLIENT] Versão V1.2 Ativa. ESP Name e ESP Distância configurados perfeitamente!")
