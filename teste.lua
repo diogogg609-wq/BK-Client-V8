@@ -61,33 +61,139 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
--- Cápsula Flutuante (Botão de Ativação)
+-- ==========================================
+-- NOVA CÁPSULA FLUTUANTE V1.3 ANIMADA (REFORMULADA)
+-- ==========================================
 local Capsule = Instance.new("Frame")
 Capsule.Name = "BK_Capsule"
-Capsule.Size = UDim2.new(0, 48, 0, 48)
+Capsule.Size = UDim2.new(0, 160, 0, 36) -- Formato horizontal de pílula/cápsula
 Capsule.Position = UDim2.new(0.05, 0, 0.25, 0)
-Capsule.BackgroundColor3 = MenuBGColor
+Capsule.BackgroundColor3 = Color3.fromRGB(12, 12, 15)
 Capsule.BorderSizePixel = 0
+Capsule.ClipsDescendants = true -- Para as bolinhas não saírem da cápsula
 Capsule.Active = true
 Capsule.ZIndex = 50
 Capsule.Parent = ScreenGui
 
-Instance.new("UICorner", Capsule).CornerRadius = UDim.new(0, 10)
+-- Bordas redondas perfeitas (estilo pílula)
+local CapsuleCorner = Instance.new("UICorner", Capsule)
+CapsuleCorner.CornerRadius = UDim.new(0, 18)
+
 local CapsuleStroke = Instance.new("UIStroke", Capsule)
 CapsuleStroke.Color = AccentColor
 CapsuleStroke.Thickness = 1.5
 
+-- Texto Centralizado
 local CapsuleIcon = Instance.new("TextLabel")
 CapsuleIcon.Size = UDim2.new(1, 0, 1, 0)
 CapsuleIcon.BackgroundTransparency = 1
-CapsuleIcon.Text = "BK"
+CapsuleIcon.Text = "BK CLIENT V1.3 †"
 CapsuleIcon.TextColor3 = Color3.fromRGB(255, 255, 255)
 CapsuleIcon.Font = Enum.Font.GothamBold
-CapsuleIcon.TextSize = 14
-CapsuleIcon.ZIndex = 51
+CapsuleIcon.TextSize = 12
+CapsuleIcon.ZIndex = 55 -- Acima das bolinhas do fundo
 CapsuleIcon.Parent = Capsule
 
--- Container do Menu Central (CanvasGroup para Fade)
+-- Container para o Efeito de Partículas / Bolinhas Animadas
+local ParticleCanvas = Instance.new("Frame")
+ParticleCanvas.Size = UDim2.new(1, 0, 1, 0)
+ParticleCanvas.BackgroundTransparency = 1
+ParticleCanvas.BorderSizePixel = 0
+ParticleCanvas.ZIndex = 51
+ParticleCanvas.Parent = Capsule
+
+-- Gerador de Efeito Físico Clássico de Bolinhas e Conexões
+local particles = {}
+local numParticles = 8
+
+for i = 1, numParticles do
+    local p = Instance.new("Frame")
+    p.Size = UDim2.new(0, 4, 0, 4)
+    p.BackgroundColor3 = AccentColor
+    p.BorderSizePixel = 0
+    p.ZIndex = 52
+    p.Parent = ParticleCanvas
+    Instance.new("UICorner", p).CornerRadius = UDim.new(1, 0)
+    
+    -- Dados físicos iniciais (velocidade, direção, posição)
+    table.insert(particles, {
+        Instance = p,
+        PosX = math.random(10, 150),
+        PosY = math.random(5, 31),
+        VelX = (math.random() - 0.5) * 15,
+        VelY = (math.random() - 0.5) * 15
+    })
+end
+
+-- Tabela de linhas de conexão para evitar recriação constante de instâncias
+local lines = {}
+for i = 1, 10 do
+    local l = Instance.new("Frame")
+    l.BorderSizePixel = 0
+    l.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    l.BackgroundTransparency = 0.85
+    l.Visible = false
+    l.ZIndex = 51
+    l.Parent = ParticleCanvas
+    table.insert(lines, l)
+end
+
+-- Loop de Atualização das Bolinhas Animadas (RunService)
+RunService.RenderStepped:Connect(function(dt)
+    if not Capsule.Parent or not Capsule.Visible then return end
+    
+    local w = Capsule.AbsoluteSize.X
+    local h = Capsule.AbsoluteSize.Y
+    if w == 0 or h == 0 then return end
+    
+    -- Move e rebate as bolinhas nas bordas da cápsula
+    for _, pt in ipairs(particles) do
+        pt.PosX = pt.PosX + pt.VelX * dt
+        pt.PosY = pt.PosY + pt.VelY * dt
+        
+        if pt.PosX <= 4 then pt.PosX = 4 pt.VelX = -pt.VelX end
+        if pt.PosX >= w - 4 then pt.PosX = w - 4 pt.VelX = -pt.VelX end
+        if pt.PosY <= 4 then pt.PosY = 4 pt.VelY = -pt.VelY end
+        if pt.PosY >= h - 4 then pt.PosY = h - 4 pt.VelY = -pt.VelY end
+        
+        pt.Instance.Position = UDim2.new(0, pt.PosX, 0, pt.PosY)
+    end
+    
+    -- Oculta todas as linhas e redesenha conexões próximas
+    for _, l in ipairs(lines) do l.Visible = false end
+    
+    local lineIdx = 1
+    for i = 1, #particles do
+        for j = i + 1, #particles do
+            if lineIdx > #lines then break end
+            
+            local p1 = particles[i]
+            local p2 = particles[j]
+            local dx = p1.PosX - p2.PosX
+            local dy = p1.PosY - p2.PosY
+            local dist = math.sqrt(dx*dx + dy*dy)
+            
+            -- Se as bolinhas estiverem próximas, desenha uma linha conectando-as
+            if dist < 35 then
+                local line = lines[lineIdx]
+                local midX = (p1.PosX + p2.PosX) / 2
+                local midY = (p1.PosY + p2.PosY) / 2
+                local rot = math.deg(math.atan2(dy, dx))
+                
+                line.Size = UDim2.new(0, dist, 0, 1)
+                line.Position = UDim2.new(0, midX - dist/2, 0, midY)
+                line.Rotation = rot
+                line.Visible = true
+                
+                lineIdx = lineIdx + 1
+            end
+        end
+    end
+end)
+
+-- ==========================================
+-- CONTAINER DO MENU CENTRAL (CANVASGROUP)
+-- ==========================================
 local CentralMenuCanvas = Instance.new("CanvasGroup")
 CentralMenuCanvas.Name = "BK_CentralMenu"
 CentralMenuCanvas.Size = UDim2.new(0, 500, 0, 320)
@@ -2174,4 +2280,4 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
-print("[BK CLIENT] Versão V1.2 Ativa. ESP Name e ESP Distância configurados perfeitamente!")
+print("[BK CLIENT] Versão V1.3 Ativa. Cápsula animada integrada perfeitamente!")
