@@ -1,5 +1,5 @@
 -- ====================================================================
--- BK CLIENT - VERSÃO OFICIAL V2.8 (STATUS REAIS EM TEMPO REAL)
+-- BK CLIENT - VERSÃO OFICIAL V2.8 (STATUS REAIS + ESP BOX PERSONALIZÁVEL)
 -- ====================================================================
 
 local CoreGui = game:GetService("CoreGui")
@@ -7,6 +7,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
+local Camera = workspace.CurrentCamera
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -19,6 +20,19 @@ pcall(function()
         LocalPlayer.PlayerGui:FindFirstChild("BK_Official_UI"):Destroy()
     end
 end)
+
+-- ==========================================
+-- SISTEMA DE CONFIGURAÇÕES SALVÁVEIS DO ESP
+-- ==========================================
+local ESP_Config = {
+    Enabled = false,
+    Color = Color3.fromRGB(110, 60, 220), -- Roxo Neon Padrão
+    Thickness = 1.5,
+    SizeMultiplier = 1.0
+}
+
+-- Armazenamento das caixas de desenho ativas
+local ActiveBoxes = {}
 
 -- ==========================================
 -- SISTEMA DE SONS SATISFATÓRIOS
@@ -324,244 +338,219 @@ local function createTab(name)
     Pages[name] = Page
 end
 
--- CRIAÇÃO DAS ABAS OFICIAIS (AGORA COM A NOVA ABA STATUS)
+-- CRIAÇÃO DAS ABAS OFICIAIS
 createTab("Visual")
 createTab("Mira")
 createTab("Status")
 createTab("Configurações")
 
 -- ==========================================
--- DESIGN DA ABA [STATUS] - ATIVA E COM STATUS REAIS
+-- SEÇÃO MÓVEL DA BOX (ESTILO PC FLUTUANTE)
 -- ==========================================
-local StatusPage = Pages["Status"]
+local CustomizerWindow = Instance.new("Frame")
+CustomizerWindow.Name = "BK_BoxCustomizer"
+CustomizerWindow.Size = UDim2.new(0, 220, 0, 190)
+CustomizerWindow.Position = UDim2.new(0.5, -110, 0.5, -210) -- Aparece um pouco acima do menu principal
+CustomizerWindow.BackgroundColor3 = MenuBGColor
+CustomizerWindow.BorderSizePixel = 0
+CustomizerWindow.Active = true
+CustomizerWindow.Visible = false
+CustomizerWindow.ZIndex = 30
+CustomizerWindow.Parent = ScreenGui
 
-local StatusLayout = Instance.new("UIListLayout", StatusPage)
-StatusLayout.Padding = UDim.new(0, 12)
-StatusLayout.SortOrder = Enum.SortOrder.LayoutOrder
+Instance.new("UICorner", CustomizerWindow).CornerRadius = UDim.new(0, 8)
+local CustomizerStroke = Instance.new("UIStroke", CustomizerWindow)
+CustomizerStroke.Color = AccentColor
+CustomizerStroke.Thickness = 1.2
 
--- 1. CARD JOGADORES ATIVOS
-local CardPlayers = Instance.new("Frame")
-CardPlayers.Size = UDim2.new(1, -10, 0, 65)
-CardPlayers.BackgroundColor3 = SidebarColor
-CardPlayers.ZIndex = 8
-CardPlayers.Parent = StatusPage
-Instance.new("UICorner", CardPlayers).CornerRadius = UDim.new(0, 8)
-local StrokeCP = Instance.new("UIStroke", CardPlayers)
-StrokeCP.Color = Color3.fromRGB(35, 35, 40)
-StrokeCP.Thickness = 1.2
+-- Barra de arrasto superior da mini janela
+local CustomHeader = Instance.new("Frame")
+CustomHeader.Size = UDim2.new(1, 0, 0, 28)
+CustomHeader.BackgroundColor3 = SidebarColor
+CustomHeader.BorderSizePixel = 0
+CustomHeader.ZIndex = 31
+CustomHeader.Parent = CustomizerWindow
+Instance.new("UICorner", CustomHeader).CornerRadius = UDim.new(0, 8)
 
-local IconCP = Instance.new("TextLabel")
-IconCP.Size = UDim2.new(0, 50, 1, 0)
-IconCP.BackgroundTransparency = 1
-IconCP.Text = "👤"
-IconCP.TextSize = 22
-IconCP.ZIndex = 9
-IconCP.Parent = CardPlayers
+local CustomTitle = Instance.new("TextLabel")
+CustomTitle.Size = UDim2.new(1, -30, 1, 0)
+CustomTitle.Position = UDim2.new(0, 10, 0, 0)
+CustomTitle.BackgroundTransparency = 1
+CustomTitle.Text = "Ajustes da Box"
+CustomTitle.TextColor3 = Color3.fromRGB(200, 200, 205)
+CustomTitle.Font = Enum.Font.GothamBold
+CustomTitle.TextSize = 11
+CustomTitle.TextXAlignment = Enum.TextXAlignment.Left
+CustomTitle.ZIndex = 32
+CustomTitle.Parent = CustomHeader
 
-local LabelCP = Instance.new("TextLabel")
-LabelCP.Position = UDim2.new(0, 55, 0, 12)
-LabelCP.Size = UDim2.new(1, -65, 0, 20)
-LabelCP.BackgroundTransparency = 1
-LabelCP.Text = "Jogadores usando o BK"
-LabelCP.TextColor3 = Color3.fromRGB(170, 170, 180)
-LabelCP.Font = Enum.Font.GothamSemibold
-LabelCP.TextSize = 12
-LabelCP.TextXAlignment = Enum.TextXAlignment.Left
-LabelCP.ZIndex = 9
-LabelCP.Parent = CardPlayers
+local CustomClose = Instance.new("TextButton")
+CustomClose.Size = UDim2.new(0, 24, 0, 24)
+CustomClose.Position = UDim2.new(1, -26, 0.5, -12)
+CustomClose.BackgroundTransparency = 1
+CustomClose.Text = "×"
+CustomClose.TextColor3 = Color3.fromRGB(150, 150, 150)
+CustomClose.Font = Enum.Font.GothamBold
+CustomClose.TextSize = 18
+CustomClose.ZIndex = 32
+CustomClose.Parent = CustomHeader
 
-local ValCP = Instance.new("TextLabel")
-ValCP.Position = UDim2.new(0, 55, 0, 32)
-ValCP.Size = UDim2.new(1, -65, 0, 20)
-ValCP.BackgroundTransparency = 1
-ValCP.Text = "Calculando..."
-ValCP.TextColor3 = AccentColor -- Cor roxa neon destacada
-ValCP.Font = Enum.Font.GothamBold
-ValCP.TextSize = 14
-ValCP.TextXAlignment = Enum.TextXAlignment.Left
-ValCP.ZIndex = 9
-ValCP.Parent = CardPlayers
-
--- 2. CARD FPS
-local CardFPS = Instance.new("Frame")
-CardFPS.Size = UDim2.new(1, -10, 0, 65)
-CardFPS.BackgroundColor3 = SidebarColor
-CardFPS.ZIndex = 8
-CardFPS.Parent = StatusPage
-Instance.new("UICorner", CardFPS).CornerRadius = UDim.new(0, 8)
-local StrokeCF = Instance.new("UIStroke", CardFPS)
-StrokeCF.Color = Color3.fromRGB(35, 35, 40)
-StrokeCF.Thickness = 1.2
-
-local IconCF = Instance.new("TextLabel")
-IconCF.Size = UDim2.new(0, 50, 1, 0)
-IconCF.BackgroundTransparency = 1
-IconCF.Text = "⚡"
-IconCF.TextSize = 22
-IconCF.ZIndex = 9
-IconCF.Parent = CardFPS
-
-local LabelCF = Instance.new("TextLabel")
-LabelCF.Position = UDim2.new(0, 55, 0, 12)
-LabelCF.Size = UDim2.new(1, -65, 0, 20)
-LabelCF.BackgroundTransparency = 1
-LabelCF.Text = "Taxa de Quadros (FPS)"
-LabelCF.TextColor3 = Color3.fromRGB(170, 170, 180)
-LabelCF.Font = Enum.Font.GothamSemibold
-LabelCF.TextSize = 12
-LabelCF.TextXAlignment = Enum.TextXAlignment.Left
-LabelCF.ZIndex = 9
-LabelCF.Parent = CardFPS
-
-local ValCF = Instance.new("TextLabel")
-ValCF.Position = UDim2.new(0, 55, 0, 32)
-ValCF.Size = UDim2.new(1, -65, 0, 20)
-ValCF.BackgroundTransparency = 1
-ValCF.Text = "Calculando..."
-ValCF.TextColor3 = Color3.fromRGB(50, 220, 110) -- Verde Esmeralda de performance
-ValCF.Font = Enum.Font.GothamBold
-ValCF.TextSize = 14
-ValCF.TextXAlignment = Enum.TextXAlignment.Left
-ValCF.ZIndex = 9
-ValCF.Parent = CardFPS
-
--- ==========================================
--- SCRIPT DE CÁLCULO DE FPS & PLAYERS REAL
--- ==========================================
-local fpsTable = {}
-local fpsTimer = 0
-local frameCount = 0
-
-RunService.Heartbeat:Connect(function(dt)
-    frameCount = frameCount + 1
-    fpsTimer = fpsTimer + dt
-    if fpsTimer >= 1 then
-        ValCF.Text = tostring(frameCount) .. " FPS"
-        frameCount = 0
-        fpsTimer = 0
-    end
+CustomClose.MouseButton1Click:Connect(function()
+    playSound("12222076", 0.3)
+    CustomizerWindow.Visible = false
 end)
 
-task.spawn(function()
-    while task.wait(3) do
-        if not ScreenGui.Parent then break end
-        
-        -- Varredura real na rede do servidor local buscando assinaturas do BK
-        local usingBKCount = 0
-        pcall(function()
-            for _, p in ipairs(Players:GetPlayers()) do
-                local pg = p:FindFirstChild("PlayerGui")
-                if pg and (pg:FindFirstChild("BK_Official_UI") or pg:FindFirstChild("BK_Capsule")) then
-                    usingBKCount = usingBKCount + 1
-                end
-            end
-        end)
-        
-        -- Sempre garante que pelo menos você (1 jogador) está ativo no contador local
-        if usingBKCount == 0 then usingBKCount = 1 end
-        ValCP.Text = tostring(usingBKCount) .. " Ativo(s) no Servidor"
-    end
-end)
+-- Sistema de Arraste da mini janela (Touch de PC funcional no celular)
+local customDragging = false
+local customDragStart, customStartPos
 
--- INTERDITANDO AS OUTRAS ABAS
-local function setInterdicted(page, name)
-    local InfoLabel = Instance.new("TextLabel")
-    InfoLabel.Size = UDim2.new(1, 0, 1, 0)
-    InfoLabel.BackgroundTransparency = 1
-    InfoLabel.Text = "ABA [" .. string.upper(name) .. "]\n\n⚡ EM BREVE ⚡\n(INTERDITADA V2.8)"
-    InfoLabel.TextColor3 = Color3.fromRGB(100, 100, 110)
-    InfoLabel.TextSize = 13
-    InfoLabel.Font = Enum.Font.GothamBold
-    InfoLabel.ZIndex = 8
-    InfoLabel.Parent = page
-end
-
-setInterdicted(Pages["Visual"], "Visual")
-setInterdicted(Pages["Mira"], "Mira")
-setInterdicted(Pages["Configurações"], "Configurações")
-
--- Seleciona a aba Status por padrão (Inicialização Limpa)
-Tabs["Status"].Btn.BackgroundTransparency = 0.8
-Tabs["Status"].Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-Tabs["Status"].Btn.BackgroundColor3 = AccentColor
-Tabs["Status"].Stroke.Transparency = 0.3
-Pages["Status"].Visible = true
-
--- ==========================================
--- SISTEMA DE ABERTURA PREMIUM (FADE & SCALE)
--- ==========================================
-local isMenuOpen = false
-local menuTransitioning = false
-
-local function toggleMenu()
-    if menuTransitioning then return end
-    menuTransitioning = true
-    isMenuOpen = not isMenuOpen
-    playSound("6895086153", 0.5)
-    
-    if isMenuOpen then
-        CentralMenuCanvas.Size = UDim2.new(0, 470, 0, 290)
-        CentralMenuCanvas.GroupTransparency = 1
-        CentralMenuCanvas.Visible = true
-        
-        TweenService:Create(CentralMenuCanvas, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 500, 0, 320),
-            GroupTransparency = 0
-        }):Play()
-        
-        task.wait(0.4)
-        menuTransitioning = false
-    else
-        TweenService:Create(CentralMenuCanvas, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
-            Size = UDim2.new(0, 470, 0, 290),
-            GroupTransparency = 1
-        }):Play()
-        
-        task.wait(0.3)
-        if not isMenuOpen then
-            CentralMenuCanvas.Visible = false
-        end
-        menuTransitioning = false
-    end
-end
-
--- ==========================================
--- SISTEMA DE ARRASTE ULTRA ESTÁVEL (DIRETO)
--- ==========================================
-local dragging = false
-local dragStart, startPos
-local dragLimit = 8
-
-Capsule.InputBegan:Connect(function(input)
+CustomHeader.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = Capsule.Position
+        customDragging = true
+        customDragStart = input.Position
+        customStartPos = CustomizerWindow.Position
     end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local delta = input.Position - dragStart
-        Capsule.Position = UDim2.new(
-            startPos.X.Scale, 
-            startPos.X.Offset + delta.X, 
-            startPos.Y.Scale, 
-            startPos.Y.Offset + delta.Y
+    if customDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - customDragStart
+        CustomizerWindow.Position = UDim2.new(
+            customStartPos.X.Scale, 
+            customStartPos.X.Offset + delta.X, 
+            customStartPos.Y.Scale, 
+            customStartPos.Y.Offset + delta.Y
         )
     end
 end)
 
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        if dragging then
-            dragging = false
-            local moveDistance = (input.Position - dragStart).Magnitude
-            if moveDistance < dragLimit then
-                toggleMenu()
-            end
-        end
+        customDragging = false
     end
 end)
 
-print("[BK CLIENT] Versão V2.8 Ativa. Aba Status aberta com dados reais!")
+-- CONTEÚDO DOS AJUSTES NA JANELA FLUTUANTE
+local CustomBody = Instance.new("Frame")
+CustomBody.Position = UDim2.new(0, 0, 0, 28)
+CustomBody.Size = UDim2.new(1, 0, 1, -28)
+CustomBody.BackgroundTransparency = 1
+CustomBody.ZIndex = 31
+CustomBody.Parent = CustomizerWindow
+
+local BodyLayout = Instance.new("UIListLayout", CustomBody)
+BodyLayout.Padding = UDim.new(0, 8)
+BodyLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+Instance.new("UIPadding", CustomBody).PaddingTop = UDim.new(0, 8)
+
+-- 1. Seletor de Cores da Box
+local ColorSection = Instance.new("Frame")
+ColorSection.Size = UDim2.new(0.9, 0, 0, 32)
+ColorSection.BackgroundTransparency = 1
+ColorSection.ZIndex = 32
+ColorSection.Parent = CustomBody
+
+local ColorLabel = Instance.new("TextLabel")
+ColorLabel.Size = UDim2.new(0.4, 0, 1, 0)
+ColorLabel.BackgroundTransparency = 1
+ColorLabel.Text = "Cor da Box:"
+ColorLabel.TextColor3 = Color3.fromRGB(180, 180, 185)
+ColorLabel.Font = Enum.Font.GothamSemibold
+ColorLabel.TextSize = 10
+ColorLabel.TextXAlignment = Enum.TextXAlignment.Left
+ColorLabel.ZIndex = 33
+ColorLabel.Parent = ColorSection
+
+local ColorBtnContainer = Instance.new("Frame")
+ColorBtnContainer.Size = UDim2.new(0.6, 0, 1, 0)
+ColorBtnContainer.Position = UDim2.new(0.4, 0, 0, 0)
+ColorBtnContainer.BackgroundTransparency = 1
+ColorBtnContainer.ZIndex = 33
+ColorBtnContainer.Parent = ColorSection
+
+local ColorsList = {
+    {Color = Color3.fromRGB(0, 255, 120), Text = "Verde"},
+    {Color = Color3.fromRGB(110, 60, 220), Text = "Roxo"},
+    {Color = Color3.fromRGB(255, 50, 50), Text = "Verm."}
+}
+
+for idx, colorData in ipairs(ColorsList) do
+    local cBtn = Instance.new("TextButton")
+    cBtn.Size = UDim2.new(0, 35, 0, 22)
+    cBtn.Position = UDim2.new(0, (idx - 1) * 40, 0.5, -11)
+    cBtn.BackgroundColor3 = colorData.Color
+    cBtn.BorderSizePixel = 0
+    cBtn.Text = ""
+    cBtn.ZIndex = 34
+    cBtn.Parent = ColorBtnContainer
+    Instance.new("UICorner", cBtn).CornerRadius = UDim.new(0, 4)
+    
+    local cBtnStroke = Instance.new("UIStroke", cBtn)
+    cBtnStroke.Color = Color3.fromRGB(255, 255, 255)
+    cBtnStroke.Thickness = 1.2
+    cBtnStroke.Transparency = (ESP_Config.Color == colorData.Color) and 0 or 1
+    
+    cBtn.MouseButton1Click:Connect(function()
+        playSound("12222076", 0.35)
+        ESP_Config.Color = colorData.Color
+        -- Atualiza as bordas de seleção
+        for _, child in ipairs(ColorBtnContainer:GetChildren()) do
+            if child:IsA("TextButton") and child:FindFirstChildOfClass("UIStroke") then
+                child:FindFirstChildOfClass("UIStroke").Transparency = 1
+            end
+        end
+        cBtnStroke.Transparency = 0
+    end)
+end
+
+-- 2. Ajustador de Espessura
+local ThickSection = Instance.new("Frame")
+ThickSection.Size = UDim2.new(0.9, 0, 0, 32)
+ThickSection.BackgroundTransparency = 1
+ThickSection.ZIndex = 32
+ThickSection.Parent = CustomBody
+
+local ThickLabel = Instance.new("TextLabel")
+ThickLabel.Size = UDim2.new(0.4, 0, 1, 0)
+ThickLabel.BackgroundTransparency = 1
+ThickLabel.Text = "Espessura:"
+ThickLabel.TextColor3 = Color3.fromRGB(180, 180, 185)
+ThickLabel.Font = Enum.Font.GothamSemibold
+ThickLabel.TextSize = 10
+ThickLabel.TextXAlignment = Enum.TextXAlignment.Left
+ThickLabel.ZIndex = 33
+ThickLabel.Parent = ThickSection
+
+local ThickValLabel = Instance.new("TextLabel")
+ThickValLabel.Size = UDim2.new(0.2, 0, 1, 0)
+ThickValLabel.Position = UDim2.new(0.4, 0, 0, 0)
+ThickValLabel.BackgroundTransparency = 1
+ThickValLabel.Text = tostring(ESP_Config.Thickness)
+ThickValLabel.TextColor3 = Color3.fromRGB(240, 240, 245)
+ThickValLabel.Font = Enum.Font.GothamBold
+ThickValLabel.TextSize = 11
+ThickValLabel.ZIndex = 33
+ThickValLabel.Parent = ThickSection
+
+local ThickLess = Instance.new("TextButton")
+ThickLess.Size = UDim2.new(0, 24, 0, 24)
+ThickLess.Position = UDim2.new(0.65, 0, 0.5, -12)
+ThickLess.BackgroundColor3 = SidebarColor
+ThickLess.Text = "-"
+ThickLess.TextColor3 = Color3.fromRGB(240, 240, 240)
+ThickLess.Font = Enum.Font.GothamBold
+ThickLess.TextSize = 12
+ThickLess.ZIndex = 34
+ThickLess.Parent = ThickSection
+Instance.new("UICorner", ThickLess).CornerRadius = UDim.new(0, 4)
+
+local ThickMore = Instance.new("TextButton")
+ThickMore.Size = UDim2.new(0, 24, 0, 24)
+ThickMore.Position = UDim2.new(0.85, 0, 0.5, -12)
+ThickMore.BackgroundColor3 = SidebarColor
+ThickMore.Text = "+"
+ThickMore.TextColor3 = Color3.fromRGB(240, 240, 240)
+ThickMore.Font = Enum.Font.GothamBold
+ThickMore.TextSize = 12
+ThickMore.ZIndex = 34
+ThickMo
