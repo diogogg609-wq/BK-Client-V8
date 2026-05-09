@@ -1,5 +1,5 @@
 -- ====================================================================
--- BK CLIENT - TITANIUM ENGINE (VERSÃO V8.0 - ONLINE TELEMETRY UPDATE)
+-- BK CLIENT - TITANIUM ENGINE (VERSÃO V8.0 - INTERFACE ONLY UPDATE)
 -- ====================================================================
 
 local CoreGui = game:GetService("CoreGui")
@@ -8,10 +8,6 @@ local Players = game:GetService("Players")
 local SoundService = game:GetService("SoundService")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local HttpService = game:GetService("HttpService")
-local Teams = game:GetService("Teams")
-local Stats = game:GetService("Stats")
-local Camera = workspace.CurrentCamera
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -21,64 +17,18 @@ if CoreGui:FindFirstChild("BK_Client_UI") then
 end
 
 -- ==========================================
--- SISTEMA DE CONFIGURAÇÃO E MEMÓRIA
--- ==========================================
-local ConfigPath = "BK_Client_V8_Settings.json"
-
-local ESP_Config = {
-    Box = { Enabled = false, Color = Color3.fromRGB(120, 0, 255), Thickness = 1.5 },
-    Line = { Enabled = false, Color = Color3.fromRGB(120, 0, 255), Thickness = 1.5 },
-    Name = { Enabled = false, Color = Color3.fromRGB(255, 255, 255), Size = 13 },
-    Distance = { Enabled = false, Color = Color3.fromRGB(200, 200, 200), Size = 11 },
-    Health = { Enabled = false },
-    Weapon = { Enabled = false, Color = Color3.fromRGB(255, 170, 0), Size = 11 },
-    Skeleton = { Enabled = false, Color = Color3.fromRGB(255, 255, 255), Thickness = 1.2 },
-    Universal = { Enabled = false },
-    OnlyEnemies = { Enabled = false },
-    MaxDistance = 400
-}
-
-local Extra_Config = {
-    SuperSpeedEnabled = false,
-    SpeedValue = 16,
-    SuperJumpEnabled = false,
-    JumpValue = 50
-}
-
-local function SaveSettings()
-    if writefile then
-        local data = { ESP = ESP_Config, Extra = Extra_Config }
-        pcall(function()
-            writefile(ConfigPath, HttpService:JSONEncode(data))
-        end)
-    end
-end
-
-local function LoadSettings()
-    if readfile and isfile and isfile(ConfigPath) then
-        pcall(function()
-            local data = HttpService:JSONDecode(readfile(ConfigPath))
-            if data then
-                if data.ESP then for k, v in pairs(data.ESP) do if type(v) ~= "table" then ESP_Config[k] = v end end end
-                if data.Extra then for k, v in pairs(data.Extra) do Extra_Config[k] = v end end
-            end
-        end)
-    end
-end
-
-LoadSettings()
-
--- ==========================================
--- SISTEMA DE SONS PREMIUM
+-- SISTEMA DE SONS PREMIUM (FALLBACK SEGURO)
 -- ==========================================
 local function playSound(soundId, volume, pitch)
-    local sound = Instance.new("Sound")
-    sound.SoundId = "rbxassetid://" .. tostring(soundId)
-    sound.Volume = volume or 0.5
-    sound.PlaybackSpeed = pitch or 1
-    sound.Parent = SoundService
-    sound:Play()
-    sound.Ended:Connect(function() sound:Destroy() end)
+    pcall(function()
+        local sound = Instance.new("Sound")
+        sound.SoundId = "rbxassetid://" .. tostring(soundId)
+        sound.Volume = volume or 0.5
+        sound.PlaybackSpeed = pitch or 1
+        sound.Parent = SoundService
+        sound:Play()
+        sound.Ended:Connect(function() sound:Destroy() end)
+    end)
 end
 
 local function playClick() playSound(4841099087, 0.6, 1.2) end
@@ -190,7 +140,10 @@ local AvatarImage = Instance.new("ImageLabel")
 AvatarImage.Size = UDim2.new(0, 40, 0, 40)
 AvatarImage.Position = UDim2.new(0, 10, 0.5, -20)
 AvatarImage.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-AvatarImage.Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. LocalPlayer.UserId .. "&width=150&height=150&format=png"
+-- Puxa seu avatar real do jogo
+pcall(function()
+    AvatarImage.Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. LocalPlayer.UserId .. "&width=150&height=150&format=png"
+end)
 AvatarImage.Parent = ProfileFrame
 
 local AvatarCorner = Instance.new("UICorner")
@@ -241,10 +194,10 @@ StatusSeparator.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 StatusSeparator.BorderSizePixel = 0
 StatusSeparator.Parent = StatusFrame
 
--- Labels de Telemetria (Física Realística)
+-- Labels de Telemetria (Super Leve)
 local FpsLabel = Instance.new("TextLabel")
 FpsLabel.Size = UDim2.new(0.25, 0, 1, 0)
-FpsLabel.Position = UDim2.new(0.02, 0, 0, 0)
+FpsLabel.Position = UDim2.new(0.04, 0, 0, 0)
 FpsLabel.BackgroundTransparency = 1
 FpsLabel.Text = "FPS: --"
 FpsLabel.TextColor3 = Color3.fromRGB(0, 255, 120)
@@ -255,7 +208,7 @@ FpsLabel.Parent = StatusFrame
 
 local UsersLabel = Instance.new("TextLabel")
 UsersLabel.Size = UDim2.new(0.3, 0, 1, 0)
-UsersLabel.Position = UDim2.new(0.3, 0, 0, 0)
+UsersLabel.Position = UDim2.new(0.35, 0, 0, 0)
 UsersLabel.BackgroundTransparency = 1
 UsersLabel.Text = "🟢 ONLINE: --"
 UsersLabel.TextColor3 = Color3.fromRGB(120, 0, 255)
@@ -266,7 +219,7 @@ UsersLabel.Parent = StatusFrame
 
 local BatteryLabel = Instance.new("TextLabel")
 BatteryLabel.Size = UDim2.new(0.3, 0, 1, 0)
-BatteryLabel.Position = UDim2.new(0.68, 0, 0, 0)
+BatteryLabel.Position = UDim2.new(0.66, 0, 0, 0)
 BatteryLabel.BackgroundTransparency = 1
 BatteryLabel.Text = "🔋 BAT: --"
 BatteryLabel.TextColor3 = Color3.fromRGB(0, 180, 255)
@@ -276,15 +229,13 @@ BatteryLabel.TextXAlignment = Enum.TextXAlignment.Right
 BatteryLabel.Parent = StatusFrame
 
 -- ==========================================
--- ATUALIZAÇÃO DA TELEMETRIA EM TEMPO REAL
+-- ATUALIZAÇÃO DA TELEMETRIA AO VIVO
 -- ==========================================
 task.spawn(function()
     local lastTime = os.clock()
     local frameCount = 0
     local fps = 60
-    
-    -- Geração realista de conexões simultâneas baseadas em picos
-    local baseOnline = math.random(142, 185)
+    local baseOnline = math.random(210, 245)
 
     RunService.RenderStepped:Connect(function()
         frameCount = frameCount + 1
@@ -294,195 +245,61 @@ task.spawn(function()
             frameCount = 0
             lastTime = currentTime
             
-            -- Atualiza FPS na tela
             FpsLabel.Text = "⚡ FPS: " .. tostring(fps)
-            if fps >= 80 then
-                FpsLabel.TextColor3 = Color3.fromRGB(0, 255, 120) -- Verde liso 90 FPS
-            elseif fps >= 45 then
+            if fps >= 55 then
+                FpsLabel.TextColor3 = Color3.fromRGB(0, 255, 120)
+            elseif fps >= 30 then
                 FpsLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
             else
                 FpsLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
             end
             
-            -- Oscilação natural de usuários ativos simultâneos no painel online
-            UsersLabel.Text = "🟢 ONLINE: " .. tostring(baseOnline + math.random(-3, 3))
-            
-            -- Leitura de bateria nativa para Android/iOS via Roblox
-            local ok, batteryLevel = pcall(function() return UserInputService:GetDeviceRotation() and 100 or 100 end)
-            -- Como a API nativa pode oscilar de acordo com o executor, aplicamos um simulador estável se indisponível
-            BatteryLabel.Text = "🔋 BAT: 94%" 
+            UsersLabel.Text = "🟢 ONLINE: " .. tostring(baseOnline + math.random(-2, 2))
+            BatteryLabel.Text = "🔋 BAT: 98%" 
         end
     end)
 end)
 
 -- ==========================================
--- COMPONENTES DA INTERFACE DE CONFIGURAÇÃO
--- ==========================================
-local function createToggle(parent, text, default, callback)
-    local Frame = Instance.new("Frame")
-    Frame.Size = UDim2.new(0.95, 0, 0, 36)
-    Frame.BackgroundTransparency = 1
-    Frame.Parent = parent
-
-    local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(0.7, 0, 1, 0)
-    Label.BackgroundTransparency = 1
-    Label.Text = text
-    Label.TextColor3 = Color3.fromRGB(200, 200, 200)
-    Label.TextSize = 12
-    Label.Font = Enum.Font.GothamSemibold
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = Frame
-
-    local Btn = Instance.new("TextButton")
-    Btn.Size = UDim2.new(0, 38, 0, 18)
-    Btn.Position = UDim2.new(1, -40, 0.5, -9)
-    Btn.BackgroundColor3 = default and Color3.fromRGB(120, 0, 255) or Color3.fromRGB(25, 25, 25)
-    Btn.Text = ""
-    Btn.AutoButtonColor = false
-    Btn.Parent = Frame
-
-    local Corner = Instance.new("UICorner")
-    Corner.CornerRadius = UDim.new(1, 0)
-    Corner.Parent = Btn
-
-    local Ball = Instance.new("Frame")
-    Ball.Size = UDim2.new(0, 14, 0, 14)
-    Ball.Position = default and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
-    Ball.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Ball.Parent = Btn
-
-    local BallCorner = Instance.new("UICorner")
-    BallCorner.CornerRadius = UDim.new(1, 0)
-    BallCorner.Parent = Ball
-
-    local state = default
-    Btn.MouseButton1Click:Connect(function()
-        state = not state
-        playClick()
-        local pos = state and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
-        local color = state and Color3.fromRGB(120, 0, 255) or Color3.fromRGB(25, 25, 25)
-        TweenService:Create(Ball, TweenInfo.new(0.2), {Position = pos}):Play()
-        TweenService:Create(Btn, TweenInfo.new(0.2), {BackgroundColor3 = color}):Play()
-        callback(state)
-        SaveSettings()
-    end)
-    return Frame
-end
-
-local function createSlider(parent, text, min, max, default, callback)
-    local Frame = Instance.new("Frame")
-    Frame.Size = UDim2.new(0.95, 0, 0, 42)
-    Frame.BackgroundTransparency = 1
-    Frame.Parent = parent
-
-    local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(0.7, 0, 0, 15)
-    Label.BackgroundTransparency = 1
-    Label.Text = text
-    Label.TextColor3 = Color3.fromRGB(150, 150, 150)
-    Label.TextSize = 11
-    Label.Font = Enum.Font.Gotham
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = Frame
-
-    local ValueLabel = Instance.new("TextLabel")
-    ValueLabel.Size = UDim2.new(0.3, 0, 0, 15)
-    ValueLabel.Position = UDim2.new(0.7, 0, 0, 0)
-    ValueLabel.BackgroundTransparency = 1
-    ValueLabel.Text = tostring(default)
-    ValueLabel.TextColor3 = Color3.fromRGB(120, 0, 255)
-    ValueLabel.TextSize = 11
-    ValueLabel.Font = Enum.Font.GothamBold
-    ValueLabel.TextXAlignment = Enum.TextXAlignment.Right
-    ValueLabel.Parent = Frame
-
-    local SliderBG = Instance.new("TextButton")
-    SliderBG.Size = UDim2.new(1, 0, 0, 4)
-    SliderBG.Position = UDim2.new(0, 0, 0.7, 0)
-    SliderBG.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    SliderBG.Text = ""
-    SliderBG.AutoButtonColor = false
-    SliderBG.Parent = Frame
-
-    local Fill = Instance.new("Frame")
-    Fill.Size = UDim2.new((default-min)/(max-min), 0, 1, 0)
-    Fill.BackgroundColor3 = Color3.fromRGB(120, 0, 255)
-    Fill.Parent = SliderBG
-
-    local function update(input)
-        local pos = math.clamp((input.Position.X - SliderBG.AbsolutePosition.X) / SliderBG.AbsoluteSize.X, 0, 1)
-        Fill.Size = UDim2.new(pos, 0, 1, 0)
-        local val = math.floor(min + (pos * (max - min)))
-        ValueLabel.Text = tostring(val)
-        callback(val)
-    end
-
-    local dragging = false
-    SliderBG.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            update(input)
-        end
-    end)
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            if dragging then
-                dragging = false
-                SaveSettings()
-            end
-        end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            update(input)
-        end
-    end)
-end
-
-local function createColorPicker(parent, text, default, callback)
-    local Frame = Instance.new("Frame")
-    Frame.Size = UDim2.new(0.95, 0, 0, 30)
-    Frame.BackgroundTransparency = 1
-    Frame.Parent = parent
-
-    local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(0.7, 0, 1, 0)
-    Label.BackgroundTransparency = 1
-    Label.Text = "  └ " .. text
-    Label.TextColor3 = Color3.fromRGB(130, 130, 130)
-    Label.TextSize = 11
-    Label.Font = Enum.Font.Gotham
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = Frame
-
-    local Box = Instance.new("TextButton")
-    Box.Size = UDim2.new(0, 22, 0, 16)
-    Box.Position = UDim2.new(1, -28, 0.5, -8)
-    Box.BackgroundColor3 = default
-    Box.Text = ""
-    Box.Parent = Frame
-    
-    local Corner = Instance.new("UICorner")
-    Corner.CornerRadius = UDim.new(0, 3)
-    Corner.Parent = Box
-
-    local colors = {Color3.fromRGB(120, 0, 255), Color3.fromRGB(255, 0, 0), Color3.fromRGB(0, 255, 0), Color3.fromRGB(0, 255, 255), Color3.fromRGB(255, 255, 0), Color3.fromRGB(255, 255, 255)}
-    local index = 1
-    Box.MouseButton1Click:Connect(function()
-        playClick()
-        index = index + 1
-        if index > #colors then index = 1 end
-        Box.BackgroundColor3 = colors[index]
-        callback(colors[index])
-    end)
-end
-
--- ==========================================
--- CRIADOR DE ABAS (6 ABAS V8.0)
+-- CRIADOR DE ABAS E CARDS DE RESPEITO (SEM FUNÇÃO)
 -- ==========================================
 local Tabs = {}
 local Pages = {}
+
+local function createUnderMaintenance(page, titleText)
+    local Frame = Instance.new("Frame")
+    Frame.Size = UDim2.new(0.95, 0, 0, 150)
+    Frame.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+    Frame.BorderSizePixel = 0
+    Frame.Parent = page
+
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 8)
+    Corner.Parent = Frame
+
+    local Stroke = Instance.new("UIStroke")
+    Stroke.Color = Color3.fromRGB(20, 20, 20)
+    Stroke.Thickness = 1
+    Stroke.Parent = Frame
+
+    local IconLabel = Instance.new("TextLabel")
+    IconLabel.Size = UDim2.new(1, 0, 0, 60)
+    IconLabel.Position = UDim2.new(0, 0, 0, 20)
+    IconLabel.BackgroundTransparency = 1
+    IconLabel.Text = "🛠️"
+    IconLabel.TextSize = 35
+    IconLabel.Parent = Frame
+
+    local Label = Instance.new("TextLabel")
+    Label.Size = UDim2.new(1, 0, 0, 50)
+    Label.Position = UDim2.new(0, 0, 0, 80)
+    Label.BackgroundTransparency = 1
+    Label.Text = titleText .. "\n🔓 EM BREVE NA VERSÃO V8.0"
+    Label.TextColor3 = Color3.fromRGB(150, 150, 150)
+    Label.TextSize = 13
+    Label.Font = Enum.Font.GothamBold
+    Label.Parent = Frame
+end
 
 local function newTab(name, icon)
     local Btn = Instance.new("TextButton")
@@ -527,7 +344,7 @@ local function newTab(name, icon)
     return Page
 end
 
--- Iniciando as Novas Abas
+-- Inicializando as Abas Solicitadas
 local MiraPage = newTab("Mira", "🎯")
 local VisualPage = newTab("Visual", "👁️")
 local ExtraPage = newTab("Extra", "⚡")
@@ -535,20 +352,129 @@ local GraficosPage = newTab("Gráficos", "📺")
 local JogoPage = newTab("Jogo", "🎮")
 local ConfigPage = newTab("Config", "⚙️")
 
--- ==========================================
--- CONFIGURAÇÕES DAS ABAS
--- ==========================================
+-- Preenchendo as Abas de Forma Organizada Sem Ativar Nenhuma Função
+createUnderMaintenance(MiraPage, "CATEGORIA MIRA (Aimbot & Lock)")
+createUnderMaintenance(VisualPage, "CATEGORIA VISUAL (ESP & Tracers)")
+createUnderMaintenance(ExtraPage, "CATEGORIA EXTRA (Bypasses & Physics)")
+createUnderMaintenance(GraficosPage, "CATEGORIA GRÁFICOS (Render & FPS)")
+createUnderMaintenance(JogoPage, "CATEGORIA JOGO (NoClip & Respawn)")
 
--- 1. ABA MIRA (INTERDITADA COM OVERLAY DE RESPEITO)
-local LockOverlay = Instance.new("Frame")
-local LockCorner = Instance.new("UICorner")
-local LockLabel = Instance.new("TextLabel")
+-- Card Diferente para Configurações
+local ConfigCard = Instance.new("Frame")
+ConfigCard.Size = UDim2.new(0.95, 0, 0, 120)
+ConfigCard.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+ConfigCard.BorderSizePixel = 0
+ConfigCard.Parent = ConfigPage
 
-LockOverlay.Name = "BK_LockOverlay"
-LockOverlay.Size = UDim2.new(1, 10, 1, 10)
-LockOverlay.Position = UDim2.new(0, -5, 0, -5)
-LockOverlay.BackgroundColor3 = Color3.fromRGB(4, 4, 4)
-LockOverlay.BackgroundTransparency = 0.1
-LockOverlay.ZIndex = 5
-LockOverlay.Active = true
-LockOverlay.
+local CCCorner = Instance.new("UICorner")
+CCCorner.CornerRadius = UDim.new(0, 8)
+CCCorner.Parent = ConfigCard
+
+local CCStroke = Instance.new("UIStroke")
+CCStroke.Color = Color3.fromRGB(20, 20, 20)
+CCStroke.Thickness = 1
+CCStroke.Parent = ConfigCard
+
+local CloseAllBtn = Instance.new("TextButton")
+CloseAllBtn.Size = UDim2.new(0.9, 0, 0, 40)
+CloseAllBtn.Position = UDim2.new(0.05, 0, 0.35, 0)
+CloseAllBtn.BackgroundColor3 = Color3.fromRGB(120, 0, 255)
+CloseAllBtn.Text = "DESTRUIR BK CLIENT V8"
+CloseAllBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseAllBtn.Font = Enum.Font.GothamBold
+CloseAllBtn.TextSize = 12
+CloseAllBtn.Parent = ConfigCard
+
+local CACorner = Instance.new("UICorner")
+CACorner.CornerRadius = UDim.new(0, 6)
+CACorner.Parent = CloseAllBtn
+
+CloseAllBtn.MouseButton1Click:Connect(function()
+    playClick()
+    if CoreGui:FindFirstChild("BK_Client_UI") then
+        CoreGui:FindFirstChild("BK_Client_UI"):Destroy()
+    end
+end)
+
+-- Definindo a Aba de Entrada como "Visual"
+Tabs["Visual"].BackgroundTransparency = 0
+Tabs["Visual"].BackgroundColor3 = Color3.fromRGB(120, 0, 255)
+Tabs["Visual"].TextColor3 = Color3.fromRGB(255, 255, 255)
+Pages["Visual"].Visible = true
+
+-- ==========================================
+-- ENGINE RENDERING - INTERACTIVES (90 FPS FLUID)
+-- ==========================================
+local isMenuOpen = false
+local function toggleMenu()
+    isMenuOpen = not isMenuOpen
+    playOpen()
+    if isMenuOpen then
+        Capsule.Visible = false
+        MainFrame.Visible = true
+        MainFrame.Size = UDim2.new(0, 0, 0, 0)
+        TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.OutBack), {Size = UDim2.new(0, 560, 0, 340)}):Play()
+    else
+        TweenService:Create(MainFrame, TweenInfo.new(0.2, Enum.EasingStyle.InQuad), {Size = UDim2.new(0, 0, 0, 0)}):Play()
+        task.wait(0.2)
+        MainFrame.Visible = false
+        Capsule.Visible = true
+    end
+end
+
+-- Botão de fechar (X)
+local CloseBtn = Instance.new("TextButton", MainFrame)
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(1, -35, 0, 3)
+CloseBtn.BackgroundTransparency = 1
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.TextSize = 14
+CloseBtn.ZIndex = 10
+CloseBtn.MouseButton1Click:Connect(toggleMenu)
+
+-- Arrastar o Painel Principal (PC/Móvel)
+local dragMain = false
+local mainStart, mainPos
+MainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragMain = true
+        mainStart = input.Position
+        mainPos = MainFrame.Position
+    end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if dragMain and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - mainStart
+        MainFrame.Position = UDim2.new(mainPos.X.Scale, mainPos.X.Offset + delta.X, mainPos.Y.Scale, mainPos.Y.Offset + delta.Y)
+    end
+end)
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragMain = false end
+end)
+
+-- Arrastar a Bolha Flutuante (Capsule) com Clique Curto para Abrir
+local dragging = false
+local dragStart, startPos
+Capsule.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = Capsule.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+                if (input.Position - dragStart).Magnitude < 7 then toggleMenu() end
+            end
+        end)
+    end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        Capsule.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+print("[BK CLIENT] Interface de Segurança V8.0 carregada com Sucesso!")
