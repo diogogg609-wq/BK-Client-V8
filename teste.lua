@@ -1,5 +1,5 @@
 -- ====================================================================
--- BK CLIENT - VERSÃO OFICIAL V1.1 (PASSO 1: CÁPSULA AJUSTADA & NOTIFICAÇÃO)
+-- BK CLIENT - VERSÃO OFICIAL V1.2 (PASSO 1: CÁPSULA ESPACIAL & RAIO ROXO)
 -- ====================================================================
 
 local CoreGui = game:GetService("CoreGui")
@@ -22,7 +22,7 @@ pcall(function()
     StarterGui:SetCore("SendNotification", {
         Title = "BK CLIENT V1",
         Text = "SCRIPT BK CLIENT V1 ATIVO",
-        Icon = "rbxassetid://6031094028", -- Ícone discreto e elegante
+        Icon = "rbxassetid://6031094028",
         Duration = 5
     })
 end)
@@ -35,7 +35,6 @@ ScreenGui.Name = "BK_Official_UI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- Suporte seguro para injeção no CoreGui do Delta Android
 local successParent = pcall(function()
     ScreenGui.Parent = CoreGui
 end)
@@ -44,35 +43,99 @@ if not successParent then
 end
 
 -- ==========================================
--- CÁPSULA FLUTUANTE ULTRA OTIMIZADA
+-- CÁPSULA FLUTUANTE (FUNDO SÓLIDO ESPACIAL)
 -- ==========================================
 local Capsule = Instance.new("Frame")
 local CapsuleCorner = Instance.new("UICorner")
 local CapsuleStroke = Instance.new("UIStroke")
-local Layout = Instance.new("UIListLayout")
 
 Capsule.Name = "BK_Capsule"
-Capsule.Size = UDim2.new(0, 165, 0, 42) -- Ajustado levemente na largura para o novo tamanho do raio
+Capsule.Size = UDim2.new(0, 165, 0, 42)
 Capsule.Position = UDim2.new(0.05, 0, 0.4, 0)
-Capsule.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
-Capsule.BackgroundTransparency = 0.15
+Capsule.BackgroundColor3 = Color3.fromRGB(10, 10, 12) -- Fundo totalmente sólido e escuro
+Capsule.BackgroundTransparency = 0 -- ZERO transparência como você pediu!
 Capsule.Active = true
-Capsule.ClipsDescendants = false
+Capsule.ClipsDescendants = true -- Corta as bolhas para elas não saírem da cápsula
 Capsule.Parent = ScreenGui
 
 CapsuleCorner.CornerRadius = UDim.new(0, 21)
 CapsuleCorner.Parent = Capsule
 
-CapsuleStroke.Color = Color3.fromRGB(90, 60, 160) -- Roxo escuro premium (menos saturado)
+CapsuleStroke.Color = Color3.fromRGB(90, 60, 160) -- Roxo escuro premium
 CapsuleStroke.Thickness = 1.5
 CapsuleStroke.Parent = Capsule
 
--- Layout para alinhar o texto e o raio perfeitamente lado a lado
+-- ==========================================
+-- SISTEMA DE PARTÍCULAS ESPACIAIS (STARFIELD)
+-- ==========================================
+local StarContainer = Instance.new("Frame")
+StarContainer.Name = "StarContainer"
+StarContainer.Size = UDim2.new(1, 0, 1, 0)
+StarContainer.BackgroundTransparency = 1
+StarContainer.ZIndex = 1
+StarContainer.Parent = Capsule
+
+-- Criar 8 pequenas bolinhas/estrelas flutuantes
+local stars = {}
+for i = 1, 8 do
+    local star = Instance.new("Frame")
+    star.Name = "Star" .. i
+    star.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    
+    -- Tamanhos variados para profundidade (de 1 a 3 pixels)
+    local size = math.random(1, 3)
+    star.Size = UDim2.new(0, size, 0, size)
+    star.BackgroundTransparency = math.random(2, 6) / 10 -- Transparências diferentes para brilho
+    
+    -- Posição inicial aleatória
+    star.Position = UDim2.new(math.random(), 0, math.random(), 0)
+    star.ZIndex = 1
+    star.Parent = StarContainer
+    
+    local sCorner = Instance.new("UICorner")
+    sCorner.CornerRadius = UDim.new(1, 0) -- Deixar as bolinhas perfeitamente redondas
+    sCorner.Parent = star
+    
+    -- Velocidade de movimento individual (para a esquerda)
+    local speed = math.random(10, 30) / 1000
+    table.insert(stars, {frame = star, speed = speed})
+end
+
+-- Animação infinita das bolinhas se mexendo no espaço
+RunService.RenderStepped:Connect(function(dt)
+    for _, starData in ipairs(stars) do
+        local star = starData.frame
+        local speed = starData.speed
+        
+        -- Move a bolinha para a esquerda
+        local currentX = star.Position.X.Scale
+        local newX = currentX - (speed * dt * 60)
+        
+        -- Se passar do limite esquerdo, ressurge na direita com nova altura aleatória
+        if newX < -0.05 then
+            newX = 1.05
+            star.Position = UDim2.new(newX, 0, math.random(), 0)
+        else
+            star.Position = UDim2.new(newX, 0, star.Position.Y.Scale, 0)
+        end
+    end
+end)
+
+-- ==========================================
+-- CONTEÚDO DA CÁPSULA (SOBRE AS PARTÍCULAS)
+-- ==========================================
+local ContentFrame = Instance.new("Frame")
+ContentFrame.Size = UDim2.new(1, 0, 1, 0)
+ContentFrame.BackgroundTransparency = 1
+ContentFrame.ZIndex = 2 -- Garante que o texto fique acima do espaço
+ContentFrame.Parent = Capsule
+
+local Layout = Instance.new("UIListLayout")
 Layout.FillDirection = Enum.FillDirection.Horizontal
 Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 Layout.VerticalAlignment = Enum.VerticalAlignment.Center
 Layout.Padding = UDim.new(0, 6)
-Layout.Parent = Capsule
+Layout.Parent = ContentFrame
 
 -- Texto: BK CLIENT V1
 local TextLabel = Instance.new("TextLabel")
@@ -83,36 +146,38 @@ TextLabel.Text = "BK CLIENT V1"
 TextLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
 TextLabel.TextSize = 13
 TextLabel.Font = Enum.Font.GothamBold
-TextLabel.Parent = Capsule
+TextLabel.ZIndex = 3
+TextLabel.Parent = ContentFrame
 
--- Raio Roxo Brilhante Maior (Sem usar ID de imagem para máxima estabilidade no Delta)
+-- Raio ROXO Brilhante e Maior (Pulsação Roxa Ativa)
 local GlowRay = Instance.new("TextLabel")
 GlowRay.Name = "GlowRay"
-GlowRay.Size = UDim2.new(0, 22, 0, 22) -- Tamanho do frame aumentado
+GlowRay.Size = UDim2.new(0, 22, 0, 22)
 GlowRay.BackgroundTransparency = 1
 GlowRay.Text = "⚡"
-GlowRay.TextColor3 = Color3.fromRGB(130, 80, 255) -- Roxo brilhante inicial
-GlowRay.TextSize = 18 -- Raio maior como você pediu!
+GlowRay.TextColor3 = Color3.fromRGB(130, 80, 255) -- Inicialmente roxo neon
+GlowRay.TextSize = 18
 GlowRay.Font = Enum.Font.GothamBold
-GlowRay.Parent = Capsule
+GlowRay.ZIndex = 3
+GlowRay.Parent = ContentFrame
 
 -- ==========================================
--- SISTEMA DE ANIMAÇÃO DO RAIO (PULSAÇÃO EM ROXO)
+-- SISTEMA DE ANIMAÇÃO DO RAIO (TOTALMENTE ROXO)
 -- ==========================================
 task.spawn(function()
     while true do
         pcall(function()
-            -- Intercala o brilho e o tamanho do raio maior suavemente
+            -- Pulsa entre roxo neon ultra brilhante e roxo escuro
             local tweenOn = TweenService:Create(GlowRay, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                TextColor3 = Color3.fromRGB(180, 130, 255),
-                TextSize = 20 -- Pulsação máxima maior
+                TextColor3 = Color3.fromRGB(180, 100, 255), -- Roxo neon brilhante
+                TextSize = 20
             })
             tweenOn:Play()
             tweenOn.Completed:Wait()
             
             local tweenOff = TweenService:Create(GlowRay, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                TextColor3 = Color3.fromRGB(110, 50, 220),
-                TextSize = 17 -- Pulsação mínima maior
+                TextColor3 = Color3.fromRGB(100, 30, 180), -- Roxo profundo escuro
+                TextSize = 17
             })
             tweenOff:Play()
             tweenOff.Completed:Wait()
@@ -155,4 +220,4 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
-print("[BK CLIENT] Passo 1: Capsula V1.1 Carregada e Notificada no Android!")
+print("[BK CLIENT] Passo 1: Capsula Espacial V1.2 Carregada!")
