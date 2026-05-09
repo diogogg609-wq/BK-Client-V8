@@ -324,26 +324,27 @@ local function createTab(name)
     Pages[name] = Page
 end
 
--- CRIAÇÃO DAS ABAS OFICIAIS
+-- CRIAÇÃO DAS ABAS OFICIAIS (AGORA COM A NOVA ABA STATUS)
 createTab("Visual")
 createTab("Mira")
+createTab("Status")
 createTab("Configurações")
 
 -- ==========================================
--- DESIGN DA ABA [VISUAL] - ATIVA E COM STATUS REAIS
+-- DESIGN DA ABA [STATUS] - ATIVA E COM STATUS REAIS
 -- ==========================================
-local VisualPage = Pages["Visual"]
+local StatusPage = Pages["Status"]
 
-local VisualLayout = Instance.new("UIListLayout", VisualPage)
-VisualLayout.Padding = UDim.new(0, 12)
-VisualLayout.SortOrder = Enum.SortOrder.LayoutOrder
+local StatusLayout = Instance.new("UIListLayout", StatusPage)
+StatusLayout.Padding = UDim.new(0, 12)
+StatusLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
 -- 1. CARD JOGADORES ATIVOS
 local CardPlayers = Instance.new("Frame")
 CardPlayers.Size = UDim2.new(1, -10, 0, 65)
 CardPlayers.BackgroundColor3 = SidebarColor
 CardPlayers.ZIndex = 8
-CardPlayers.Parent = VisualPage
+CardPlayers.Parent = StatusPage
 Instance.new("UICorner", CardPlayers).CornerRadius = UDim.new(0, 8)
 local StrokeCP = Instance.new("UIStroke", CardPlayers)
 StrokeCP.Color = Color3.fromRGB(35, 35, 40)
@@ -386,7 +387,7 @@ local CardFPS = Instance.new("Frame")
 CardFPS.Size = UDim2.new(1, -10, 0, 65)
 CardFPS.BackgroundColor3 = SidebarColor
 CardFPS.ZIndex = 8
-CardFPS.Parent = VisualPage
+CardFPS.Parent = StatusPage
 Instance.new("UICorner", CardFPS).CornerRadius = UDim.new(0, 8)
 local StrokeCF = Instance.new("UIStroke", CardFPS)
 StrokeCF.Color = Color3.fromRGB(35, 35, 40)
@@ -475,15 +476,16 @@ local function setInterdicted(page, name)
     InfoLabel.Parent = page
 end
 
+setInterdicted(Pages["Visual"], "Visual")
 setInterdicted(Pages["Mira"], "Mira")
 setInterdicted(Pages["Configurações"], "Configurações")
 
--- Seleciona a aba Visual por padrão
-Tabs["Visual"].Btn.BackgroundTransparency = 0.8
-Tabs["Visual"].Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-Tabs["Visual"].Btn.BackgroundColor3 = AccentColor
-Tabs["Visual"].Stroke.Transparency = 0.3
-Pages["Visual"].Visible = true
+-- Seleciona a aba Status por padrão (Inicialização Limpa)
+Tabs["Status"].Btn.BackgroundTransparency = 0.8
+Tabs["Status"].Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+Tabs["Status"].Btn.BackgroundColor3 = AccentColor
+Tabs["Status"].Stroke.Transparency = 0.3
+Pages["Status"].Visible = true
 
 -- ==========================================
 -- SISTEMA DE ABERTURA PREMIUM (FADE & SCALE)
@@ -562,4 +564,4 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
-print("[BK CLIENT] Versão V2.8 Ativa. Aba Visual aberta com dados reais!")
+print("[BK CLIENT] Versão V2.8 Ativa. Aba Status aberta com dados reais!")
