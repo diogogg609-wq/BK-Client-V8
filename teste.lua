@@ -1,5 +1,5 @@
 -- ====================================================================
--- BK CLIENT - VERSÃO OFICIAL V1.2 (PASSO 1: CÁPSULA ESPACIAL & RAIO ROXO)
+-- BK CLIENT - VERSÃO OFICIAL V1.3 (PASSO 1: CÁPSULA ESPACIAL & NINJA ROXO)
 -- ====================================================================
 
 local CoreGui = game:GetService("CoreGui")
@@ -52,8 +52,8 @@ local CapsuleStroke = Instance.new("UIStroke")
 Capsule.Name = "BK_Capsule"
 Capsule.Size = UDim2.new(0, 165, 0, 42)
 Capsule.Position = UDim2.new(0.05, 0, 0.4, 0)
-Capsule.BackgroundColor3 = Color3.fromRGB(10, 10, 12) -- Fundo totalmente sólido e escuro
-Capsule.BackgroundTransparency = 0 -- ZERO transparência como você pediu!
+Capsule.BackgroundColor3 = Color3.fromRGB(10, 10, 12) -- Fundo totalmente sólido
+Capsule.BackgroundTransparency = 0
 Capsule.Active = true
 Capsule.ClipsDescendants = true -- Corta as bolhas para elas não saírem da cápsula
 Capsule.Parent = ScreenGui
@@ -82,36 +82,31 @@ for i = 1, 8 do
     star.Name = "Star" .. i
     star.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     
-    -- Tamanhos variados para profundidade (de 1 a 3 pixels)
     local size = math.random(1, 3)
     star.Size = UDim2.new(0, size, 0, size)
-    star.BackgroundTransparency = math.random(2, 6) / 10 -- Transparências diferentes para brilho
+    star.BackgroundTransparency = math.random(2, 6) / 10
     
-    -- Posição inicial aleatória
     star.Position = UDim2.new(math.random(), 0, math.random(), 0)
     star.ZIndex = 1
     star.Parent = StarContainer
     
     local sCorner = Instance.new("UICorner")
-    sCorner.CornerRadius = UDim.new(1, 0) -- Deixar as bolinhas perfeitamente redondas
+    sCorner.CornerRadius = UDim.new(1, 0)
     sCorner.Parent = star
     
-    -- Velocidade de movimento individual (para a esquerda)
     local speed = math.random(10, 30) / 1000
     table.insert(stars, {frame = star, speed = speed})
 end
 
--- Animação infinita das bolinhas se mexendo no espaço
+-- Animação infinita das bolinhas
 RunService.RenderStepped:Connect(function(dt)
     for _, starData in ipairs(stars) do
         local star = starData.frame
         local speed = starData.speed
         
-        -- Move a bolinha para a esquerda
         local currentX = star.Position.X.Scale
         local newX = currentX - (speed * dt * 60)
         
-        -- Se passar do limite esquerdo, ressurge na direita com nova altura aleatória
         if newX < -0.05 then
             newX = 1.05
             star.Position = UDim2.new(newX, 0, math.random(), 0)
@@ -127,14 +122,14 @@ end)
 local ContentFrame = Instance.new("Frame")
 ContentFrame.Size = UDim2.new(1, 0, 1, 0)
 ContentFrame.BackgroundTransparency = 1
-ContentFrame.ZIndex = 2 -- Garante que o texto fique acima do espaço
+ContentFrame.ZIndex = 2
 ContentFrame.Parent = Capsule
 
 local Layout = Instance.new("UIListLayout")
 Layout.FillDirection = Enum.FillDirection.Horizontal
 Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 Layout.VerticalAlignment = Enum.VerticalAlignment.Center
-Layout.Padding = UDim.new(0, 6)
+Layout.Padding = UDim.new(0, 8) -- Ajustado espaçamento
 Layout.Parent = ContentFrame
 
 -- Texto: BK CLIENT V1
@@ -149,37 +144,58 @@ TextLabel.Font = Enum.Font.GothamBold
 TextLabel.ZIndex = 3
 TextLabel.Parent = ContentFrame
 
--- Raio ROXO Brilhante e Maior (Pulsação Roxa Ativa)
-local GlowRay = Instance.new("TextLabel")
-GlowRay.Name = "GlowRay"
-GlowRay.Size = UDim2.new(0, 22, 0, 22)
-GlowRay.BackgroundTransparency = 1
-GlowRay.Text = "⚡"
-GlowRay.TextColor3 = Color3.fromRGB(130, 80, 255) -- Inicialmente roxo neon
-GlowRay.TextSize = 18
-GlowRay.Font = Enum.Font.GothamBold
-GlowRay.ZIndex = 3
-GlowRay.Parent = ContentFrame
+-- ÍCONE DE MÁSCARA NINJA (ESTILIZADO EM ROXO NEON)
+local NinjaIcon = Instance.new("TextLabel")
+NinjaIcon.Name = "NinjaIcon"
+NinjaIcon.Size = UDim2.new(0, 24, 0, 24)
+NinjaIcon.BackgroundTransparency = 1
+NinjaIcon.Text = "🥷" -- Usando o caractere de ninja base com modificação de cor via código para dar contraste
+NinjaIcon.TextSize = 20
+NinjaIcon.Font = Enum.Font.GothamBold
+NinjaIcon.ZIndex = 3
+NinjaIcon.Parent = ContentFrame
+
+-- Sobreposição de Cor Roxo Neon no Ninja (Efeito Silhouette profissional)
+local GlowLabel = Instance.new("TextLabel")
+GlowLabel.Size = UDim2.new(1, 0, 1, 0)
+GlowLabel.BackgroundTransparency = 1
+GlowLabel.Text = "🥷"
+GlowLabel.TextSize = 20
+GlowLabel.Font = Enum.Font.GothamBold
+GlowLabel.TextColor3 = Color3.fromRGB(140, 80, 255) -- Tom Roxo Puro Neon
+GlowLabel.TextTransparency = 0.45 -- Sobreposição sutil que puxa os detalhes do Ninja para o roxo
+GlowLabel.ZIndex = 4
+GlowLabel.Parent = NinjaIcon
 
 -- ==========================================
--- SISTEMA DE ANIMAÇÃO DO RAIO (TOTALMENTE ROXO)
+-- SISTEMA DE ANIMAÇÃO DO NINJA (PULSAÇÃO SUAVE)
 -- ==========================================
 task.spawn(function()
     while true do
         pcall(function()
-            -- Pulsa entre roxo neon ultra brilhante e roxo escuro
-            local tweenOn = TweenService:Create(GlowRay, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                TextColor3 = Color3.fromRGB(180, 100, 255), -- Roxo neon brilhante
-                TextSize = 20
+            -- Pulsação suave do tamanho e do brilho roxo
+            local tweenOn = TweenService:Create(GlowLabel, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                TextColor3 = Color3.fromRGB(190, 130, 255),
+                TextSize = 22
             })
+            local tweenOnBase = TweenService:Create(NinjaIcon, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                TextSize = 22
+            })
+            
             tweenOn:Play()
+            tweenOnBase:Play()
             tweenOn.Completed:Wait()
             
-            local tweenOff = TweenService:Create(GlowRay, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                TextColor3 = Color3.fromRGB(100, 30, 180), -- Roxo profundo escuro
-                TextSize = 17
+            local tweenOff = TweenService:Create(GlowLabel, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                TextColor3 = Color3.fromRGB(110, 40, 200),
+                TextSize = 18
             })
+            local tweenOffBase = TweenService:Create(NinjaIcon, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                TextSize = 18
+            })
+            
             tweenOff:Play()
+            tweenOffBase:Play()
             tweenOff.Completed:Wait()
         end)
         task.wait(0.1)
@@ -220,4 +236,4 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
-print("[BK CLIENT] Passo 1: Capsula Espacial V1.2 Carregada!")
+print("[BK CLIENT] Passo 1: Capsula Espacial V1.3 (Ninja) Carregada!")
