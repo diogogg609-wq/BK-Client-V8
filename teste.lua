@@ -1,5 +1,5 @@
 -- ====================================================================
--- BK CLIENT - VERSÃO OFICIAL V1.7 (PASSO 3: PAINEL INDEPENDENTE & ABAS)
+-- BK CLIENT - VERSÃO OFICIAL V1.8 (CORREÇÃO DE ARRASTE E TOQUE NO ANDROID)
 -- ====================================================================
 
 local CoreGui = game:GetService("CoreGui")
@@ -183,13 +183,13 @@ local MenuCorner = Instance.new("UICorner")
 local MenuStroke = Instance.new("UIStroke")
 
 MainMenu.Name = "BK_MainMenu"
-MainMenu.Size = UDim2.new(0, 480, 0, 280) -- Formato PC / Retangular espaçoso
-MainMenu.Position = UDim2.new(0, 0, 0, 60) -- Posicionado abaixo da bolha, mas livre visualmente
+MainMenu.Size = UDim2.new(0, 480, 0, 280)
+MainMenu.Position = UDim2.new(0, 0, 0, 60) -- Alinhado abaixo da cápsula
 MainMenu.BackgroundColor3 = MenuBGColor
 MainMenu.BackgroundTransparency = 1
 MainMenu.Visible = false
 MainMenu.Active = true
-MainMenu.Parent = Capsule -- Segue a cápsula no arraste
+MainMenu.Parent = Capsule -- Segue a cápsula automaticamente no arraste
 
 MenuCorner.CornerRadius = UDim.new(0, 10)
 MenuCorner.Parent = MainMenu
@@ -201,7 +201,7 @@ MenuStroke.Parent = MainMenu
 
 -- GAVETA / SIDEBAR ESQUERDA (BOTÕES DE ABAS)
 local Sidebar = Instance.new("Frame")
-Sidebar.Size = UDim2.new(0, 140, 1, -30) -- Deixa espaço para a telemetria embaixo
+Sidebar.Size = UDim2.new(0, 140, 1, -30)
 Sidebar.BackgroundColor3 = SidebarColor
 Sidebar.BorderSizePixel = 0
 Sidebar.Parent = MainMenu
@@ -229,7 +229,7 @@ ContentContainer.BackgroundTransparency = 1
 ContentContainer.Parent = MainMenu
 
 -- ==========================================
--- BARRA DE TELEMETRIA (DADOS REAIS E SEGUROS)
+-- BARRA DE TELEMETRIA (DADOS REAIS)
 -- ==========================================
 local TelemetryFrame = Instance.new("Frame")
 TelemetryFrame.Size = UDim2.new(1, 0, 0, 30)
@@ -265,7 +265,6 @@ local PingLabel = createStatLabel("PING: --ms")
 local PlayersLabel = createStatLabel("PLAYERS: --")
 local BatteryLabel = createStatLabel("BAT: --%")
 
--- Loop de Atualização Otimizado
 local lastTime = tick()
 local frameCount = 0
 RunService.RenderStepped:Connect(function(dt)
@@ -295,13 +294,12 @@ RunService.RenderStepped:Connect(function(dt)
 end)
 
 -- ==========================================
--- CRIADOR DE ABAS E TRANSIÇÃO GOSTOSA (TWEEN)
+-- CRIADOR DE ABAS
 -- ==========================================
 local Tabs = {}
 local Pages = {}
 
 local function createTab(name)
-    -- Botão da Gaveta
     local TabBtn = Instance.new("TextButton")
     TabBtn.Size = UDim2.new(0.9, 0, 0, 36)
     TabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
@@ -322,7 +320,6 @@ local function createTab(name)
     BtnStroke.Transparency = 1
     BtnStroke.Parent = TabBtn
 
-    -- Página de Conteúdo correspondente
     local Page = Instance.new("Frame")
     Page.Size = UDim2.new(1, 0, 1, 0)
     Page.BackgroundTransparency = 1
@@ -338,9 +335,7 @@ local function createTab(name)
     InfoLabel.Font = Enum.Font.GothamBold
     InfoLabel.Parent = Page
 
-    -- Clique com Animação Suave e Gostosa
     TabBtn.MouseButton1Click:Connect(function()
-        -- Reseta todas as outras abas
         for _, otherTab in pairs(Tabs) do
             TweenService:Create(otherTab.Btn, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 TextColor3 = Color3.fromRGB(160, 160, 165),
@@ -353,7 +348,6 @@ local function createTab(name)
             otherPage.Visible = false
         end
 
-        -- Ativa a aba atual com transição premium
         Page.Visible = true
         TweenService:Create(TabBtn, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             TextColor3 = Color3.fromRGB(255, 255, 255),
@@ -367,12 +361,10 @@ local function createTab(name)
     Pages[name] = Page
 end
 
--- Criando as Abas solicitadas
 createTab("Visual")
 createTab("Mira")
 createTab("Configurações")
 
--- Seleciona a primeira aba por padrão ao abrir
 Tabs["Visual"].Btn.BackgroundTransparency = 0.8
 Tabs["Visual"].Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
 Tabs["Visual"].Btn.BackgroundColor3 = AccentColor
@@ -380,7 +372,7 @@ Tabs["Visual"].Stroke.Transparency = 0.3
 Pages["Visual"].Visible = true
 
 -- ==========================================
--- LÓGICA DE ABRIR E FECHAR O MENU (TWEEN)
+-- LÓGICA DE INTERRUPTOR DO MENU (TWEEN)
 -- ==========================================
 local isMenuOpen = false
 
@@ -388,7 +380,6 @@ local function toggleMenu()
     isMenuOpen = not isMenuOpen
     
     if isMenuOpen then
-        -- Encolhe a cápsula para formato mini
         TweenService:Create(Capsule, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
             Size = CAPSULE_MINI_SIZE
         }):Play()
@@ -397,7 +388,6 @@ local function toggleMenu()
             TextTransparency = 1
         }):Play()
         
-        -- Abre o painel independente abaixo dela
         MainMenu.Visible = true
         TweenService:Create(MainMenu, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
             BackgroundTransparency = 0
@@ -405,9 +395,7 @@ local function toggleMenu()
         TweenService:Create(MenuStroke, TweenInfo.new(0.3), {
             Transparency = 0
         }):Play()
-        
     else
-        -- Fecha o painel independente
         local menuTween = TweenService:Create(MainMenu, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
             BackgroundTransparency = 1
         })
@@ -422,7 +410,6 @@ local function toggleMenu()
             end
         end)
         
-        -- Restaura a cápsula ao tamanho normal
         TweenService:Create(Capsule, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
             Size = CAPSULE_NORMAL_SIZE
         }):Play()
@@ -434,28 +421,17 @@ local function toggleMenu()
 end
 
 -- ==========================================
--- SISTEMA DE ARRASTE INTEGRADO (CÁPSULA + MENU)
+-- NOVO SISTEMA DE ARRASTE + CLIQUE SEPARADO (BLINDADO)
 -- ==========================================
 local dragging = false
 local dragStart, startPos
+local dragLimit = 6 -- Tolerância de movimento (pixels) para diferenciar arraste de clique
 
 Capsule.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
         dragStart = input.Position
         startPos = Capsule.Position
-        
-        local inputEndedConnection
-        inputEndedConnection = input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-                inputEndedConnection:Disconnect()
-                
-                if (input.Position - dragStart).Magnitude < 8 then
-                    toggleMenu()
-                end
-            end
-        end)
     end
 end)
 
@@ -473,4 +449,17 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
-print("[BK CLIENT] Passo 3: Painel Independente, Abas e Telemetria Ativados!")
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        if dragging then
+            dragging = false
+            local dragDistance = (input.Position - dragStart).Magnitude
+            -- Se mover menos do que o limite de pixels, detecta como um CLIQUE real!
+            if dragDistance < dragLimit then
+                toggleMenu()
+            end
+        end
+    end
+end)
+
+print("[BK CLIENT] Passo 3 Corrigido: Arraste e cliques 100% calibrados!")
