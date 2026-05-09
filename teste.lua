@@ -1,5 +1,5 @@
 -- ====================================================================
--- BK CLIENT - VERSÃO OFICIAL V2.5 (FIX ESTRELAS & ANIMAÇÃO PREMIUM)
+-- BK CLIENT - VERSÃO OFICIAL V2.6 (EFEITO CONSTELAÇÃO DINÂMICA)
 -- ====================================================================
 
 local CoreGui = game:GetService("CoreGui")
@@ -35,13 +35,13 @@ local function playSound(id, volume)
 end
 
 -- ==========================================
--- INTERFACE BASE (CAMADA DE TOQUE CORRETA)
+-- INTERFACE BASE
 -- ==========================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "BK_Official_UI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.DisplayOrder = 10 -- Ligeiramente acima do padrão, mas seguro
+ScreenGui.DisplayOrder = 10
 
 local successParent = pcall(function() 
     ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") 
@@ -68,7 +68,7 @@ Capsule.BorderSizePixel = 0
 Capsule.AutoButtonColor = false
 Capsule.Text = ""
 Capsule.Active = true
-Capsule.ClipsDescendants = true -- FUNDAMENTAL PARA AS ESTRELAS NÃO SAIREM
+Capsule.ClipsDescendants = true -- Corta as linhas e bolinhas fora da borda
 Capsule.ZIndex = 10
 Capsule.Parent = ScreenGui
 
@@ -78,7 +78,7 @@ CapsuleStroke.Color = BorderColor
 CapsuleStroke.Thickness = 1.5
 
 -- ==========================================
--- [EFEITO CONSERTADO] ESTRELAS DESLIZANTES
+-- [SISTEMA EXCLUSIVO] CONSTELAÇÃO DINÂMICA
 -- ==========================================
 local StarContainer = Instance.new("Frame")
 StarContainer.Size = UDim2.new(1, 0, 1, 0)
@@ -86,36 +86,105 @@ StarContainer.BackgroundTransparency = 1
 StarContainer.ZIndex = 1
 StarContainer.Parent = Capsule
 
-local stars = {}
-for i = 1, 8 do -- Aumentei para 8 bolinhas
-    local star = Instance.new("ImageLabel")
-    star.BackgroundTransparency = 1
-    star.Image = "rbxassetid://5030221360" -- Imagem vetorial de bolinha perfeita
-    star.ImageColor3 = Color3.fromRGB(255, 255, 255)
+local numNodes = 7 -- Quantidade ideal de pontos para ficar limpo
+local nodes = {}
+local connectionLines = {}
+
+-- Cria os nós (bolinhas usando frames nativos redondos)
+for i = 1, numNodes do
+    local node = Instance.new("Frame")
+    node.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    node.BorderSizePixel = 0
     
-    local size = math.random(2, 4) -- Tamanhos variados
-    star.Size = UDim2.new(0, size, 0, size)
-    star.ImageTransparency = math.random(4, 8) / 10 -- Transparências variadas
+    local size = math.random(3, 5)
+    node.Size = UDim2.new(0, size, 0, size)
+    node.BackgroundTransparency = math.random(3, 6) / 10
     
-    star.Position = UDim2.new(math.random(), 0, math.random(), 0)
-    star.ZIndex = 2
-    star.Parent = StarContainer
+    -- Posição inicial randômica na tela
+    node.Position = UDim2.new(math.random(), 0, math.random(), 0)
+    node.ZIndex = 2
+    node.Parent = StarContainer
     
-    table.insert(stars, {frame = star, speed = math.random(15, 40) / 1000})
+    Instance.new("UICorner", node).CornerRadius = UDim.new(1, 0)
+    
+    -- Vetor de velocidade suave e direção aleatória
+    local angle = math.random() * math.pi * 2
+    local speed = math.random(5, 12) / 100 -- Bem lento e gostoso de ver
+    local vx = math.cos(angle) * speed
+    local vy = math.sin(angle) * speed
+    
+    table.insert(nodes, {frame = node, vx = vx, vy = vy})
 end
 
--- Movimento contínuo das estrelas (Otimizado)
+-- Função rápida para desenhar linhas finas entre os nós que se aproximam
+local function drawLine(posA, posB, distance)
+    local line = Instance.new("Frame")
+    line.BorderSizePixel = 0
+    line.ZIndex = 1
+    
+    -- Gradiente de fade-out baseado na proximidade
+    local maxDist = 45
+    local transparency = 0.4 + (distance / maxDist) * 0.6
+    line.BackgroundTransparency = math.clamp(transparency, 0.4, 1)
+    line.BackgroundColor3 = AccentColor -- Linha roxa estilosa
+    
+    -- Posicionamento matemático da linha
+    local startPos = Vector2.new(posA.X, posA.Y)
+    local endPos = Vector2.new(posB.X, posB.Y)
+    local diff = endPos - startPos
+    local angle = math.atan2(diff.Y, diff.X)
+    
+    line.Size = UDim2.new(0, diff.Magnitude, 0, 1)
+    line.Position = UDim2.new(0, startPos.X, 0, startPos.Y)
+    line.Rotation = math.deg(angle)
+    line.AnchorPoint = Vector2.new(0, 0.5)
+    line.Parent = StarContainer
+    
+    table.insert(connectionLines, line)
+end
+
+-- Loop de física e conexões (Super leve)
 RunService.RenderStepped:Connect(function(dt)
     if not Capsule.Parent then return end
-    for _, starData in ipairs(stars) do
-        local star = starData.frame
-        local currentX = star.Position.X.Scale
-        local newX = currentX - (starData.speed * dt * 60)
-        if newX < -0.1 then 
-            newX = 1.1 
-            star.Position = UDim2.new(newX, 0, math.random(), 0)
-        else 
-            star.Position = UDim2.new(newX, 0, star.Position.Y.Scale, 0) 
+    
+    -- Limpa as linhas do frame anterior
+    for _, line in ipairs(connectionLines) do
+        line:Destroy()
+    end
+    table.clear(connectionLines)
+    
+    local sizeX, sizeY = Capsule.AbsoluteSize.X, Capsule.AbsoluteSize.Y
+    
+    -- 1. Atualiza a posição de cada bolinha
+    for _, data in ipairs(nodes) do
+        local node = data.frame
+        local newX = node.Position.X.Scale + (data.vx * dt)
+        local newY = node.Position.Y.Scale + (data.vy * dt)
+        
+        -- Rebate nas bordas horizontais
+        if newX < 0.05 or newX > 0.95 then
+            data.vx = -data.vx
+            newX = math.clamp(newX, 0.05, 0.95)
+        end
+        -- Rebate nas bordas verticais
+        if newY < 0.05 or newY > 0.95 then
+            data.vy = -data.vy
+            newY = math.clamp(newY, 0.05, 0.95)
+        end
+        
+        node.Position = UDim2.new(newX, 0, newY, 0)
+    end
+    
+    -- 2. Calcula as distâncias para desenhar as linhas de conexão
+    for i = 1, #nodes do
+        for j = i + 1, #nodes do
+            local posA = nodes[i].frame.AbsolutePosition - Capsule.AbsolutePosition + (nodes[i].frame.AbsoluteSize/2)
+            local posB = nodes[j].frame.AbsolutePosition - Capsule.AbsolutePosition + (nodes[j].frame.AbsoluteSize/2)
+            
+            local distance = (posA - posB).Magnitude
+            if distance < 45 then -- Distância máxima para conectar
+                drawLine(posA, posB, distance)
+            end
         end
     end
 end)
@@ -128,22 +197,21 @@ CapsuleLabel.Text = "BK CLIENT V1 †"
 CapsuleLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
 CapsuleLabel.TextSize = 13
 CapsuleLabel.Font = Enum.Font.GothamBold
-CapsuleLabel.ZIndex = 3
+CapsuleLabel.ZIndex = 5
 CapsuleLabel.Parent = Capsule
 
 -- ==========================================
--- MENU CENTRAL FLUTUANTE (ANIMAÇÃO PREMIUM)
+-- MENU CENTRAL FLUTUANTE
 -- ==========================================
--- Usando CanvasGroup para animação de transparência suave
 local CentralMenuCanvas = Instance.new("CanvasGroup")
 CentralMenuCanvas.Name = "BK_CentralMenu"
-CentralMenuCanvas.Size = UDim2.new(0, 500, 0, 320) -- Ligeiramente mais alto
+CentralMenuCanvas.Size = UDim2.new(0, 500, 0, 320)
 CentralMenuCanvas.AnchorPoint = Vector2.new(0.5, 0.5)
 CentralMenuCanvas.Position = UDim2.new(0.5, 0, 0.5, 0)
 CentralMenuCanvas.BackgroundColor3 = MenuBGColor
 CentralMenuCanvas.Visible = false
 CentralMenuCanvas.Active = true
-CentralMenuCanvas.GroupTransparency = 1 -- Inicia invisível
+CentralMenuCanvas.GroupTransparency = 1
 CentralMenuCanvas.ZIndex = 5
 CentralMenuCanvas.Parent = ScreenGui
 
@@ -249,7 +317,7 @@ local function createTab(name)
     local InfoLabel = Instance.new("TextLabel")
     InfoLabel.Size = UDim2.new(1, 0, 1, 0)
     InfoLabel.BackgroundTransparency = 1
-    InfoLabel.Text = "ABA [" .. string.upper(name) .. "]\n\n⚡ EM BREVE ⚡\n(INTERDITADA V2.5)"
+    InfoLabel.Text = "ABA [" .. string.upper(name) .. "]\n\n⚡ EM BREVE ⚡\n(INTERDITADA V2.6)"
     InfoLabel.TextColor3 = Color3.fromRGB(100, 100, 110)
     InfoLabel.TextSize = 13
     InfoLabel.Font = Enum.Font.GothamBold
@@ -301,12 +369,10 @@ local function toggleMenu()
     playSound("6895086153", 0.5)
     
     if isMenuOpen then
-        -- Inicia encolhido e transparente
         CentralMenuCanvas.Size = UDim2.new(0, 470, 0, 290)
         CentralMenuCanvas.GroupTransparency = 1
         CentralMenuCanvas.Visible = true
         
-        -- Animação de Entrada (Suave e Gostosa)
         TweenService:Create(CentralMenuCanvas, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
             Size = UDim2.new(0, 500, 0, 320),
             GroupTransparency = 0
@@ -315,7 +381,6 @@ local function toggleMenu()
         task.wait(0.4)
         menuTransitioning = false
     else
-        -- Animação de Saída (Rápida e Leve)
         TweenService:Create(CentralMenuCanvas, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
             Size = UDim2.new(0, 470, 0, 290),
             GroupTransparency = 1
@@ -368,4 +433,4 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
-print("[BK CLIENT] Versão V2.5 Ativa. Estrelas Fixadas & Animação Premium.")
+print("[BK CLIENT] Versão V2.6 Ativa. Constelação Dinâmica Rodando.")
