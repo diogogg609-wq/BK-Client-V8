@@ -1,5 +1,5 @@
 -- =================================================================
--- BK CLIENT v1.7 [Beta] - PC STYLE INJECTOR LAYOUT
+-- BK CLIENT v1.8 [Beta] - PC STYLE INJECTOR LAYOUT (SIDEBAR LEFT)
 -- NO EFFECTS - GREY THEME - MINIMAL COLOR
 -- Abas: Perfil (Inicial), Status, Opções, Mira, Visual, Extras, Gráficos
 -- Pronto para hospedagem no GitHub / Loadstring
@@ -13,6 +13,7 @@ local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local Debris = game:GetService("Debris")
 local MemoryStoreService = game:GetService("MemoryStoreService")
+local GuiService = game:GetService("GuiService")
 
 -- Evita execução duplicada
 if CoreGui:FindFirstChild("BKClient_V15") then
@@ -82,7 +83,7 @@ Bubble.Size = UDim2.new(0, 150, 0, 48)
 Bubble.Position = UDim2.new(0.05, 0, 0.15, 0)
 Bubble.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 Bubble.BorderSizePixel = 0
-Bubble.Text = "BK CLIENT v1.7 †"
+Bubble.Text = "BK CLIENT v1.8 †"
 Bubble.TextColor3 = Color3.fromRGB(255, 255, 255)
 Bubble.Font = Enum.Font.GothamBold
 Bubble.TextSize = 13
@@ -95,13 +96,13 @@ BubbleCorner.CornerRadius = UDim.new(0, 14)
 BubbleCorner.Parent = Bubble
 
 -- ==========================================
--- 2. PAINEL PRINCIPAL PREMIUM (CINZA)
+-- 2. PAINEL PRINCIPAL PREMIUM (CINZA COM SIDEBAR ESQUERDA)
 -- ==========================================
 
 local MainPanel = Instance.new("Frame")
 MainPanel.Name = "MainPanel"
-MainPanel.Size = UDim2.new(0, 440, 0, 320)
-MainPanel.Position = UDim2.new(0.5, -220, 0.5, -160)
+MainPanel.Size = UDim2.new(0, 520, 0, 320)
+MainPanel.Position = UDim2.new(0.5, -260, 0.5, -160)
 MainPanel.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 MainPanel.BorderSizePixel = 0
 MainPanel.ClipsDescendants = true
@@ -125,7 +126,7 @@ local function CreateSubPanel(name)
     local SP = Instance.new("Frame")
     SP.Name = name
     SP.Size = UDim2.new(0, 200, 0, 220)
-    SP.Position = UDim2.new(0.5, 230, 0.5, -110)
+    SP.Position = UDim2.new(0.5, 270, 0.5, -110)
     SP.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
     SP.BorderSizePixel = 0
     SP.Visible = false
@@ -167,8 +168,8 @@ Bubble.MouseButton1Click:Connect(function()
         MainPanel.Visible = true
         
         local openTween = TweenService:Create(MainPanel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 440, 0, 320),
-            Position = UDim2.new(0.5, -220, 0.5, -160)
+            Size = UDim2.new(0, 520, 0, 320),
+            Position = UDim2.new(0.5, -260, 0.5, -160)
         })
         openTween:Play()
     else
@@ -185,7 +186,7 @@ Bubble.MouseButton1Click:Connect(function()
 end)
 
 -- ==========================================
--- 3. HEADER COM CONTADOR REAL ONLINE
+-- 3. HEADER SUPERIOR
 -- ==========================================
 
 local TitleLabel = Instance.new("TextLabel")
@@ -193,7 +194,7 @@ TitleLabel.Name = "TitleLabel"
 TitleLabel.Size = UDim2.new(1, 0, 0, 30)
 TitleLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 TitleLabel.BorderSizePixel = 0
-TitleLabel.Text = "BK CLIENT v1.7 [Beta]"
+TitleLabel.Text = "BK CLIENT v1.8 [Beta]"
 TitleLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.TextSize = 11
@@ -281,32 +282,33 @@ end
 task.spawn(StartOnlineCounter)
 
 -- ==========================================
--- 4. CONTAINER DE ABAS SUPERIORES
+-- 4. CONTAINER DE ABAS (SIDEBAR ESQUERDA)
 -- ==========================================
 
-local TabContainer = Instance.new("Frame")
-TabContainer.Size = UDim2.new(1, 0, 0, 32)
-TabContainer.Position = UDim2.new(0, 0, 0, 30)
-TabContainer.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-TabContainer.BorderSizePixel = 0
-TabContainer.Parent = MainPanel
+local Sidebar = Instance.new("Frame")
+Sidebar.Name = "Sidebar"
+Sidebar.Size = UDim2.new(0, 110, 1, -30)
+Sidebar.Position = UDim2.new(0, 0, 0, 30)
+Sidebar.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+Sidebar.BorderSizePixel = 0
+Sidebar.Parent = MainPanel
 
-local TabLayout = Instance.new("UIGridLayout")
-TabLayout.CellSize = UDim2.new(1/7, 0, 1, 0)
-TabLayout.CellPadding = UDim2.new(0, 0, 0, 0)
-TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
-TabLayout.Parent = TabContainer
+local SidebarLine = Instance.new("Frame")
+SidebarLine.Size = UDim2.new(0, 1, 1, 0)
+SidebarLine.Position = UDim2.new(1, -1, 0, 0)
+SidebarLine.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+SidebarLine.BorderSizePixel = 0
+SidebarLine.Parent = Sidebar
 
-local TabLine = Instance.new("Frame")
-TabLine.Size = UDim2.new(1, 0, 0, 1)
-TabLine.Position = UDim2.new(0, 0, 1, -1)
-TabLine.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-TabLine.BorderSizePixel = 0
-TabLine.Parent = TabContainer
+local SidebarLayout = Instance.new("UIListLayout")
+SidebarLayout.FillDirection = Enum.FillDirection.Vertical
+SidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
+SidebarLayout.Padding = UDim.new(0, 0)
+SidebarLayout.Parent = Sidebar
 
 local ContainerPages = Instance.new("Frame")
-ContainerPages.Size = UDim2.new(1, -20, 1, -72)
-ContainerPages.Position = UDim2.new(0, 10, 0, 72)
+ContainerPages.Size = UDim2.new(1, -130, 1, -50)
+ContainerPages.Position = UDim2.new(0, 120, 0, 40)
 ContainerPages.BackgroundTransparency = 1
 ContainerPages.Parent = MainPanel
 
@@ -320,7 +322,7 @@ local function CreatePage(name, isProfile, isVisual)
     Page.BackgroundTransparency = 1
     Page.BorderSizePixel = 0
     Page.ScrollBarThickness = 3
-    Page.CanvasSize = UDim2.new(0, 0, 0, 300)
+    Page.CanvasSize = UDim2.new(0, 0, 0, 320)
     Page.Visible = false
     Page.Parent = ContainerPages
     
@@ -385,7 +387,7 @@ local function CreatePage(name, isProfile, isVisual)
     return Page
 end
 
--- Reorganizando as páginas: Perfil passa a ser a Aba Inicial na Ordem
+-- Criando as abas
 local PagePerfil = CreatePage("Perfil", true, false)
 local PageStatus = CreatePage("Status", false, false)
 local PageOpcoes = CreatePage("Opcoes", false, false)
@@ -394,12 +396,12 @@ local PageVisual = CreatePage("Visual", false, true)
 local PageExtras = CreatePage("Extras", false, false)
 local PageGraficos = CreatePage("Graficos", false, false)
 
--- Perfil visível ao iniciar o injetor
+-- Perfil inicial ativo
 PagePerfil.Visible = true
 
 local function AddTabBtn(name, displayName, layoutOrder, isDefault)
     local Btn = Instance.new("TextButton")
-    Btn.Size = UDim2.new(1, 0, 1, 0)
+    Btn.Size = UDim2.new(1, 0, 0, 41)
     Btn.BackgroundColor3 = isDefault and Color3.fromRGB(10, 10, 10) or Color3.fromRGB(15, 15, 15)
     Btn.BorderSizePixel = 0
     Btn.Text = displayName:upper()
@@ -407,7 +409,7 @@ local function AddTabBtn(name, displayName, layoutOrder, isDefault)
     Btn.Font = Enum.Font.GothamBold
     Btn.TextSize = 9
     Btn.LayoutOrder = layoutOrder
-    Btn.Parent = TabContainer
+    Btn.Parent = Sidebar
 
     Btn.MouseButton1Click:Connect(function()
         for tName, tBtn in pairs(TabButtons) do
@@ -421,7 +423,7 @@ local function AddTabBtn(name, displayName, layoutOrder, isDefault)
     TabButtons[name] = Btn
 end
 
--- Botões ordenados corretamente colocando Perfil como primeiro botão
+-- Botões alinhados na esquerda (Perfil inicial)
 AddTabBtn("Perfil", "Perfil", 1, true)
 AddTabBtn("Status", "Status", 2, false)
 AddTabBtn("Opcoes", "Opções", 3, false)
@@ -922,7 +924,6 @@ SaveBtnName.Parent = SubPanelName
 
 SaveBtnName.MouseButton1Click:Connect(function() SubPanelName.Visible = false end)
 
-
 -- ==========================================
 -- 8. CONSTRUÇÃO DO SUB-PAINEL (ESP DISTÂNCIA)
 -- ==========================================
@@ -1250,7 +1251,7 @@ local function CreateToggleWithSettings(parent, text, default, subPanelToOpen, c
     end)
 end
 
--- Botões de visual carregados sequencialmente na aba Visual
+-- Criando os toggles com as sub-configurações correspondentes
 CreateToggleWithSettings(PageVisual, "ESP LINE", false, SubPanel, function(v)
     ESP_Config.Active = v
 end)
@@ -1273,14 +1274,14 @@ end)
 
 
 -- ==========================================
--- 11. RENDERIZADOR SUPREMO DE ESP (v1.7)
+-- 11. RENDERIZADOR SUPREMO DE ESP CORRIGIDO (v1.8)
 -- ==========================================
 
 local ESPContainer = Instance.new("Folder")
 ESPContainer.Name = "BK_ESP_v15"
 ESPContainer.Parent = ScreenGui
 
--- Desenha conexões de esqueleto dinâmico em 2D usando Frames
+-- Cria conexões de linha de esqueleto 2D
 local function DrawLine(parent, thickness)
     local l = Instance.new("Frame")
     l.BorderSizePixel = 0
@@ -1332,12 +1333,12 @@ local function ApplyESP(player)
     DistTag.Visible = false
     DistTag.Parent = PlayerFolder
 
-    -- Estrutura ESP ESQUELETO (Articulações Suportadas R6/R15)
+    -- Estrutura ESP ESQUELETO (Articulações R6/R15)
     local SkeletonFolder = Instance.new("Folder")
     SkeletonFolder.Name = "Skeleton"
     SkeletonFolder.Parent = PlayerFolder
 
-    -- Pool de 16 linhas para cobrir todo o esqueleto R15
+    -- Pool de 16 linhas para cobrir perfeitamente o esqueleto R15
     local lines = {}
     for i = 1, 16 do
         lines[i] = DrawLine(SkeletonFolder, 1.5)
@@ -1373,7 +1374,14 @@ local function ApplyESP(player)
             return
         end
 
-        local ScreenPos, OnScreen = Camera:WorldToViewportPoint(RootPart.Position)
+        -- =================================================================
+        -- CORREÇÃO DO INSET DA TELA (MOBILE TOOLBAR / TOPBAR SHIFT FIX)
+        -- =================================================================
+        local inset = GuiService:GetGuiInset()
+
+        local RawScreenPos, OnScreen = Camera:WorldToViewportPoint(RootPart.Position)
+        -- Aplica a correção de escala e offset de viewport mobile
+        local ScreenPos = Vector2.new(RawScreenPos.X, RawScreenPos.Y - inset.Y)
 
         if OnScreen then
             -- RENDERIZAR ESP LINE
@@ -1388,26 +1396,28 @@ local function ApplyESP(player)
 
                 FrameLine.Size = UDim2.new(0, Dist, 0, ESP_Config.Thickness)
                 FrameLine.BackgroundColor3 = ESP_Config.Color
-                FrameLine.Position = UDim2.new(0, (StartX + TargetX) / 2 - Dist / 2, 0, (StartY + TargetY) / 2)
+                FrameLine.Position = UDim2.new(0, (StartX + TargetX) / 2 - Dist / 2, 0, (StartY + TargetY) / 2 - (ESP_Config.Origin == "Bottom" and inset.Y or 0))
                 FrameLine.Rotation = math.deg(Angle)
                 FrameLine.Visible = true
             else
                 FrameLine.Visible = false
             end
 
-            -- RENDERIZAR ESP BOX (CENTRALIZADO PERFEITO NO PERSONAGEM)
+            -- RENDERIZAR ESP BOX (CENTRALIZADO COM OFFSET CORRIGIDO)
             if ESP_Config.BoxActive then
-                -- Define a posição 3D do topo e da base real do modelo do personagem
-                local TopPos, OnScreenTop = Camera:WorldToViewportPoint(RootPart.Position + Vector3.new(0, 3, 0))
-                local BottomPos, OnScreenBottom = Camera:WorldToViewportPoint(RootPart.Position - Vector3.new(0, 3.5, 0))
+                local RawTopPos, OnScreenTop = Camera:WorldToViewportPoint(RootPart.Position + Vector3.new(0, 3, 0))
+                local RawBottomPos, OnScreenBottom = Camera:WorldToViewportPoint(RootPart.Position - Vector3.new(0, 3.5, 0))
 
                 if OnScreenTop and OnScreenBottom then
-                    -- Determina a altura exata com base na projeção da tela
+                    -- Ajusta as posições com base no Inset Mobile
+                    local TopPos = Vector2.new(RawTopPos.X, RawTopPos.Y - inset.Y)
+                    local BottomPos = Vector2.new(RawBottomPos.X, RawBottomPos.Y - inset.Y)
+
                     local BoxHeight = math.abs(TopPos.Y - BottomPos.Y) * ESP_Config.BoxSize
-                    local BoxWidth = (BoxHeight * 0.65) -- Relação de proporção ideal de corpo de pé
+                    local BoxWidth = (BoxHeight * 0.65)
 
                     FrameBox.Size = UDim2.new(0, BoxWidth, 0, BoxHeight)
-                    -- Centraliza horizontalmente e verticalmente no HumanoidRootPart projetado
+                    -- Perfeitamente centralizado no personagem compensando o inset
                     FrameBox.Position = UDim2.new(0, ScreenPos.X - (BoxWidth / 2), 0, ScreenPos.Y - (BoxHeight / 2))
                     
                     BoxStroke.Color = ESP_Config.BoxColor
@@ -1442,7 +1452,6 @@ local function ApplyESP(player)
                 local OffsetY = (800 / DistFromCamera)
 
                 DistTag.Size = UDim2.new(0, 100, 0, 15)
-                -- Posicionado estrategicamente logo abaixo do personagem
                 DistTag.Position = UDim2.new(0, ScreenPos.X - 50, 0, ScreenPos.Y + OffsetY + 5)
                 DistTag.Text = "[" .. tostring(DistFromCamera) .. "m]"
                 DistTag.TextSize = ESP_Config.DistSize
@@ -1452,7 +1461,7 @@ local function ApplyESP(player)
                 DistTag.Visible = false
             end
 
-            -- RENDERIZAR ESP ESQUELETO REAL (R6 / R15 DINÂMICO)
+            -- RENDERIZAR ESP ESQUELETO (R6 / R15 DINÂMICO CENTRALIZADO COM INSET FIXED)
             if ESP_Config.SkelActive then
                 local lineIndex = 1
                 local rigType = Humanoid.RigType
@@ -1462,10 +1471,14 @@ local function ApplyESP(player)
                     local part2 = Char:FindFirstChild(p2Name)
 
                     if part1 and part2 and lines[lineIndex] then
-                        local screen1, on1 = Camera:WorldToViewportPoint(part1.Position)
-                        local screen2, on2 = Camera:WorldToViewportPoint(part2.Position)
+                        local rawScreen1, on1 = Camera:WorldToViewportPoint(part1.Position)
+                        local rawScreen2, on2 = Camera:WorldToViewportPoint(part2.Position)
 
                         if on1 and on2 then
+                            -- Compensação de inset nas articulações
+                            local screen1 = Vector2.new(rawScreen1.X, rawScreen1.Y - inset.Y)
+                            local screen2 = Vector2.new(rawScreen2.X, rawScreen2.Y - inset.Y)
+
                             local line = lines[lineIndex]
                             local dx = screen2.X - screen1.X
                             local dy = screen2.Y - screen1.Y
@@ -1483,7 +1496,7 @@ local function ApplyESP(player)
                     end
                 end
 
-                -- Mapeia as conexões baseado na estrutura anatômica R15 ou R6 detectada
+                -- Mapeamento das conexões de articulação
                 if rigType == Enum.HumanoidRigType.R15 then
                     -- Tronco e Cabeça
                     ConnectJoints("Head", "UpperTorso")
@@ -1504,12 +1517,12 @@ local function ApplyESP(player)
                     ConnectJoints("LeftUpperLeg", "LeftLowerLeg")
                     ConnectJoints("LeftLowerLeg", "LeftFoot")
 
-                    -- Perna Direito
+                    -- Perna Direita
                     ConnectJoints("LowerTorso", "RightUpperLeg")
                     ConnectJoints("RightUpperLeg", "RightLowerLeg")
                     ConnectJoints("RightLowerLeg", "RightFoot")
                 else
-                    -- R6 Clássico estruturado
+                    -- R6 Clássico estruturado com correção de Inset
                     ConnectJoints("Head", "Torso")
                     ConnectJoints("Torso", "Left Arm")
                     ConnectJoints("Torso", "Right Arm")
@@ -1517,7 +1530,7 @@ local function ApplyESP(player)
                     ConnectJoints("Torso", "Right Leg")
                 end
 
-                -- Esconde as linhas sobressalentes que não foram utilizadas
+                -- Esconde as linhas que sobraram
                 for i = lineIndex, #lines do
                     lines[i].Visible = false
                 end
@@ -1532,7 +1545,7 @@ local function ApplyESP(player)
     end)
 end
 
--- Rodar o ESP para o Servidor inteiro
+-- Monitorar jogadores do servidor
 for _, p in ipairs(Players:GetPlayers()) do
     task.spawn(function() ApplyESP(p) end)
 end
