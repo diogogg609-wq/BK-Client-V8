@@ -1,5 +1,5 @@
 -- =================================================================
--- BK CLIENT v1.5 [Beta] - PC STYLE INJECTOR LAYOUT
+-- BK CLIENT v1.6 [Beta] - PC STYLE INJECTOR LAYOUT
 -- NO EFFECTS - GREY THEME - MINIMAL COLOR
 -- Abas: Status, Opções, Mira, Visual, Extras, Gráficos
 -- Pronto para hospedagem no GitHub / Loadstring
@@ -27,17 +27,42 @@ ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = CoreGui
 
 -- ==========================================
--- CONFIGURAÇÕES DA FUNÇÃO ESP (SALVÁVEIS)
+-- CONFIGURAÇÕES SALVÁVEIS DAS FUNÇÕES VISUAIS
 -- ==========================================
 local ESP_Config = {
+    -- ESP LINE
     Active = false,
     Thickness = 1.5,
     Color = Color3.fromRGB(255, 0, 0),
-    Origin = "Bottom" -- "Bottom" ou "Top"
+    Origin = "Bottom",
+    
+    -- ESP BOX
+    BoxActive = false,
+    BoxSize = 1.0, -- Multiplicador (0.7 = P, 1.0 = M, 1.4 = G)
+    BoxThickness = 1.5,
+    BoxColor = Color3.fromRGB(255, 255, 255),
+    BoxRound = false, -- true = Redonda, false = Quadrada
+    
+    -- ESP NOME
+    NameActive = false,
+    NameColor = Color3.fromRGB(255, 255, 255),
+    NameRGB = false,
+    NameSize = 11
 }
 
+-- Variável auxiliar para efeito RGB
+local GlobalRGB = Color3.fromRGB(255, 0, 0)
+task.spawn(function()
+    while task.wait() do
+        for i = 0, 1, 0.01 do
+            GlobalRGB = Color3.fromHSV(i, 1, 1)
+            task.wait(0.03)
+        end
+    end
+end)
+
 -- ==========================================
--- 1. SISTEMA DA BOLHA FLUTUANTE (PRETA, TEXTO BRANCO, SEM EFEITOS)
+-- 1. SISTEMA DA BOLHA FLUTUANTE (PRETA, TEXTO BRANCO)
 -- ==========================================
 
 local Bubble = Instance.new("TextButton")
@@ -46,7 +71,7 @@ Bubble.Size = UDim2.new(0, 150, 0, 48)
 Bubble.Position = UDim2.new(0.05, 0, 0.15, 0)
 Bubble.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 Bubble.BorderSizePixel = 0
-Bubble.Text = "BK CLIENT v1.5 †"
+Bubble.Text = "BK CLIENT v1.6 †"
 Bubble.TextColor3 = Color3.fromRGB(255, 255, 255)
 Bubble.Font = Enum.Font.GothamBold
 Bubble.TextSize = 13
@@ -81,11 +106,15 @@ PanelStroke.Color = Color3.fromRGB(30, 30, 30)
 PanelStroke.Thickness = 1.5
 PanelStroke.Parent = MainPanel
 
--- Sub-Painel de Customização da LINE (Configurações extras)
+-- ==========================================
+-- SUB-PAINEIS DE CUSTOMIZAÇÃO DE FUNÇÕES
+-- ==========================================
+
+-- Sub-Painel de Customização da LINE
 local SubPanel = Instance.new("Frame")
 SubPanel.Name = "SubPanel"
 SubPanel.Size = UDim2.new(0, 200, 0, 220)
-SubPanel.Position = UDim2.new(0.5, 230, 0.5, -110) -- Aparece elegantemente ao lado direito do menu principal
+SubPanel.Position = UDim2.new(0.5, 230, 0.5, -110)
 SubPanel.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
 SubPanel.BorderSizePixel = 0
 SubPanel.Visible = false
@@ -100,7 +129,51 @@ SubStroke.Color = Color3.fromRGB(40, 40, 40)
 SubStroke.Thickness = 1.5
 SubStroke.Parent = SubPanel
 
--- Lógica de abrir/fechar simplificada
+-- Sub-Painel de Customização da BOX
+local SubPanelBox = Instance.new("Frame")
+SubPanelBox.Name = "SubPanelBox"
+SubPanelBox.Size = UDim2.new(0, 200, 0, 220)
+SubPanelBox.Position = UDim2.new(0.5, 230, 0.5, -110)
+SubPanelBox.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+SubPanelBox.BorderSizePixel = 0
+SubPanelBox.Visible = false
+SubPanelBox.Parent = ScreenGui
+
+local SubCornerBox = Instance.new("UICorner")
+SubCornerBox.CornerRadius = UDim.new(0, 12)
+SubCornerBox.Parent = SubPanelBox
+
+local SubStrokeBox = Instance.new("UIStroke")
+SubStrokeBox.Color = Color3.fromRGB(40, 40, 40)
+SubStrokeBox.Thickness = 1.5
+SubStrokeBox.Parent = SubPanelBox
+
+-- Sub-Painel de Customização do NOME
+local SubPanelName = Instance.new("Frame")
+SubPanelName.Name = "SubPanelName"
+SubPanelName.Size = UDim2.new(0, 200, 0, 220)
+SubPanelName.Position = UDim2.new(0.5, 230, 0.5, -110)
+SubPanelName.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+SubPanelName.BorderSizePixel = 0
+SubPanelName.Visible = false
+SubPanelName.Parent = ScreenGui
+
+local SubCornerName = Instance.new("UICorner")
+SubCornerName.CornerRadius = UDim.new(0, 12)
+SubCornerName.Parent = SubPanelName
+
+local SubStrokeName = Instance.new("UIStroke")
+SubStrokeName.Color = Color3.fromRGB(40, 40, 40)
+SubStrokeName.Thickness = 1.5
+SubStrokeName.Parent = SubPanelName
+
+-- Lógica para fechar todos os sub-paineis extras
+local function CloseAllSubPanels()
+    SubPanel.Visible = false
+    SubPanelBox.Visible = false
+    SubPanelName.Visible = false
+end
+
 local isMenuOpen = false
 Bubble.MouseButton1Click:Connect(function()
     isMenuOpen = not isMenuOpen
@@ -116,7 +189,7 @@ Bubble.MouseButton1Click:Connect(function()
         })
         openTween:Play()
     else
-        SubPanel.Visible = false
+        CloseAllSubPanels()
         local closeTween = TweenService:Create(MainPanel, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
             Size = UDim2.new(0, 0, 0, 0),
             Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -129,7 +202,7 @@ Bubble.MouseButton1Click:Connect(function()
 end)
 
 -- ==========================================
--- 3. HEADER MINIMALISTA COM INDICADOR ONLINE REAL
+-- 3. HEADER MINIMALISTA E CONTADOR ONLINE REAL
 -- ==========================================
 
 local TitleLabel = Instance.new("TextLabel")
@@ -137,7 +210,7 @@ TitleLabel.Name = "TitleLabel"
 TitleLabel.Size = UDim2.new(1, 0, 0, 30)
 TitleLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 TitleLabel.BorderSizePixel = 0
-TitleLabel.Text = "BK CLIENT v1.5 [Beta]"
+TitleLabel.Text = "BK CLIENT v1.6 [Beta]"
 TitleLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.TextSize = 11
@@ -225,7 +298,7 @@ end
 task.spawn(StartOnlineCounter)
 
 -- ==========================================
--- 4. CONTAINER DE ABAS SUPERIORES (HORIZONTAL)
+-- 4. CONTAINER DE ABAS SUPERIORES
 -- ==========================================
 
 local TabContainer = Instance.new("Frame")
@@ -264,7 +337,7 @@ local function CreatePage(name, isProfile, isVisual)
     Page.BackgroundTransparency = 1
     Page.BorderSizePixel = 0
     Page.ScrollBarThickness = 3
-    Page.CanvasSize = UDim2.new(0, 0, 0, 200)
+    Page.CanvasSize = UDim2.new(0, 0, 0, 250)
     Page.Visible = false
     Page.Parent = ContainerPages
     
@@ -311,9 +384,8 @@ local function CreatePage(name, isProfile, isVisual)
         CompanyLabel.TextSize = 11
         CompanyLabel.Parent = ProfileCard
     elseif isVisual then
-        -- LIST LAYOUT PARA ADICIONAR AS FUNÇÕES VISUAIS FUTURAS
         local VisualLayout = Instance.new("UIListLayout")
-        VisualLayout.Padding = UDim.new(0, 8)
+        VisualLayout.Padding = UDim.new(0, 6)
         VisualLayout.Parent = Page
     else
         local SoonText = Instance.new("TextLabel")
@@ -333,7 +405,7 @@ end
 local PageStatus = CreatePage("Status", false, false)
 local PageOpcoes = CreatePage("Opcoes", false, false)
 local PageMira = CreatePage("Mira", false, false)
-local PageVisual = CreatePage("Visual", false, true) -- Ativado layout de lista na aba Visual
+local PageVisual = CreatePage("Visual", false, true)
 local PageExtras = CreatePage("Extras", false, false)
 local PagePerfil = CreatePage("Perfil", true, false)
 local PageGraficos = CreatePage("Graficos", false, false)
@@ -373,7 +445,7 @@ AddTabBtn("Perfil", "Perfil", 6, false)
 AddTabBtn("Graficos", "Gráficos", 7, false)
 
 -- ==========================================
--- 5. CONSTRUÇÃO DO SUB-PAINEL DE PERSONALIZAÇÃO
+-- 5. CONSTRUÇÃO DO SUB-PAINEL (ESP LINE)
 -- ==========================================
 
 local SubTitle = Instance.new("TextLabel")
@@ -390,7 +462,6 @@ local SubTitleCorner = Instance.new("UICorner")
 SubTitleCorner.CornerRadius = UDim.new(0, 12)
 SubTitleCorner.Parent = SubTitle
 
--- Ajuste de Espessura (Thickness)
 local ThickLabel = Instance.new("TextLabel")
 ThickLabel.Size = UDim2.new(1, 0, 0, 20)
 ThickLabel.Position = UDim2.new(0, 10, 0, 40)
@@ -417,7 +488,6 @@ local ThickCorner = Instance.new("UICorner")
 ThickCorner.CornerRadius = UDim.new(0, 4)
 ThickCorner.Parent = ThickSlider
 
--- Alterna a espessura entre 1.0, 1.5, 2.5, 4.0
 ThickSlider.MouseButton1Click:Connect(function()
     if ESP_Config.Thickness == 1.5 then
         ESP_Config.Thickness = 2.5
@@ -431,7 +501,6 @@ ThickSlider.MouseButton1Click:Connect(function()
     ThickLabel.Text = "ESPESSURA: " .. tostring(ESP_Config.Thickness)
 end)
 
--- Origem da linha (Top / Bottom)
 local OriginLabel = Instance.new("TextLabel")
 OriginLabel.Size = UDim2.new(1, 0, 0, 20)
 OriginLabel.Position = UDim2.new(0, 10, 0, 85)
@@ -461,7 +530,7 @@ BtnTopCorner.Parent = BtnTop
 local BtnBottom = Instance.new("TextButton")
 BtnBottom.Size = UDim2.new(0.42, 0, 0, 20)
 BtnBottom.Position = UDim2.new(0.53, 0, 0, 105)
-BtnBottom.BackgroundColor3 = Color3.fromRGB(40, 40, 40) -- Ativado por padrão
+BtnBottom.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 BtnBottom.BorderSizePixel = 0
 BtnBottom.Text = "BAIXO"
 BtnBottom.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -489,7 +558,6 @@ BtnBottom.MouseButton1Click:Connect(function()
     BtnTop.TextColor3 = Color3.fromRGB(150, 150, 150)
 end)
 
--- Cores Rápidas
 local ColorLabel = Instance.new("TextLabel")
 ColorLabel.Size = UDim2.new(1, 0, 0, 20)
 ColorLabel.Position = UDim2.new(0, 10, 0, 130)
@@ -512,55 +580,373 @@ ColorLayout.FillDirection = Enum.FillDirection.Horizontal
 ColorLayout.Padding = UDim.new(0, 6)
 ColorLayout.Parent = ColorContainer
 
-local function CreateColorSelector(color, name)
+local function CreateColorSelector(color, parent)
     local colBtn = Instance.new("TextButton")
     colBtn.Size = UDim2.new(0, 20, 0, 20)
     colBtn.BackgroundColor3 = color
     colBtn.Text = ""
     colBtn.BorderSizePixel = 0
-    colBtn.Parent = ColorContainer
+    colBtn.Parent = parent
 
     local colCorner = Instance.new("UICorner")
     colCorner.CornerRadius = UDim.new(1, 0)
     colCorner.Parent = colBtn
-
-    colBtn.MouseButton1Click:Connect(function()
-        ESP_Config.Color = color
-    end)
+    return colBtn
 end
 
-CreateColorSelector(Color3.fromRGB(255, 0, 0))   -- Vermelho
-CreateColorSelector(Color3.fromRGB(0, 255, 0))   -- Verde
-CreateColorSelector(Color3.fromRGB(0, 0, 255))   -- Azul
-CreateColorSelector(Color3.fromRGB(255, 255, 255)) -- Branco
-CreateColorSelector(Color3.fromRGB(255, 255, 0)) -- Amare
+local c1 = CreateColorSelector(Color3.fromRGB(255, 0, 0), ColorContainer)
+c1.MouseButton1Click:Connect(function() ESP_Config.Color = Color3.fromRGB(255, 0, 0) end)
+local c2 = CreateColorSelector(Color3.fromRGB(0, 255, 0), ColorContainer)
+c2.MouseButton1Click:Connect(function() ESP_Config.Color = Color3.fromRGB(0, 255, 0) end)
+local c3 = CreateColorSelector(Color3.fromRGB(0, 0, 255), ColorContainer)
+c3.MouseButton1Click:Connect(function() ESP_Config.Color = Color3.fromRGB(0, 0, 255) end)
+local c4 = CreateColorSelector(Color3.fromRGB(255, 255, 255), ColorContainer)
+c4.MouseButton1Click:Connect(function() ESP_Config.Color = Color3.fromRGB(255, 255, 255) end)
+local c5 = CreateColorSelector(Color3.fromRGB(255, 255, 0), ColorContainer)
+c5.MouseButton1Click:Connect(function() ESP_Config.Color = Color3.fromRGB(255, 255, 0) end)
 
--- Botão Salvar (Salva as configurações e fecha o painel menor)
 local SaveBtn = Instance.new("TextButton")
 SaveBtn.Size = UDim2.new(0.9, 0, 0, 25)
 SaveBtn.Position = UDim2.new(0.05, 0, 0, 185)
 SaveBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 SaveBtn.BorderSizePixel = 0
 SaveBtn.Text = "SALVAR CONFIGURAÇÃO"
-SaveBtn.TextColor3 = Color3.fromRGB(0, 255, 0) -- Verde confirmador
+SaveBtn.TextColor3 = Color3.fromRGB(0, 255, 0)
 SaveBtn.Font = Enum.Font.GothamBold
 SaveBtn.TextSize = 9
 SaveBtn.Parent = SubPanel
 
-local SaveCorner = Instance.new("UICorner")
-SaveCorner.CornerRadius = UDim.new(0, 6)
-SaveCorner.Parent = SaveBtn
+SaveBtn.MouseButton1Click:Connect(function() SubPanel.Visible = false end)
 
-SaveBtn.MouseButton1Click:Connect(function()
-    SubPanel.Visible = false -- Fecha o Sub-Painel simulando salvar e carregar
+-- ==========================================
+-- 6. CONSTRUÇÃO DO SUB-PAINEL (ESP BOX)
+-- ==========================================
+
+local SubTitleBox = Instance.new("TextLabel")
+SubTitleBox.Size = UDim2.new(1, 0, 0, 30)
+SubTitleBox.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+SubTitleBox.BorderSizePixel = 0
+SubTitleBox.Text = "BOX CONFIGS ⚙️"
+SubTitleBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+SubTitleBox.Font = Enum.Font.GothamBold
+SubTitleBox.TextSize = 10
+SubTitleBox.Parent = SubPanelBox
+
+local SubTitleBoxCorner = Instance.new("UICorner")
+SubTitleBoxCorner.CornerRadius = UDim.new(0, 12)
+SubTitleBoxCorner.Parent = SubTitleBox
+
+-- Customizar Tamanho da Box
+local BoxSizeLabel = Instance.new("TextLabel")
+BoxSizeLabel.Size = UDim2.new(1, 0, 0, 20)
+BoxSizeLabel.Position = UDim2.new(0, 10, 0, 40)
+BoxSizeLabel.BackgroundTransparency = 1
+BoxSizeLabel.Text = "TAMANHO: MÉDIO"
+BoxSizeLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+BoxSizeLabel.Font = Enum.Font.GothamBold
+BoxSizeLabel.TextSize = 9
+BoxSizeLabel.TextXAlignment = Enum.TextXAlignment.Left
+BoxSizeLabel.Parent = SubPanelBox
+
+local BoxSizeSlider = Instance.new("TextButton")
+BoxSizeSlider.Size = UDim2.new(0.9, 0, 0, 18)
+BoxSizeSlider.Position = UDim2.new(0.05, 0, 0, 60)
+BoxSizeSlider.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+BoxSizeSlider.BorderSizePixel = 0
+BoxSizeSlider.Text = "MUDAR TAMANHO"
+BoxSizeSlider.TextColor3 = Color3.fromRGB(255, 255, 255)
+BoxSizeSlider.Font = Enum.Font.GothamBold
+BoxSizeSlider.TextSize = 8
+BoxSizeSlider.Parent = SubPanelBox
+
+local BoxSizeCorner = Instance.new("UICorner")
+BoxSizeCorner.CornerRadius = UDim.new(0, 4)
+BoxSizeCorner.Parent = BoxSizeSlider
+
+BoxSizeSlider.MouseButton1Click:Connect(function()
+    if ESP_Config.BoxSize == 1.0 then
+        ESP_Config.BoxSize = 1.4
+        BoxSizeLabel.Text = "TAMANHO: GRANDE"
+    elseif ESP_Config.BoxSize == 1.4 then
+        ESP_Config.BoxSize = 0.7
+        BoxSizeLabel.Text = "TAMANHO: PEQUENO"
+    else
+        ESP_Config.BoxSize = 1.0
+        BoxSizeLabel.Text = "TAMANHO: MÉDIO"
+    end
 end)
 
+-- Estilo da Box (Redonda ou Quadrada)
+local BoxStyleLabel = Instance.new("TextLabel")
+BoxStyleLabel.Size = UDim2.new(1, 0, 0, 20)
+BoxStyleLabel.Position = UDim2.new(0, 10, 0, 85)
+BoxStyleLabel.BackgroundTransparency = 1
+BoxStyleLabel.Text = "ESTILO DA BOX"
+BoxStyleLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+BoxStyleLabel.Font = Enum.Font.GothamBold
+BoxStyleLabel.TextSize = 9
+BoxStyleLabel.TextXAlignment = Enum.TextXAlignment.Left
+BoxStyleLabel.Parent = SubPanelBox
+
+local BtnSquare = Instance.new("TextButton")
+BtnSquare.Size = UDim2.new(0.42, 0, 0, 20)
+BtnSquare.Position = UDim2.new(0.05, 0, 0, 105)
+BtnSquare.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+BtnSquare.BorderSizePixel = 0
+BtnSquare.Text = "QUADRADA"
+BtnSquare.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnSquare.Font = Enum.Font.GothamBold
+BtnSquare.TextSize = 8
+BtnSquare.Parent = SubPanelBox
+
+local BtnSquareCorner = Instance.new("UICorner")
+BtnSquareCorner.CornerRadius = UDim.new(0, 4)
+BtnSquareCorner.Parent = BtnSquare
+
+local BtnRound = Instance.new("TextButton")
+BtnRound.Size = UDim2.new(0.42, 0, 0, 20)
+BtnRound.Position = UDim2.new(0.53, 0, 0, 105)
+BtnRound.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+BtnRound.BorderSizePixel = 0
+BtnRound.Text = "REDONDA"
+BtnRound.TextColor3 = Color3.fromRGB(150, 150, 150)
+BtnRound.Font = Enum.Font.GothamBold
+BtnRound.TextSize = 8
+BtnRound.Parent = SubPanelBox
+
+local BtnRoundCorner = Instance.new("UICorner")
+BtnRoundCorner.CornerRadius = UDim.new(0, 4)
+BtnRoundCorner.Parent = BtnRound
+
+BtnSquare.MouseButton1Click:Connect(function()
+    ESP_Config.BoxRound = false
+    BtnSquare.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    BtnSquare.TextColor3 = Color3.fromRGB(255, 255, 255)
+    BtnRound.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    BtnRound.TextColor3 = Color3.fromRGB(150, 150, 150)
+end)
+
+BtnRound.MouseButton1Click:Connect(function()
+    ESP_Config.BoxRound = true
+    BtnRound.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    BtnRound.TextColor3 = Color3.fromRGB(255, 255, 255)
+    BtnSquare.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    BtnSquare.TextColor3 = Color3.fromRGB(150, 150, 150)
+end)
+
+-- Cores da Box
+local BoxColorLabel = Instance.new("TextLabel")
+BoxColorLabel.Size = UDim2.new(1, 0, 0, 20)
+BoxColorLabel.Position = UDim2.new(0, 10, 0, 130)
+BoxColorLabel.BackgroundTransparency = 1
+BoxColorLabel.Text = "COR DA BOX"
+BoxColorLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+BoxColorLabel.Font = Enum.Font.GothamBold
+BoxColorLabel.TextSize = 9
+BoxColorLabel.TextXAlignment = Enum.TextXAlignment.Left
+BoxColorLabel.Parent = SubPanelBox
+
+local BoxColorContainer = Instance.new("Frame")
+BoxColorContainer.Size = UDim2.new(0.9, 0, 0, 20)
+BoxColorContainer.Position = UDim2.new(0.05, 0, 0, 150)
+BoxColorContainer.BackgroundTransparency = 1
+BoxColorContainer.Parent = SubPanelBox
+
+local BoxColorLayout = Instance.new("UIListLayout")
+BoxColorLayout.FillDirection = Enum.FillDirection.Horizontal
+BoxColorLayout.Padding = UDim.new(0, 6)
+BoxColorLayout.Parent = BoxColorContainer
+
+local bc1 = CreateColorSelector(Color3.fromRGB(255, 0, 0), BoxColorContainer)
+bc1.MouseButton1Click:Connect(function() ESP_Config.BoxColor = Color3.fromRGB(255, 0, 0) end)
+local bc2 = CreateColorSelector(Color3.fromRGB(0, 255, 0), BoxColorContainer)
+bc2.MouseButton1Click:Connect(function() ESP_Config.BoxColor = Color3.fromRGB(0, 255, 0) end)
+local bc3 = CreateColorSelector(Color3.fromRGB(0, 0, 255), BoxColorContainer)
+bc3.MouseButton1Click:Connect(function() ESP_Config.BoxColor = Color3.fromRGB(0, 0, 255) end)
+local bc4 = CreateColorSelector(Color3.fromRGB(255, 255, 255), BoxColorContainer)
+bc4.MouseButton1Click:Connect(function() ESP_Config.BoxColor = Color3.fromRGB(255, 255, 255) end)
+local bc5 = CreateColorSelector(Color3.fromRGB(255, 255, 0), BoxColorContainer)
+bc5.MouseButton1Click:Connect(function() ESP_Config.BoxColor = Color3.fromRGB(255, 255, 0) end)
+
+local SaveBtnBox = Instance.new("TextButton")
+SaveBtnBox.Size = UDim2.new(0.9, 0, 0, 25)
+SaveBtnBox.Position = UDim2.new(0.05, 0, 0, 185)
+SaveBtnBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+SaveBtnBox.BorderSizePixel = 0
+SaveBtnBox.Text = "SALVAR CONFIGURAÇÃO"
+SaveBtnBox.TextColor3 = Color3.fromRGB(0, 255, 0)
+SaveBtnBox.Font = Enum.Font.GothamBold
+SaveBtnBox.TextSize = 9
+SaveBtnBox.Parent = SubPanelBox
+
+SaveBtnBox.MouseButton1Click:Connect(function() SubPanelBox.Visible = false end)
 
 -- ==========================================
--- 6. INTEGRAÇÃO DO SWITCH COM SUB-PAINEL NA ABA VISUAL
+-- 7. CONSTRUÇÃO DO SUB-PAINEL (ESP NOME)
 -- ==========================================
 
-local function CreateToggleWithSettings(parent, text, default, callback)
+local SubTitleName = Instance.new("TextLabel")
+SubTitleName.Size = UDim2.new(1, 0, 0, 30)
+SubTitleName.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+SubTitleName.BorderSizePixel = 0
+SubTitleName.Text = "NAME CONFIGS ⚙️"
+SubTitleName.TextColor3 = Color3.fromRGB(255, 255, 255)
+SubTitleName.Font = Enum.Font.GothamBold
+SubTitleName.TextSize = 10
+SubTitleName.Parent = SubPanelName
+
+local SubTitleNameCorner = Instance.new("UICorner")
+SubTitleNameCorner.CornerRadius = UDim.new(0, 12)
+SubTitleNameCorner.Parent = SubTitleName
+
+-- Efeito RGB (Ligar / Desligar)
+local RGBLabel = Instance.new("TextLabel")
+RGBLabel.Size = UDim2.new(1, 0, 0, 20)
+RGBLabel.Position = UDim2.new(0, 10, 0, 40)
+RGBLabel.BackgroundTransparency = 1
+RGBLabel.Text = "EFEITO COLORIDO RGB"
+RGBLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+RGBLabel.Font = Enum.Font.GothamBold
+RGBLabel.TextSize = 9
+RGBLabel.TextXAlignment = Enum.TextXAlignment.Left
+RGBLabel.Parent = SubPanelName
+
+local BtnRGBOn = Instance.new("TextButton")
+BtnRGBOn.Size = UDim2.new(0.42, 0, 0, 20)
+BtnRGBOn.Position = UDim2.new(0.05, 0, 0, 60)
+BtnRGBOn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+BtnRGBOn.BorderSizePixel = 0
+BtnRGBOn.Text = "ATIVAR RGB"
+BtnRGBOn.TextColor3 = Color3.fromRGB(150, 150, 150)
+BtnRGBOn.Font = Enum.Font.GothamBold
+BtnRGBOn.TextSize = 8
+BtnRGBOn.Parent = SubPanelName
+
+local BtnRGBOnCorner = Instance.new("UICorner")
+BtnRGBOnCorner.CornerRadius = UDim.new(0, 4)
+BtnRGBOnCorner.Parent = BtnRGBOn
+
+local BtnRGBOff = Instance.new("TextButton")
+BtnRGBOff.Size = UDim2.new(0.42, 0, 0, 20)
+BtnRGBOff.Position = UDim2.new(0.53, 0, 0, 60)
+BtnRGBOff.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+BtnRGBOff.BorderSizePixel = 0
+BtnRGBOff.Text = "ESTÁTICO"
+BtnRGBOff.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnRGBOff.Font = Enum.Font.GothamBold
+BtnRGBOff.TextSize = 8
+BtnRGBOff.Parent = SubPanelName
+
+local BtnRGBOffCorner = Instance.new("UICorner")
+BtnRGBOffCorner.CornerRadius = UDim.new(0, 4)
+BtnRGBOffCorner.Parent = BtnRGBOff
+
+BtnRGBOn.MouseButton1Click:Connect(function()
+    ESP_Config.NameRGB = true
+    BtnRGBOn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    BtnRGBOn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    BtnRGBOff.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    BtnRGBOff.TextColor3 = Color3.fromRGB(150, 150, 150)
+end)
+
+BtnRGBOff.MouseButton1Click:Connect(function()
+    ESP_Config.NameRGB = false
+    BtnRGBOff.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    BtnRGBOff.TextColor3 = Color3.fromRGB(255, 255, 255)
+    BtnRGBOn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    BtnRGBOn.TextColor3 = Color3.fromRGB(150, 150, 150)
+end)
+
+-- Customizar tamanho do Texto do Nome
+local NameSizeLabel = Instance.new("TextLabel")
+NameSizeLabel.Size = UDim2.new(1, 0, 0, 20)
+NameSizeLabel.Position = UDim2.new(0, 10, 0, 85)
+NameSizeLabel.BackgroundTransparency = 1
+NameSizeLabel.Text = "TAMANHO DO TEXTO: 11"
+NameSizeLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+NameSizeLabel.Font = Enum.Font.GothamBold
+NameSizeLabel.TextSize = 9
+NameSizeLabel.TextXAlignment = Enum.TextXAlignment.Left
+NameSizeLabel.Parent = SubPanelName
+
+local NameSizeSlider = Instance.new("TextButton")
+NameSizeSlider.Size = UDim2.new(0.9, 0, 0, 18)
+NameSizeSlider.Position = UDim2.new(0.05, 0, 0, 105)
+NameSizeSlider.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+NameSizeSlider.BorderSizePixel = 0
+NameSizeSlider.Text = "MUDAR TAMANHO"
+NameSizeSlider.TextColor3 = Color3.fromRGB(255, 255, 255)
+NameSizeSlider.Font = Enum.Font.GothamBold
+NameSizeSlider.TextSize = 8
+NameSizeSlider.Parent = SubPanelName
+
+local NameSizeCorner = Instance.new("UICorner")
+NameSizeCorner.CornerRadius = UDim.new(0, 4)
+NameSizeCorner.Parent = NameSizeSlider
+
+NameSizeSlider.MouseButton1Click:Connect(function()
+    if ESP_Config.NameSize == 11 then
+        ESP_Config.NameSize = 14
+    elseif ESP_Config.NameSize == 14 then
+        ESP_Config.NameSize = 8
+    else
+        ESP_Config.NameSize = 11
+    end
+    NameSizeLabel.Text = "TAMANHO DO TEXTO: " .. tostring(ESP_Config.NameSize)
+end)
+
+-- Cores Estáticas do Nome
+local NameColorLabel = Instance.new("TextLabel")
+NameColorLabel.Size = UDim2.new(1, 0, 0, 20)
+NameColorLabel.Position = UDim2.new(0, 10, 0, 130)
+NameColorLabel.BackgroundTransparency = 1
+NameColorLabel.Text = "COR DO NOME"
+NameColorLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+NameColorLabel.Font = Enum.Font.GothamBold
+NameColorLabel.TextSize = 9
+NameColorLabel.TextXAlignment = Enum.TextXAlignment.Left
+NameColorLabel.Parent = SubPanelName
+
+local NameColorContainer = Instance.new("Frame")
+NameColorContainer.Size = UDim2.new(0.9, 0, 0, 20)
+NameColorContainer.Position = UDim2.new(0.05, 0, 0, 150)
+NameColorContainer.BackgroundTransparency = 1
+NameColorContainer.Parent = SubPanelName
+
+local NameColorLayout = Instance.new("UIListLayout")
+NameColorLayout.FillDirection = Enum.FillDirection.Horizontal
+NameColorLayout.Padding = UDim.new(0, 6)
+NameColorLayout.Parent = NameColorContainer
+
+local nc1 = CreateColorSelector(Color3.fromRGB(255, 0, 0), NameColorContainer)
+nc1.MouseButton1Click:Connect(function() ESP_Config.NameColor = Color3.fromRGB(255, 0, 0) end)
+local nc2 = CreateColorSelector(Color3.fromRGB(0, 255, 0), NameColorContainer)
+nc2.MouseButton1Click:Connect(function() ESP_Config.NameColor = Color3.fromRGB(0, 255, 0) end)
+local nc3 = CreateColorSelector(Color3.fromRGB(0, 0, 255), NameColorContainer)
+nc3.MouseButton1Click:Connect(function() ESP_Config.NameColor = Color3.fromRGB(0, 0, 255) end)
+local nc4 = CreateColorSelector(Color3.fromRGB(255, 255, 255), NameColorContainer)
+nc4.MouseButton1Click:Connect(function() ESP_Config.NameColor = Color3.fromRGB(255, 255, 255) end)
+local nc5 = CreateColorSelector(Color3.fromRGB(255, 255, 0), NameColorContainer)
+nc5.MouseButton1Click:Connect(function() ESP_Config.NameColor = Color3.fromRGB(255, 255, 0) end)
+
+local SaveBtnName = Instance.new("TextButton")
+SaveBtnName.Size = UDim2.new(0.9, 0, 0, 25)
+SaveBtnName.Position = UDim2.new(0.05, 0, 0, 185)
+SaveBtnName.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+SaveBtnName.BorderSizePixel = 0
+SaveBtnName.Text = "SALVAR CONFIGURAÇÃO"
+SaveBtnName.TextColor3 = Color3.fromRGB(0, 255, 0)
+SaveBtnName.Font = Enum.Font.GothamBold
+SaveBtnName.TextSize = 9
+SaveBtnName.Parent = SubPanelName
+
+SaveBtnName.MouseButton1Click:Connect(function() SubPanelName.Visible = false end)
+
+-- ==========================================
+-- 8. INTEGRANDO OS BOTÕES NA ABA VISUAL
+-- ==========================================
+
+local function CreateToggleWithSettings(parent, text, default, subPanelToOpen, callback)
     local Frame = Instance.new("Frame")
     Frame.Size = UDim2.new(1, 0, 0, 36)
     Frame.BackgroundTransparency = 1
@@ -576,7 +962,6 @@ local function CreateToggleWithSettings(parent, text, default, callback)
     Label.TextXAlignment = Enum.TextXAlignment.Left
     Label.Parent = Frame
 
-    -- Botão Liga/Desliga
     local Button = Instance.new("TextButton")
     Button.Size = UDim2.new(0.2, 0, 0.7, 0)
     Button.Position = UDim2.new(0.55, -5, 0.15, 0)
@@ -591,7 +976,6 @@ local function CreateToggleWithSettings(parent, text, default, callback)
     BtnCorner.CornerRadius = UDim.new(0, 6)
     BtnCorner.Parent = Button
 
-    -- Botão de Engrenagem (= ou ⚙️) para abrir sub-painel
     local SettingsBtn = Instance.new("TextButton")
     SettingsBtn.Size = UDim2.new(0.18, 0, 0.7, 0)
     SettingsBtn.Position = UDim2.new(0.78, 0, 0.15, 0)
@@ -615,19 +999,28 @@ local function CreateToggleWithSettings(parent, text, default, callback)
         callback(state)
     end)
 
-    -- Mostra o painel pequeno ao clicar na engrenagem
     SettingsBtn.MouseButton1Click:Connect(function()
-        SubPanel.Visible = not SubPanel.Visible
+        local lastState = subPanelToOpen.Visible
+        CloseAllSubPanels()
+        subPanelToOpen.Visible = not lastState
     end)
 end
 
--- Adiciona a função com o botão e a engrenagem dentro da aba VISUAL
-CreateToggleWithSettings(PageVisual, "ESP LINE", false, function(v)
+-- Iniciando botões na aba Visual
+CreateToggleWithSettings(PageVisual, "ESP LINE", false, SubPanel, function(v)
     ESP_Config.Active = v
 end)
 
+CreateToggleWithSettings(PageVisual, "ESP BOX", false, SubPanelBox, function(v)
+    ESP_Config.BoxActive = v
+end)
+
+CreateToggleWithSettings(PageVisual, "ESP NOME", false, SubPanelName, function(v)
+    ESP_Config.NameActive = v
+end)
+
 -- ==========================================
--- 7. RENDERIZADOR ESP LINE DE ALTA COMPATIBILIDADE E RESPONSIVO
+-- 9. RENDERIZADOR SUPREMO DE ESP (RESPONSIVO E OTIMIZADO)
 -- ==========================================
 
 local ESPContainer = Instance.new("Folder")
@@ -641,13 +1034,38 @@ local function ApplyESP(player)
     PlayerFolder.Name = "ESP_" .. player.Name
     PlayerFolder.Parent = ESPContainer
 
+    -- Estrutura ESP LINE
     local FrameLine = Instance.new("Frame")
     FrameLine.BorderSizePixel = 0
     FrameLine.Visible = false
     FrameLine.Parent = PlayerFolder
 
+    -- Estrutura ESP BOX
+    local FrameBox = Instance.new("Frame")
+    FrameBox.BackgroundTransparency = 1
+    FrameBox.Visible = false
+    FrameBox.Parent = PlayerFolder
+
+    local BoxStroke = Instance.new("UIStroke")
+    BoxStroke.Thickness = 1.5
+    BoxStroke.Parent = FrameBox
+
+    local BoxCorner = Instance.new("UICorner")
+    BoxCorner.CornerRadius = UDim.new(0, 0)
+    BoxCorner.Parent = FrameBox
+
+    -- Estrutura ESP NOME
+    local NameTag = Instance.new("TextLabel")
+    NameTag.BackgroundTransparency = 1
+    NameTag.Text = player.DisplayName
+    NameTag.Font = Enum.Font.GothamBold
+    NameTag.Visible = false
+    NameTag.Parent = PlayerFolder
+
     local function Clear()
         FrameLine.Visible = false
+        FrameBox.Visible = false
+        NameTag.Visible = false
     end
 
     local connection
@@ -672,30 +1090,65 @@ local function ApplyESP(player)
 
         local ScreenPos, OnScreen = Camera:WorldToViewportPoint(RootPart.Position)
 
-        if OnScreen and ESP_Config.Active then
-            -- Determina a origem baseado na configuração (Topo ou Baixo)
-            local StartX = Camera.ViewportSize.X / 2
-            local StartY = (ESP_Config.Origin == "Top") and 0 or Camera.ViewportSize.Y
-            
-            local TargetX = ScreenPos.X
-            local TargetY = ScreenPos.Y
+        if OnScreen then
+            -- RENDERIZAR ESP LINE
+            if ESP_Config.Active then
+                local StartX = Camera.ViewportSize.X / 2
+                local StartY = (ESP_Config.Origin == "Top") and 0 or Camera.ViewportSize.Y
+                local TargetX = ScreenPos.X
+                local TargetY = ScreenPos.Y
 
-            local Dist = math.sqrt((TargetX - StartX)^2 + (TargetY - StartY)^2)
-            local Angle = math.atan2(TargetY - StartY, TargetX - StartX)
+                local Dist = math.sqrt((TargetX - StartX)^2 + (TargetY - StartY)^2)
+                local Angle = math.atan2(TargetY - StartY, TargetX - StartX)
 
-            -- Aplica as configurações personalizadas dinâmicas (Espessura e Cor)
-            FrameLine.Size = UDim2.new(0, Dist, 0, ESP_Config.Thickness)
-            FrameLine.BackgroundColor3 = ESP_Config.Color
-            FrameLine.Position = UDim2.new(0, (StartX + TargetX) / 2 - Dist / 2, 0, (StartY + TargetY) / 2)
-            FrameLine.Rotation = math.deg(Angle)
-            FrameLine.Visible = true
+                FrameLine.Size = UDim2.new(0, Dist, 0, ESP_Config.Thickness)
+                FrameLine.BackgroundColor3 = ESP_Config.Color
+                FrameLine.Position = UDim2.new(0, (StartX + TargetX) / 2 - Dist / 2, 0, (StartY + TargetY) / 2)
+                FrameLine.Rotation = math.deg(Angle)
+                FrameLine.Visible = true
+            else
+                FrameLine.Visible = false
+            end
+
+            -- RENDERIZAR ESP BOX
+            if ESP_Config.BoxActive then
+                -- Calcula dimensão responsiva baseado na distância
+                local DistFromCamera = (Camera.CoordinateFrame.p - RootPart.Position).Magnitude
+                local BoxW = (1200 / DistFromCamera) * ESP_Config.BoxSize
+                local BoxH = (1600 / DistFromCamera) * ESP_Config.BoxSize
+
+                FrameBox.Size = UDim2.new(0, BoxW, 0, BoxH)
+                FrameBox.Position = UDim2.new(0, ScreenPos.X - (BoxW / 2), 0, ScreenPos.Y - (BoxH / 2))
+                
+                BoxStroke.Color = ESP_Config.BoxColor
+                BoxStroke.Thickness = ESP_Config.BoxThickness
+                BoxCorner.CornerRadius = ESP_Config.BoxRound and UDim.new(1, 0) or UDim.new(0, 0)
+                
+                FrameBox.Visible = true
+            else
+                FrameBox.Visible = false
+            end
+
+            -- RENDERIZAR ESP NOME
+            if ESP_Config.NameActive then
+                local DistFromCamera = (Camera.CoordinateFrame.p - RootPart.Position).Magnitude
+                local OffsetY = (800 / DistFromCamera) -- Posiciona acima da cabeça de forma dinâmica
+
+                NameTag.Size = UDim2.new(0, 150, 0, 20)
+                NameTag.Position = UDim2.new(0, ScreenPos.X - 75, 0, ScreenPos.Y - OffsetY - 15)
+                NameTag.TextSize = ESP_Config.NameSize
+                NameTag.TextColor3 = ESP_Config.NameRGB and GlobalRGB or ESP_Config.NameColor
+                NameTag.Visible = true
+            else
+                NameTag.Visible = false
+            end
         else
             Clear()
         end
     end)
 end
 
--- Rodar o ESP para o Servidor
+-- Rodar o ESP para o Servidor inteiro
 for _, p in ipairs(Players:GetPlayers()) do
     task.spawn(function() ApplyESP(p) end)
 end
