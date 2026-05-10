@@ -1,114 +1,86 @@
--- ==========================================
--- BK CLIENT v1.4 † - ROBLOX MOBILE SCRIPT
--- ==========================================
+-- =================================================================
+-- BK CLIENT v1.4 † - ROBLOX MOBILE PRIVATE SCRIPT
+-- Desenvolvido para máxima compatibilidade com Delta Executor (Mobile)
+-- Pronto para hospedagem no GitHub / Loadstring
+-- =================================================================
 
-local Players = game:Service("Players")
+local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
-local RunService = game:Service("RunService")
-local UserInputService = game:Service("UserInputService")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
 
--- Criando a interface principal
+-- Evita executar o script mais de uma vez ao mesmo tempo
+if CoreGui:FindFirstChild("BKClient_V14") then
+    CoreGui:FindFirstChild("BKClient_V14"):Destroy()
+end
+
+-- Criando a ScreenGui Principal
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "BKClient_V14"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Parent = CoreGui
 
--- Tentando injetar na pasta segura do CoreGui para evitar detecções
-pcall(function()
-    ScreenGui.Parent = game:GetService("CoreGui")
-end)
-if not ScreenGui.Parent then
-    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-end
-
--- Variaveis de Estado (Ativação das Funções)
-local ESP_Active = {
+-- Estados de ativação das funções
+local ESP_Settings = {
     Lines = false,
     Names = false,
     Weapons = false,
     Distance = false,
     Health = false,
-    Skeleton = false,
-    Boxes = false
+    Boxes = false,
+    Skeleton = false
 }
 
-local Extra_Active = {
-    SuperJump = false,
-    SuperSpeed = false
+local Extra_Settings = {
+    SuperSpeed = false,
+    SuperJump = false
 }
 
-local JumpPowerValue = 150
-local SpeedValue = 100
+local SpeedValue = 80
+local JumpValue = 120
+
+-- Container para desenhos do ESP (Fica por trás do menu)
+local ESPContainer = Instance.new("Folder")
+ESPContainer.Name = "BK_ESP_Container"
+ESPContainer.Parent = ScreenGui
 
 -- ==========================================
 -- 1. SISTEMA DA CÁPSULA FLUTUANTE (BUBBLE)
 -- ==========================================
 
 local Bubble = Instance.new("TextButton")
-Bubble.Name = "BK_Bubble"
+Bubble.Name = "BKBubble"
 Bubble.Size = UDim2.new(0, 140, 0, 45)
 Bubble.Position = UDim2.new(0.1, 0, 0.2, 0)
 Bubble.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 Bubble.BorderSizePixel = 0
 Bubble.Text = "BK CLIENT v1.4 †"
-Bubble.TextColor3 = Color3.fromRGB(255, 0, 0) -- Letras vermelhas ameaçadoras
+Bubble.TextColor3 = Color3.fromRGB(255, 0, 0)
 Bubble.Font = Enum.Font.GothamBold
 Bubble.TextSize = 13
-Bubble.ClipsDescendants = true
+Bubble.Active = true
+Bubble.Draggable = true -- Nativo para mobile arrastar sem bugs
 Bubble.Parent = ScreenGui
 
--- Cantos arredondados na bolha
 local BubbleCorner = Instance.new("UICorner")
 BubbleCorner.CornerRadius = UDim.new(0, 12)
 BubbleCorner.Parent = Bubble
 
--- Borda Vermelha Neon na Bolha
 local BubbleStroke = Instance.new("UIStroke")
 BubbleStroke.Color = Color3.fromRGB(200, 0, 0)
 BubbleStroke.Thickness = 2
 BubbleStroke.Parent = Bubble
 
--- Tornar a bolha arrastável em celulares
-local dragging, dragInput, dragStart, startPos
-local function update(input)
-    local delta = input.Position - dragStart
-    Bubble.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-end
-
-Bubble.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = Bubble.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-
-Bubble.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
-    end
-end)
-
-RunService.RenderStepped:Connect(function()
-    if dragging and dragInput then
-        update(dragInput)
-    end
-end)
-
 -- ==========================================
--- 2. CRIAÇÃO DO PAINEL PRINCIPAL (MENU)
+-- 2. PAINEL PRINCIPAL (MENU)
 -- ==========================================
 
 local MainPanel = Instance.new("Frame")
-MainPanel.Name = "BK_MainPanel"
-MainPanel.Size = UDim2.new(0, 320, 0, 240)
-MainPanel.Position = UDim2.new(0.5, -160, 0.5, -120)
+MainPanel.Name = "MainPanel"
+MainPanel.Size = UDim2.new(0, 300, 0, 240)
+MainPanel.Position = UDim2.new(0.5, -150, 0.5, -120)
 MainPanel.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 MainPanel.BorderSizePixel = 0
 MainPanel.Visible = false
@@ -123,58 +95,29 @@ PanelStroke.Color = Color3.fromRGB(200, 0, 0)
 PanelStroke.Thickness = 1.5
 PanelStroke.Parent = MainPanel
 
--- Alternar Menu ao Clicar na Bolha
+-- Abre/Fecha sem precisar recriar nada ao tocar na bolha
 Bubble.MouseButton1Click:Connect(function()
     MainPanel.Visible = not MainPanel.Visible
 end)
 
--- Título do Menu
+-- Título do Painel
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 30)
+Title.Size = UDim2.new(1, 0, 0, 35)
 Title.BackgroundTransparency = 1
 Title.Text = "BK CLIENT v1.4  [ PRIVATE ]"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 12
+Title.TextSize = 13
 Title.Parent = MainPanel
 
--- Container de Abas
+-- Abas do Painel
 local TabContainer = Instance.new("Frame")
 TabContainer.Size = UDim2.new(1, 0, 0, 30)
-TabContainer.Position = UDim2.new(0, 0, 0, 30)
+TabContainer.Position = UDim2.new(0, 0, 0, 35)
 TabContainer.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 TabContainer.BorderSizePixel = 0
 TabContainer.Parent = MainPanel
 
--- Páginas de Conteúdo
-local PageESP = Instance.new("ScrollingFrame")
-PageESP.Size = UDim2.new(1, -20, 1, -75)
-PageESP.Position = UDim2.new(0, 10, 0, 65)
-PageESP.BackgroundTransparency = 1
-PageESP.BorderSizePixel = 0
-PageESP.ScrollBarThickness = 2
-PageESP.Visible = true
-PageESP.Parent = MainPanel
-
-local PageExtra = Instance.new("ScrollingFrame")
-PageExtra.Size = UDim2.new(1, -20, 1, -75)
-PageExtra.Position = UDim2.new(0, 10, 0, 65)
-PageExtra.BackgroundTransparency = 1
-PageExtra.BorderSizePixel = 0
-PageExtra.ScrollBarThickness = 2
-PageExtra.Visible = false
-PageExtra.Parent = MainPanel
-
--- Layouts automáticos das listas
-local espLayout = Instance.new("UIListLayout")
-espLayout.Padding = UDim.new(0, 6)
-espLayout.Parent = PageESP
-
-local extraLayout = Instance.new("UIListLayout")
-extraLayout.Padding = UDim.new(0, 6)
-extraLayout.Parent = PageExtra
-
--- Botões de Alternar Abas (ESP vs EXTRA)
 local TabESPBtn = Instance.new("TextButton")
 TabESPBtn.Size = UDim2.new(0.5, 0, 1, 0)
 TabESPBtn.BackgroundTransparency = 1
@@ -194,6 +137,36 @@ TabExtraBtn.Font = Enum.Font.GothamBold
 TabExtraBtn.TextSize = 12
 TabExtraBtn.Parent = TabContainer
 
+-- Páginas de Conteúdo (Usando ScrollingFrames limpos)
+local PageESP = Instance.new("ScrollingFrame")
+PageESP.Size = UDim2.new(1, -20, 1, -85)
+PageESP.Position = UDim2.new(0, 10, 0, 75)
+PageESP.BackgroundTransparency = 1
+PageESP.BorderSizePixel = 0
+PageESP.CanvasSize = UDim2.new(0, 0, 0, 300)
+PageESP.ScrollBarThickness = 3
+PageESP.Visible = true
+PageESP.Parent = MainPanel
+
+local PageExtra = Instance.new("ScrollingFrame")
+PageExtra.Size = UDim2.new(1, -20, 1, -85)
+PageExtra.Position = UDim2.new(0, 10, 0, 75)
+PageExtra.BackgroundTransparency = 1
+PageExtra.BorderSizePixel = 0
+PageExtra.CanvasSize = UDim2.new(0, 0, 0, 200)
+PageExtra.ScrollBarThickness = 3
+PageExtra.Visible = false
+PageExtra.Parent = MainPanel
+
+local espLayout = Instance.new("UIListLayout")
+espLayout.Padding = UDim.new(0, 5)
+espLayout.Parent = PageESP
+
+local extraLayout = Instance.new("UIListLayout")
+extraLayout.Padding = UDim.new(0, 5)
+extraLayout.Parent = PageExtra
+
+-- Lógica de troca de abas
 TabESPBtn.MouseButton1Click:Connect(function()
     PageESP.Visible = true
     PageExtra.Visible = false
@@ -209,7 +182,7 @@ TabExtraBtn.MouseButton1Click:Connect(function()
 end)
 
 -- ==========================================
--- 3. FUNÇÃO CRIADORA DE CHECKS (BUTTONS)
+-- 3. CRIADOR DE SWITCH/BOTÃO DE FUNÇÃO
 -- ==========================================
 
 local function CreateToggle(parent, text, default, callback)
@@ -252,67 +225,98 @@ local function CreateToggle(parent, text, default, callback)
 end
 
 -- ==========================================
--- 4. ADICIONANDO AS FUNÇÕES DO PAINEL
+-- 4. MAPEANDO AS CONFIGURAÇÕES NO MENU
 -- ==========================================
 
--- ABA ESP
-CreateToggle(PageESP, "ESP LINE", false, function(v) ESP_Active.Lines = v end)
-CreateToggle(PageESP, "ESP NOME", false, function(v) ESP_Active.Names = v end)
-CreateToggle(PageESP, "ESP ARMA", false, function(v) ESP_Active.Weapons = v end)
-CreateToggle(PageESP, "ESP DISTÂNCIA", false, function(v) ESP_Active.Distance = v end)
-CreateToggle(PageESP, "ESP VIDA", false, function(v) ESP_Active.Health = v end)
-CreateToggle(PageESP, "ESP BOX", false, function(v) ESP_Active.Boxes = v end)
-CreateToggle(PageESP, "ESP ESQUELETO (R15/R20)", false, function(v) ESP_Active.Skeleton = v end)
+CreateToggle(PageESP, "ESP LINE", false, function(v) ESP_Settings.Lines = v end)
+CreateToggle(PageESP, "ESP NOME", false, function(v) ESP_Settings.Names = v end)
+CreateToggle(PageESP, "ESP ARMA", false, function(v) ESP_Settings.Weapons = v end)
+CreateToggle(PageESP, "ESP DISTÂNCIA", false, function(v) ESP_Settings.Distance = v end)
+CreateToggle(PageESP, "ESP VIDA", false, function(v) ESP_Settings.Health = v end)
+CreateToggle(PageESP, "ESP BOX", false, function(v) ESP_Settings.Boxes = v end)
+CreateToggle(PageESP, "ESP ESQUELETO (R15/R20)", false, function(v) ESP_Settings.Skeleton = v end)
 
--- ABA EXTRA
-CreateToggle(PageExtra, "SUPER PULO", false, function(v) 
-    Extra_Active.SuperJump = v 
-end)
+CreateToggle(PageExtra, "SUPER PULO", false, function(v) Extra_Settings.SuperJump = v end)
+CreateToggle(PageExtra, "SUPER VELOCIDADE", false, function(v) Extra_Settings.SuperSpeed = v end)
 
-CreateToggle(PageExtra, "SUPER VELOCIDADE", false, function(v) 
-    Extra_Active.SuperSpeed = v 
-end)
-
--- Loop para manter Super Pulo e Super Velocidade ativos no boneco
+-- Loop de Física das Funções Extras (Super Speed / Super Jump)
 RunService.Heartbeat:Connect(function()
-    local char = LocalPlayer.Character
-    if char and char:FindFirstChildOfClass("Humanoid") then
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if Extra_Active.SuperSpeed then
-            hum.WalkSpeed = SpeedValue
-        else
-            hum.WalkSpeed = 16 -- Velocidade original padrão
-        end
+    local Char = LocalPlayer.Character
+    if Char and Char:FindFirstChildOfClass("Humanoid") then
+        local Hum = Char:FindFirstChildOfClass("Humanoid")
         
-        if Extra_Active.SuperJump then
-            hum.JumpPower = JumpPowerValue
-            hum.UseJumpPower = true
+        if Extra_Settings.SuperSpeed then
+            Hum.WalkSpeed = SpeedValue
         else
-            hum.JumpPower = 50 -- Pulo original padrão
+            Hum.WalkSpeed = 16
+        end
+
+        if Extra_Settings.SuperJump then
+            Hum.JumpPower = JumpValue
+            Hum.UseJumpPower = true
+        else
+            Hum.JumpPower = 50
         end
     end
 end)
 
 -- ==========================================
--- 5. ENGINE DE DESENHO DO ESP (2D DRAWING)
+-- 5. RENDERIZADOR DE ESP NATIVO (STABLE)
 -- ==========================================
 
-local function DrawESP(player)
+local function ApplyESP(player)
     if player == LocalPlayer then return end
 
-    -- Elementos do Desenho
-    local Line = Drawing.new("Line")
-    local Name = Drawing.new("Text")
-    local Box = Drawing.new("Square")
-    local SkeletonLines = {}
+    -- Pasta individual de elementos na tela para o jogador correspondente
+    local PlayerFolder = Instance.new("Folder")
+    PlayerFolder.Name = "ESP_" .. player.Name
+    PlayerFolder.Parent = ESPContainer
+
+    -- Linha de ESP
+    local FrameLine = Instance.new("Frame")
+    FrameLine.BorderSizePixel = 0
+    FrameLine.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    FrameLine.Visible = false
+    FrameLine.Parent = PlayerFolder
+
+    -- Textos (Nome, Distância, Vida, Arma)
+    local InfoLabel = Instance.new("TextLabel")
+    InfoLabel.BackgroundTransparency = 1
+    InfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    InfoLabel.Font = Enum.Font.GothamBold
+    InfoLabel.TextSize = 11
+    InfoLabel.TextStrokeTransparency = 0.2
+    InfoLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    InfoLabel.Visible = false
+    InfoLabel.Parent = PlayerFolder
+
+    -- Box de ESP (Bordas usando frames)
+    local BoxFrame = Instance.new("Frame")
+    BoxFrame.BackgroundTransparency = 1
+    BoxFrame.Visible = false
+    BoxFrame.Parent = PlayerFolder
+
+    local BoxStroke = Instance.new("UIStroke")
+    BoxStroke.Color = Color3.fromRGB(255, 0, 0)
+    BoxStroke.Thickness = 1.5
+    BoxStroke.Parent = BoxFrame
+
+    -- Estrutura para desenho do Esqueleto
+    local Bones = {}
+    for i = 1, 10 do
+        local boneLine = Instance.new("Frame")
+        boneLine.BorderSizePixel = 0
+        boneLine.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        boneLine.Visible = false
+        boneLine.Parent = PlayerFolder
+        Bones[i] = boneLine
+    end
 
     local function Clear()
-        Line.Visible = false
-        Name.Visible = false
-        Box.Visible = false
-        for _, sLine in pairs(SkeletonLines) do
-            sLine.Visible = false
-        end
+        FrameLine.Visible = false
+        InfoLabel.Visible = false
+        BoxFrame.Visible = false
+        for _, b in ipairs(Bones) do b.Visible = false end
     end
 
     local connection
@@ -321,10 +325,7 @@ local function DrawESP(player)
             Clear()
             if not player.Parent then
                 connection:Disconnect()
-                Line:Remove()
-                Name:Remove()
-                Box:Remove()
-                for _, sLine in pairs(SkeletonLines) do sLine:Remove() end
+                PlayerFolder:Destroy()
             end
             return
         end
@@ -341,108 +342,112 @@ local function DrawESP(player)
         local ScreenPos, OnScreen = Camera:WorldToViewportPoint(RootPart.Position)
 
         if OnScreen then
-            -- 1. ESP LINE (Linha saindo de baixo para o inimigo)
-            if ESP_Active.Lines then
-                Line.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
-                Line.To = Vector2.new(ScreenPos.X, ScreenPos.Y)
-                Line.Color = Color3.fromRGB(255, 0, 0)
-                Line.Thickness = 1.2
-                Line.Transparency = 1
-                Line.Visible = true
+            -- 1. DESENHO DA ESP LINE
+            if ESP_Settings.Lines then
+                local StartX = Camera.ViewportSize.X / 2
+                local StartY = Camera.ViewportSize.Y
+                local TargetX = ScreenPos.X
+                local TargetY = ScreenPos.Y
+
+                local Dist = math.sqrt((TargetX - StartX)^2 + (TargetY - StartY)^2)
+                local Angle = math.atan2(TargetY - StartY, TargetX - StartX)
+
+                FrameLine.Size = UDim2.new(0, Dist, 0, 1.5)
+                FrameLine.Position = UDim2.new(0, (StartX + TargetX) / 2 - Dist / 2, 0, (StartY + TargetY) / 2)
+                FrameLine.Rotation = math.deg(Angle)
+                FrameLine.Visible = true
             else
-                Line.Visible = false
+                FrameLine.Visible = false
             end
 
-            -- 2. ESP INFORMAÇÕES (Nome, Distância, Vida, Arma)
-            if ESP_Active.Names or ESP_Active.Distance or ESP_Active.Health or ESP_Active.Weapons then
+            -- 2. DESENHO DAS INFORMAÇÕES (NOME, DISTÂNCIA, ETC.)
+            if ESP_Settings.Names or ESP_Settings.Distance or ESP_Settings.Health or ESP_Settings.Weapons then
                 local textStr = ""
-                if ESP_Active.Names then textStr = textStr .. player.Name .. " " end
-                if ESP_Active.Health then textStr = textStr .. "[" .. math.floor(Humanoid.Health) .. " HP] " end
-                if ESP_Active.Distance then 
-                    local dist = math.floor((RootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude)
+                if ESP_Settings.Names then textStr = textStr .. player.Name .. " " end
+                if ESP_Settings.Health then textStr = textStr .. "[" .. math.floor(Humanoid.Health) .. " HP] " end
+                
+                local myChar = LocalPlayer.Character
+                if ESP_Settings.Distance and myChar and myChar:FindFirstChild("HumanoidRootPart") then 
+                    local dist = math.floor((RootPart.Position - myChar.HumanoidRootPart.Position).Magnitude)
                     textStr = textStr .. "(" .. dist .. "m) " 
                 end
-                if ESP_Active.Weapons then
+
+                if ESP_Settings.Weapons then
                     local toolName = "Nenhum"
                     local activeTool = Char:FindFirstChildOfClass("Tool")
                     if activeTool then toolName = activeTool.Name end
                     textStr = textStr .. "{" .. toolName .. "}"
                 end
 
-                Name.Text = textStr
-                Name.Position = Vector2.new(ScreenPos.X, ScreenPos.Y - 45)
-                Name.Size = 13
-                Name.Center = true
-                Name.Outline = true
-                Name.Color = Color3.fromRGB(255, 255, 255)
-                Name.Visible = true
+                InfoLabel.Text = textStr
+                InfoLabel.Position = UDim2.new(0, ScreenPos.X - 100, 0, ScreenPos.Y - 55)
+                InfoLabel.Size = UDim2.new(0, 200, 0, 20)
+                InfoLabel.Visible = true
             else
-                Name.Visible = false
+                InfoLabel.Visible = false
             end
 
-            -- 3. ESP BOX (Caixa ao redor do oponente)
-            if ESP_Active.Boxes then
+            -- 3. DESENHO DO ESP BOX
+            if ESP_Settings.Boxes then
                 local SizeX = 2000 / ScreenPos.Z
                 local SizeY = 3000 / ScreenPos.Z
-                Box.Size = Vector2.new(SizeX, SizeY)
-                Box.Position = Vector2.new(ScreenPos.X - SizeX / 2, ScreenPos.Y - SizeY / 2)
-                Box.Color = Color3.fromRGB(200, 0, 0)
-                Box.Thickness = 1.5
-                Box.Filled = false
-                Box.Visible = true
+
+                BoxFrame.Size = UDim2.new(0, SizeX, 0, SizeY)
+                BoxFrame.Position = UDim2.new(0, ScreenPos.X - SizeX / 2, 0, ScreenPos.Y - SizeY / 2)
+                BoxFrame.Visible = true
             else
-                Box.Visible = false
+                BoxFrame.Visible = false
             end
 
-            -- 4. ESP ESQUELETO (R15 / R20 / R6)
-            if ESP_Active.Skeleton then
-                local parts = {"Head", "UpperTorso", "LowerTorso", "LeftUpperArm", "LeftLowerArm", "RightUpperArm", "RightLowerArm", "LeftUpperLeg", "LeftLowerLeg", "RightUpperLeg", "RightLowerLeg", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg"}
-                local validParts = {}
+            -- 4. DESENHO DO ESQUELETO (COMPATÍVEL COM R15 E R6)
+            if ESP_Settings.Skeleton then
+                local function connectParts(partA, partB, boneIndex)
+                    if Char:FindFirstChild(partA) and Char:FindFirstChild(partB) then
+                        local posA, onScreenA = Camera:WorldToViewportPoint(Char[partA].Position)
+                        local posB, onScreenB = Camera:WorldToViewportPoint(Char[partB].Position)
 
-                for _, pName in ipairs(parts) do
-                    local p = Char:FindFirstChild(pName)
-                    if p then validParts[pName] = p end
-                end
+                        if onScreenA and onScreenB then
+                            local Dist = math.sqrt((posB.X - posA.X)^2 + (posB.Y - posA.Y)^2)
+                            local Angle = math.atan2(posB.Y - posA.Y, posB.X - posA.X)
 
-                local function drawBone(part1, part2, index)
-                    if part1 and part2 then
-                        local p1, o1 = Camera:WorldToViewportPoint(part1.Position)
-                        local p2, o2 = Camera:WorldToViewportPoint(part2.Position)
-                        if o1 and o2 then
-                            if not SkeletonLines[index] then
-                                SkeletonLines[index] = Drawing.new("Line")
-                            end
-                            local sLine = SkeletonLines[index]
-                            sLine.From = Vector2.new(p1.X, p1.Y)
-                            sLine.To = Vector2.new(p2.X, p2.Y)
-                            sLine.Color = Color3.fromRGB(255, 255, 255)
-                            sLine.Thickness = 1
-                            sLine.Visible = true
+                            local bone = Bones[boneIndex]
+                            bone.Size = UDim2.new(0, Dist, 0, 1.2)
+                            bone.Position = UDim2.new(0, (posA.X + posB.X) / 2 - Dist / 2, 0, (posA.Y + posB.Y) / 2)
+                            bone.Rotation = math.deg(Angle)
+                            bone.Visible = true
                             return
                         end
                     end
-                    if SkeletonLines[index] then SkeletonLines[index].Visible = false end
+                    Bones[boneIndex].Visible = false
                 end
 
-                -- Conexões do esqueleto
-                drawBone(validParts["Head"], validParts["UpperTorso"] or validParts["Torso"], 1)
-                drawBone(validParts["UpperTorso"] or validParts["Torso"], validParts["LowerTorso"] or validParts["Torso"], 2)
-                -- Braço Esquerdo
-                drawBone(validParts["UpperTorso"] or validParts["Torso"], validParts["LeftUpperArm"] or validParts["Left Arm"], 3)
-                drawBone(validParts["LeftUpperArm"], validParts["LeftLowerArm"], 4)
-                -- Braço Direito
-                drawBone(validParts["UpperTorso"] or validParts["Torso"], validParts["RightUpperArm"] or validParts["Right Arm"], 5)
-                drawBone(validParts["RightUpperArm"], validParts["RightLowerArm"], 6)
-                -- Perna Esquerda
-                drawBone(validParts["LowerTorso"] or validParts["Torso"], validParts["LeftUpperLeg"] or validParts["Left Leg"], 7)
-                drawBone(validParts["LeftUpperLeg"], validParts["LeftLowerLeg"], 8)
-                -- Perna Direita
-                drawBone(validParts["LowerTorso"] or validParts["Torso"], validParts["RightUpperLeg"] or validParts["Right Leg"], 9)
-                drawBone(validParts["RightUpperLeg"], validParts["RightLowerLeg"], 10)
-            else
-                for _, sLine in pairs(SkeletonLines) do
-                    sLine.Visible = false
+                -- Conectando esqueleto dinamicamente (Funciona em R15 e R6)
+                if Humanoid.RigType == Enum.HumanoidRigType.R15 then
+                    connectParts("Head", "UpperTorso", 1)
+                    connectParts("UpperTorso", "LowerTorso", 2)
+                    connectParts("UpperTorso", "LeftUpperArm", 3)
+                    connectParts("LeftUpperArm", "LeftLowerArm", 4)
+                    connectParts("UpperTorso", "RightUpperArm", 5)
+                    connectParts("RightUpperArm", "RightLowerArm", 6)
+                    connectParts("LowerTorso", "LeftUpperLeg", 7)
+                    connectParts("LeftUpperLeg", "LeftLowerLeg", 8)
+                    connectParts("LowerTorso", "RightUpperLeg", 9)
+                    connectParts("RightUpperLeg", "RightLowerLeg", 10)
+                else -- R6
+                    connectParts("Head", "Torso", 1)
+                    connectParts("Torso", "Left Arm", 3)
+                    connectParts("Torso", "Right Arm", 5)
+                    connectParts("Torso", "Left Leg", 7)
+                    connectParts("Torso", "Right Leg", 9)
+                    -- Esconde linhas desnecessárias do R15 no modo R6
+                    Bones[2].Visible = false
+                    Bones[4].Visible = false
+                    Bones[6].Visible = false
+                    Bones[8].Visible = false
+                    Bones[10].Visible = false
                 end
+            else
+                for _, b in ipairs(Bones) do b.Visible = false end
             end
 
         else
@@ -451,10 +456,12 @@ local function DrawESP(player)
     end)
 end
 
--- Rodar o ESP para todos os jogadores presentes e futuros
-for _, player in ipairs(Players:GetPlayers()) do
-    task.spawn(function() DrawESP(player) end)
+-- Roda o ESP para quem já está no servidor
+for _, p in ipairs(Players:GetPlayers()) do
+    task.spawn(function() ApplyESP(p) end)
 end
-Players.PlayerAdded:Connect(function(player)
-    task.spawn(function() DrawESP(player) end)
+
+-- Registra novos jogadores que entrarem na partida
+Players.PlayerAdded:Connect(function(p)
+    task.spawn(function() ApplyESP(p) end)
 end)
