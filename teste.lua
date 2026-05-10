@@ -1,7 +1,7 @@
 -- =================================================================
--- BK CLIENT v1.6 [Beta] - PC STYLE INJECTOR LAYOUT
+-- BK CLIENT v1.7 [Beta] - PC STYLE INJECTOR LAYOUT
 -- NO EFFECTS - GREY THEME - MINIMAL COLOR
--- Abas: Status, Opções, Mira, Visual, Extras, Gráficos
+-- Abas: Perfil (Inicial), Status, Opções, Mira, Visual, Extras, Gráficos
 -- Pronto para hospedagem no GitHub / Loadstring
 -- =================================================================
 
@@ -41,16 +41,27 @@ local ESP_Config = {
     BoxSize = 1.0, -- Multiplicador (0.7 = P, 1.0 = M, 1.4 = G)
     BoxThickness = 1.5,
     BoxColor = Color3.fromRGB(255, 255, 255),
-    BoxRound = false, -- true = Redonda, false = Quadrada
+    BoxRound = false,
     
     -- ESP NOME
     NameActive = false,
     NameColor = Color3.fromRGB(255, 255, 255),
     NameRGB = false,
-    NameSize = 11
+    NameSize = 11,
+
+    -- ESP DISTÂNCIA
+    DistActive = false,
+    DistColor = Color3.fromRGB(0, 255, 255),
+    DistRGB = false,
+    DistSize = 10,
+
+    -- ESP ESQUELETO
+    SkelActive = false,
+    SkelColor = Color3.fromRGB(255, 0, 255),
+    SkelThickness = 1.5
 }
 
--- Variável auxiliar para efeito RGB
+-- Variável auxiliar para efeito RGB global
 local GlobalRGB = Color3.fromRGB(255, 0, 0)
 task.spawn(function()
     while task.wait() do
@@ -71,7 +82,7 @@ Bubble.Size = UDim2.new(0, 150, 0, 48)
 Bubble.Position = UDim2.new(0.05, 0, 0.15, 0)
 Bubble.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 Bubble.BorderSizePixel = 0
-Bubble.Text = "BK CLIENT v1.6 †"
+Bubble.Text = "BK CLIENT v1.7 †"
 Bubble.TextColor3 = Color3.fromRGB(255, 255, 255)
 Bubble.Font = Enum.Font.GothamBold
 Bubble.TextSize = 13
@@ -84,7 +95,7 @@ BubbleCorner.CornerRadius = UDim.new(0, 14)
 BubbleCorner.Parent = Bubble
 
 -- ==========================================
--- 2. PAINEL PRINCIPAL PREMIUM (CINZA, BORDAS ARREDONDADAS)
+-- 2. PAINEL PRINCIPAL PREMIUM (CINZA)
 -- ==========================================
 
 local MainPanel = Instance.new("Frame")
@@ -107,71 +118,43 @@ PanelStroke.Thickness = 1.5
 PanelStroke.Parent = MainPanel
 
 -- ==========================================
--- SUB-PAINEIS DE CUSTOMIZAÇÃO DE FUNÇÕES
+-- SUB-PAINEIS DE CONFIGURAÇÃO DAS FUNÇÕES
 -- ==========================================
 
--- Sub-Painel de Customização da LINE
-local SubPanel = Instance.new("Frame")
-SubPanel.Name = "SubPanel"
-SubPanel.Size = UDim2.new(0, 200, 0, 220)
-SubPanel.Position = UDim2.new(0.5, 230, 0.5, -110)
-SubPanel.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
-SubPanel.BorderSizePixel = 0
-SubPanel.Visible = false
-SubPanel.Parent = ScreenGui
+local function CreateSubPanel(name)
+    local SP = Instance.new("Frame")
+    SP.Name = name
+    SP.Size = UDim2.new(0, 200, 0, 220)
+    SP.Position = UDim2.new(0.5, 230, 0.5, -110)
+    SP.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+    SP.BorderSizePixel = 0
+    SP.Visible = false
+    SP.Parent = ScreenGui
 
-local SubCorner = Instance.new("UICorner")
-SubCorner.CornerRadius = UDim.new(0, 12)
-SubCorner.Parent = SubPanel
+    local SC = Instance.new("UICorner")
+    SC.CornerRadius = UDim.new(0, 12)
+    SC.Parent = SP
 
-local SubStroke = Instance.new("UIStroke")
-SubStroke.Color = Color3.fromRGB(40, 40, 40)
-SubStroke.Thickness = 1.5
-SubStroke.Parent = SubPanel
+    local SS = Instance.new("UIStroke")
+    SS.Color = Color3.fromRGB(40, 40, 40)
+    SS.Thickness = 1.5
+    SS.Parent = SP
 
--- Sub-Painel de Customização da BOX
-local SubPanelBox = Instance.new("Frame")
-SubPanelBox.Name = "SubPanelBox"
-SubPanelBox.Size = UDim2.new(0, 200, 0, 220)
-SubPanelBox.Position = UDim2.new(0.5, 230, 0.5, -110)
-SubPanelBox.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
-SubPanelBox.BorderSizePixel = 0
-SubPanelBox.Visible = false
-SubPanelBox.Parent = ScreenGui
+    return SP
+end
 
-local SubCornerBox = Instance.new("UICorner")
-SubCornerBox.CornerRadius = UDim.new(0, 12)
-SubCornerBox.Parent = SubPanelBox
+local SubPanel = CreateSubPanel("SubPanel")
+local SubPanelBox = CreateSubPanel("SubPanelBox")
+local SubPanelName = CreateSubPanel("SubPanelName")
+local SubPanelDist = CreateSubPanel("SubPanelDist")
+local SubPanelSkel = CreateSubPanel("SubPanelSkel")
 
-local SubStrokeBox = Instance.new("UIStroke")
-SubStrokeBox.Color = Color3.fromRGB(40, 40, 40)
-SubStrokeBox.Thickness = 1.5
-SubStrokeBox.Parent = SubPanelBox
-
--- Sub-Painel de Customização do NOME
-local SubPanelName = Instance.new("Frame")
-SubPanelName.Name = "SubPanelName"
-SubPanelName.Size = UDim2.new(0, 200, 0, 220)
-SubPanelName.Position = UDim2.new(0.5, 230, 0.5, -110)
-SubPanelName.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
-SubPanelName.BorderSizePixel = 0
-SubPanelName.Visible = false
-SubPanelName.Parent = ScreenGui
-
-local SubCornerName = Instance.new("UICorner")
-SubCornerName.CornerRadius = UDim.new(0, 12)
-SubCornerName.Parent = SubPanelName
-
-local SubStrokeName = Instance.new("UIStroke")
-SubStrokeName.Color = Color3.fromRGB(40, 40, 40)
-SubStrokeName.Thickness = 1.5
-SubStrokeName.Parent = SubPanelName
-
--- Lógica para fechar todos os sub-paineis extras
 local function CloseAllSubPanels()
     SubPanel.Visible = false
     SubPanelBox.Visible = false
     SubPanelName.Visible = false
+    SubPanelDist.Visible = false
+    SubPanelSkel.Visible = false
 end
 
 local isMenuOpen = false
@@ -202,7 +185,7 @@ Bubble.MouseButton1Click:Connect(function()
 end)
 
 -- ==========================================
--- 3. HEADER MINIMALISTA E CONTADOR ONLINE REAL
+-- 3. HEADER COM CONTADOR REAL ONLINE
 -- ==========================================
 
 local TitleLabel = Instance.new("TextLabel")
@@ -210,7 +193,7 @@ TitleLabel.Name = "TitleLabel"
 TitleLabel.Size = UDim2.new(1, 0, 0, 30)
 TitleLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 TitleLabel.BorderSizePixel = 0
-TitleLabel.Text = "BK CLIENT v1.6 [Beta]"
+TitleLabel.Text = "BK CLIENT v1.7 [Beta]"
 TitleLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.TextSize = 11
@@ -337,7 +320,7 @@ local function CreatePage(name, isProfile, isVisual)
     Page.BackgroundTransparency = 1
     Page.BorderSizePixel = 0
     Page.ScrollBarThickness = 3
-    Page.CanvasSize = UDim2.new(0, 0, 0, 250)
+    Page.CanvasSize = UDim2.new(0, 0, 0, 300)
     Page.Visible = false
     Page.Parent = ContainerPages
     
@@ -402,15 +385,17 @@ local function CreatePage(name, isProfile, isVisual)
     return Page
 end
 
+-- Reorganizando as páginas: Perfil passa a ser a Aba Inicial na Ordem
+local PagePerfil = CreatePage("Perfil", true, false)
 local PageStatus = CreatePage("Status", false, false)
 local PageOpcoes = CreatePage("Opcoes", false, false)
 local PageMira = CreatePage("Mira", false, false)
 local PageVisual = CreatePage("Visual", false, true)
 local PageExtras = CreatePage("Extras", false, false)
-local PagePerfil = CreatePage("Perfil", true, false)
 local PageGraficos = CreatePage("Graficos", false, false)
 
-PageStatus.Visible = true
+-- Perfil visível ao iniciar o injetor
+PagePerfil.Visible = true
 
 local function AddTabBtn(name, displayName, layoutOrder, isDefault)
     local Btn = Instance.new("TextButton")
@@ -436,12 +421,13 @@ local function AddTabBtn(name, displayName, layoutOrder, isDefault)
     TabButtons[name] = Btn
 end
 
-AddTabBtn("Status", "Status", 1, true)
-AddTabBtn("Opcoes", "Opções", 2, false)
-AddTabBtn("Mira", "Mira", 3, false)
-AddTabBtn("Visual", "Visual", 4, false)
-AddTabBtn("Extras", "Extras", 5, false)
-AddTabBtn("Perfil", "Perfil", 6, false)
+-- Botões ordenados corretamente colocando Perfil como primeiro botão
+AddTabBtn("Perfil", "Perfil", 1, true)
+AddTabBtn("Status", "Status", 2, false)
+AddTabBtn("Opcoes", "Opções", 3, false)
+AddTabBtn("Mira", "Mira", 4, false)
+AddTabBtn("Visual", "Visual", 5, false)
+AddTabBtn("Extras", "Extras", 6, false)
 AddTabBtn("Graficos", "Gráficos", 7, false)
 
 -- ==========================================
@@ -636,7 +622,6 @@ local SubTitleBoxCorner = Instance.new("UICorner")
 SubTitleBoxCorner.CornerRadius = UDim.new(0, 12)
 SubTitleBoxCorner.Parent = SubTitleBox
 
--- Customizar Tamanho da Box
 local BoxSizeLabel = Instance.new("TextLabel")
 BoxSizeLabel.Size = UDim2.new(1, 0, 0, 20)
 BoxSizeLabel.Position = UDim2.new(0, 10, 0, 40)
@@ -676,7 +661,6 @@ BoxSizeSlider.MouseButton1Click:Connect(function()
     end
 end)
 
--- Estilo da Box (Redonda ou Quadrada)
 local BoxStyleLabel = Instance.new("TextLabel")
 BoxStyleLabel.Size = UDim2.new(1, 0, 0, 20)
 BoxStyleLabel.Position = UDim2.new(0, 10, 0, 85)
@@ -734,7 +718,6 @@ BtnRound.MouseButton1Click:Connect(function()
     BtnSquare.TextColor3 = Color3.fromRGB(150, 150, 150)
 end)
 
--- Cores da Box
 local BoxColorLabel = Instance.new("TextLabel")
 BoxColorLabel.Size = UDim2.new(1, 0, 0, 20)
 BoxColorLabel.Position = UDim2.new(0, 10, 0, 130)
@@ -799,7 +782,6 @@ local SubTitleNameCorner = Instance.new("UICorner")
 SubTitleNameCorner.CornerRadius = UDim.new(0, 12)
 SubTitleNameCorner.Parent = SubTitleName
 
--- Efeito RGB (Ligar / Desligar)
 local RGBLabel = Instance.new("TextLabel")
 RGBLabel.Size = UDim2.new(1, 0, 0, 20)
 RGBLabel.Position = UDim2.new(0, 10, 0, 40)
@@ -857,7 +839,6 @@ BtnRGBOff.MouseButton1Click:Connect(function()
     BtnRGBOn.TextColor3 = Color3.fromRGB(150, 150, 150)
 end)
 
--- Customizar tamanho do Texto do Nome
 local NameSizeLabel = Instance.new("TextLabel")
 NameSizeLabel.Size = UDim2.new(1, 0, 0, 20)
 NameSizeLabel.Position = UDim2.new(0, 10, 0, 85)
@@ -895,7 +876,6 @@ NameSizeSlider.MouseButton1Click:Connect(function()
     NameSizeLabel.Text = "TAMANHO DO TEXTO: " .. tostring(ESP_Config.NameSize)
 end)
 
--- Cores Estáticas do Nome
 local NameColorLabel = Instance.new("TextLabel")
 NameColorLabel.Size = UDim2.new(1, 0, 0, 20)
 NameColorLabel.Position = UDim2.new(0, 10, 0, 130)
@@ -942,8 +922,272 @@ SaveBtnName.Parent = SubPanelName
 
 SaveBtnName.MouseButton1Click:Connect(function() SubPanelName.Visible = false end)
 
+
 -- ==========================================
--- 8. INTEGRANDO OS BOTÕES NA ABA VISUAL
+-- 8. CONSTRUÇÃO DO SUB-PAINEL (ESP DISTÂNCIA)
+-- ==========================================
+
+local SubTitleDist = Instance.new("TextLabel")
+SubTitleDist.Size = UDim2.new(1, 0, 0, 30)
+SubTitleDist.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+SubTitleDist.BorderSizePixel = 0
+SubTitleDist.Text = "DISTANCE CONFIGS ⚙️"
+SubTitleDist.TextColor3 = Color3.fromRGB(255, 255, 255)
+SubTitleDist.Font = Enum.Font.GothamBold
+SubTitleDist.TextSize = 10
+SubTitleDist.Parent = SubPanelDist
+
+local SubTitleDistCorner = Instance.new("UICorner")
+SubTitleDistCorner.CornerRadius = UDim.new(0, 12)
+SubTitleDistCorner.Parent = SubTitleDist
+
+local DistRGBLabel = Instance.new("TextLabel")
+DistRGBLabel.Size = UDim2.new(1, 0, 0, 20)
+DistRGBLabel.Position = UDim2.new(0, 10, 0, 40)
+DistRGBLabel.BackgroundTransparency = 1
+DistRGBLabel.Text = "RGB NA DISTÂNCIA"
+DistRGBLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+DistRGBLabel.Font = Enum.Font.GothamBold
+DistRGBLabel.TextSize = 9
+DistRGBLabel.TextXAlignment = Enum.TextXAlignment.Left
+DistRGBLabel.Parent = SubPanelDist
+
+local BtnDistRGBOn = Instance.new("TextButton")
+BtnDistRGBOn.Size = UDim2.new(0.42, 0, 0, 20)
+BtnDistRGBOn.Position = UDim2.new(0.05, 0, 0, 60)
+BtnDistRGBOn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+BtnDistRGBOn.BorderSizePixel = 0
+BtnDistRGBOn.Text = "ATIVAR"
+BtnDistRGBOn.TextColor3 = Color3.fromRGB(150, 150, 150)
+BtnDistRGBOn.Font = Enum.Font.GothamBold
+BtnDistRGBOn.TextSize = 8
+BtnDistRGBOn.Parent = SubPanelDist
+
+local BtnDistRGBOnCorner = Instance.new("UICorner")
+BtnDistRGBOnCorner.CornerRadius = UDim.new(0, 4)
+BtnDistRGBOnCorner.Parent = BtnDistRGBOn
+
+local BtnDistRGBOff = Instance.new("TextButton")
+BtnDistRGBOff.Size = UDim2.new(0.42, 0, 0, 20)
+BtnDistRGBOff.Position = UDim2.new(0.53, 0, 0, 60)
+BtnDistRGBOff.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+BtnDistRGBOff.BorderSizePixel = 0
+BtnDistRGBOff.Text = "ESTÁTICO"
+BtnDistRGBOff.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnDistRGBOff.Font = Enum.Font.GothamBold
+BtnDistRGBOff.TextSize = 8
+BtnDistRGBOff.Parent = SubPanelDist
+
+local BtnDistRGBOffCorner = Instance.new("UICorner")
+BtnDistRGBOffCorner.CornerRadius = UDim.new(0, 4)
+BtnDistRGBOffCorner.Parent = BtnDistRGBOff
+
+BtnDistRGBOn.MouseButton1Click:Connect(function()
+    ESP_Config.DistRGB = true
+    BtnDistRGBOn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    BtnDistRGBOn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    BtnDistRGBOff.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    BtnDistRGBOff.TextColor3 = Color3.fromRGB(150, 150, 150)
+end)
+
+BtnDistRGBOff.MouseButton1Click:Connect(function()
+    ESP_Config.DistRGB = false
+    BtnDistRGBOff.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    BtnDistRGBOff.TextColor3 = Color3.fromRGB(255, 255, 255)
+    BtnDistRGBOn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    BtnDistRGBOn.TextColor3 = Color3.fromRGB(150, 150, 150)
+end)
+
+local DistSizeLabel = Instance.new("TextLabel")
+DistSizeLabel.Size = UDim2.new(1, 0, 0, 20)
+DistSizeLabel.Position = UDim2.new(0, 10, 0, 85)
+DistSizeLabel.BackgroundTransparency = 1
+DistSizeLabel.Text = "TAMANHO DO TEXTO: 10"
+DistSizeLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+DistSizeLabel.Font = Enum.Font.GothamBold
+DistSizeLabel.TextSize = 9
+DistSizeLabel.TextXAlignment = Enum.TextXAlignment.Left
+DistSizeLabel.Parent = SubPanelDist
+
+local DistSizeSlider = Instance.new("TextButton")
+DistSizeSlider.Size = UDim2.new(0.9, 0, 0, 18)
+DistSizeSlider.Position = UDim2.new(0.05, 0, 0, 105)
+DistSizeSlider.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+DistSizeSlider.BorderSizePixel = 0
+DistSizeSlider.Text = "MUDAR TAMANHO"
+DistSizeSlider.TextColor3 = Color3.fromRGB(255, 255, 255)
+DistSizeSlider.Font = Enum.Font.GothamBold
+DistSizeSlider.TextSize = 8
+DistSizeSlider.Parent = SubPanelDist
+
+local DistSizeCorner = Instance.new("UICorner")
+DistSizeCorner.CornerRadius = UDim.new(0, 4)
+DistSizeCorner.Parent = DistSizeSlider
+
+DistSizeSlider.MouseButton1Click:Connect(function()
+    if ESP_Config.DistSize == 10 then
+        ESP_Config.DistSize = 13
+    elseif ESP_Config.DistSize == 13 then
+        ESP_Config.DistSize = 8
+    else
+        ESP_Config.DistSize = 10
+    end
+    DistSizeLabel.Text = "TAMANHO DO TEXTO: " .. tostring(ESP_Config.DistSize)
+end)
+
+local DistColorLabel = Instance.new("TextLabel")
+DistColorLabel.Size = UDim2.new(1, 0, 0, 20)
+DistColorLabel.Position = UDim2.new(0, 10, 0, 130)
+DistColorLabel.BackgroundTransparency = 1
+DistColorLabel.Text = "COR DA DISTÂNCIA"
+DistColorLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+DistColorLabel.Font = Enum.Font.GothamBold
+DistColorLabel.TextSize = 9
+DistColorLabel.TextXAlignment = Enum.TextXAlignment.Left
+DistColorLabel.Parent = SubPanelDist
+
+local DistColorContainer = Instance.new("Frame")
+DistColorContainer.Size = UDim2.new(0.9, 0, 0, 20)
+DistColorContainer.Position = UDim2.new(0.05, 0, 0, 150)
+DistColorContainer.BackgroundTransparency = 1
+DistColorContainer.Parent = SubPanelDist
+
+local DistColorLayout = Instance.new("UIListLayout")
+DistColorLayout.FillDirection = Enum.FillDirection.Horizontal
+DistColorLayout.Padding = UDim.new(0, 6)
+DistColorLayout.Parent = DistColorContainer
+
+local dc1 = CreateColorSelector(Color3.fromRGB(255, 0, 0), DistColorContainer)
+dc1.MouseButton1Click:Connect(function() ESP_Config.DistColor = Color3.fromRGB(255, 0, 0) end)
+local dc2 = CreateColorSelector(Color3.fromRGB(0, 255, 0), DistColorContainer)
+dc2.MouseButton1Click:Connect(function() ESP_Config.DistColor = Color3.fromRGB(0, 255, 0) end)
+local dc3 = CreateColorSelector(Color3.fromRGB(0, 255, 255), DistColorContainer)
+dc3.MouseButton1Click:Connect(function() ESP_Config.DistColor = Color3.fromRGB(0, 255, 255) end)
+local dc4 = CreateColorSelector(Color3.fromRGB(255, 255, 255), DistColorContainer)
+dc4.MouseButton1Click:Connect(function() ESP_Config.DistColor = Color3.fromRGB(255, 255, 255) end)
+local dc5 = CreateColorSelector(Color3.fromRGB(255, 255, 0), DistColorContainer)
+dc5.MouseButton1Click:Connect(function() ESP_Config.DistColor = Color3.fromRGB(255, 255, 0) end)
+
+local SaveBtnDist = Instance.new("TextButton")
+SaveBtnDist.Size = UDim2.new(0.9, 0, 0, 25)
+SaveBtnDist.Position = UDim2.new(0.05, 0, 0, 185)
+SaveBtnDist.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+SaveBtnDist.BorderSizePixel = 0
+SaveBtnDist.Text = "SALVAR CONFIGURAÇÃO"
+SaveBtnDist.TextColor3 = Color3.fromRGB(0, 255, 0)
+SaveBtnDist.Font = Enum.Font.GothamBold
+SaveBtnDist.TextSize = 9
+SaveBtnDist.Parent = SubPanelDist
+
+SaveBtnDist.MouseButton1Click:Connect(function() SubPanelDist.Visible = false end)
+
+
+-- ==========================================
+-- 9. CONSTRUÇÃO DO SUB-PAINEL (ESP ESQUELETO)
+-- ==========================================
+
+local SubTitleSkel = Instance.new("TextLabel")
+SubTitleSkel.Size = UDim2.new(1, 0, 0, 30)
+SubTitleSkel.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+SubTitleSkel.BorderSizePixel = 0
+SubTitleSkel.Text = "SKELETON CONFIGS ⚙️"
+SubTitleSkel.TextColor3 = Color3.fromRGB(255, 255, 255)
+SubTitleSkel.Font = Enum.Font.GothamBold
+SubTitleSkel.TextSize = 10
+SubTitleSkel.Parent = SubPanelSkel
+
+local SubTitleSkelCorner = Instance.new("UICorner")
+SubTitleSkelCorner.CornerRadius = UDim.new(0, 12)
+SubTitleSkelCorner.Parent = SubTitleSkel
+
+local SkelThickLabel = Instance.new("TextLabel")
+SkelThickLabel.Size = UDim2.new(1, 0, 0, 20)
+SkelThickLabel.Position = UDim2.new(0, 10, 0, 40)
+SkelThickLabel.BackgroundTransparency = 1
+SkelThickLabel.Text = "ESPESSURA LINHAS: 1.5"
+SkelThickLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+SkelThickLabel.Font = Enum.Font.GothamBold
+SkelThickLabel.TextSize = 9
+SkelThickLabel.TextXAlignment = Enum.TextXAlignment.Left
+SkelThickLabel.Parent = SubPanelSkel
+
+local SkelThickSlider = Instance.new("TextButton")
+SkelThickSlider.Size = UDim2.new(0.9, 0, 0, 18)
+SkelThickSlider.Position = UDim2.new(0.05, 0, 0, 60)
+SkelThickSlider.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+SkelThickSlider.BorderSizePixel = 0
+SkelThickSlider.Text = "MUDAR ESPESSURA"
+SkelThickSlider.TextColor3 = Color3.fromRGB(255, 255, 255)
+SkelThickSlider.Font = Enum.Font.GothamBold
+SkelThickSlider.TextSize = 8
+SkelThickSlider.Parent = SubPanelSkel
+
+local SkelThickCorner = Instance.new("UICorner")
+SkelThickCorner.CornerRadius = UDim.new(0, 4)
+SkelThickCorner.Parent = SkelThickSlider
+
+SkelThickSlider.MouseButton1Click:Connect(function()
+    if ESP_Config.SkelThickness == 1.5 then
+        ESP_Config.SkelThickness = 2.5
+    elseif ESP_Config.SkelThickness == 2.5 then
+        ESP_Config.SkelThickness = 4.0
+    elseif ESP_Config.SkelThickness == 4.0 then
+        ESP_Config.SkelThickness = 1.0
+    else
+        ESP_Config.SkelThickness = 1.5
+    end
+    SkelThickLabel.Text = "ESPESSURA LINHAS: " .. tostring(ESP_Config.SkelThickness)
+end)
+
+local SkelColorLabel = Instance.new("TextLabel")
+SkelColorLabel.Size = UDim2.new(1, 0, 0, 20)
+SkelColorLabel.Position = UDim2.new(0, 10, 0, 100)
+SkelColorLabel.BackgroundTransparency = 1
+SkelColorLabel.Text = "COR DO ESQUELETO"
+SkelColorLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+SkelColorLabel.Font = Enum.Font.GothamBold
+SkelColorLabel.TextSize = 9
+SkelColorLabel.TextXAlignment = Enum.TextXAlignment.Left
+SkelColorLabel.Parent = SubPanelSkel
+
+local SkelColorContainer = Instance.new("Frame")
+SkelColorContainer.Size = UDim2.new(0.9, 0, 0, 20)
+SkelColorContainer.Position = UDim2.new(0.05, 0, 0, 120)
+SkelColorContainer.BackgroundTransparency = 1
+SkelColorContainer.Parent = SubPanelSkel
+
+local SkelColorLayout = Instance.new("UIListLayout")
+SkelColorLayout.FillDirection = Enum.FillDirection.Horizontal
+SkelColorLayout.Padding = UDim.new(0, 6)
+SkelColorLayout.Parent = SkelColorContainer
+
+local sc1 = CreateColorSelector(Color3.fromRGB(255, 0, 0), SkelColorContainer)
+sc1.MouseButton1Click:Connect(function() ESP_Config.SkelColor = Color3.fromRGB(255, 0, 0) end)
+local sc2 = CreateColorSelector(Color3.fromRGB(0, 255, 0), SkelColorContainer)
+sc2.MouseButton1Click:Connect(function() ESP_Config.SkelColor = Color3.fromRGB(0, 255, 0) end)
+local sc3 = CreateColorSelector(Color3.fromRGB(255, 0, 255), SkelColorContainer)
+sc3.MouseButton1Click:Connect(function() ESP_Config.SkelColor = Color3.fromRGB(255, 0, 255) end)
+local sc4 = CreateColorSelector(Color3.fromRGB(255, 255, 255), SkelColorContainer)
+sc4.MouseButton1Click:Connect(function() ESP_Config.SkelColor = Color3.fromRGB(255, 255, 255) end)
+local sc5 = CreateColorSelector(Color3.fromRGB(255, 255, 0), SkelColorContainer)
+sc5.MouseButton1Click:Connect(function() ESP_Config.SkelColor = Color3.fromRGB(255, 255, 0) end)
+
+local SaveBtnSkel = Instance.new("TextButton")
+SaveBtnSkel.Size = UDim2.new(0.9, 0, 0, 25)
+SaveBtnSkel.Position = UDim2.new(0.05, 0, 0, 175)
+SaveBtnSkel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+SaveBtnSkel.BorderSizePixel = 0
+SaveBtnSkel.Text = "SALVAR CONFIGURAÇÃO"
+SaveBtnSkel.TextColor3 = Color3.fromRGB(0, 255, 0)
+SaveBtnSkel.Font = Enum.Font.GothamBold
+SaveBtnSkel.TextSize = 9
+SaveBtnSkel.Parent = SubPanelSkel
+
+SaveBtnSkel.MouseButton1Click:Connect(function() SubPanelSkel.Visible = false end)
+
+
+-- ==========================================
+-- 10. CRIANDO OS INTERRUPTORES NA ABA VISUAL
 -- ==========================================
 
 local function CreateToggleWithSettings(parent, text, default, subPanelToOpen, callback)
@@ -1006,7 +1250,7 @@ local function CreateToggleWithSettings(parent, text, default, subPanelToOpen, c
     end)
 end
 
--- Iniciando botões na aba Visual
+-- Botões de visual carregados sequencialmente na aba Visual
 CreateToggleWithSettings(PageVisual, "ESP LINE", false, SubPanel, function(v)
     ESP_Config.Active = v
 end)
@@ -1019,13 +1263,32 @@ CreateToggleWithSettings(PageVisual, "ESP NOME", false, SubPanelName, function(v
     ESP_Config.NameActive = v
 end)
 
+CreateToggleWithSettings(PageVisual, "ESP DISTÂNCIA", false, SubPanelDist, function(v)
+    ESP_Config.DistActive = v
+end)
+
+CreateToggleWithSettings(PageVisual, "ESP ESQUELETO", false, SubPanelSkel, function(v)
+    ESP_Config.SkelActive = v
+end)
+
+
 -- ==========================================
--- 9. RENDERIZADOR SUPREMO DE ESP (RESPONSIVO E OTIMIZADO)
+-- 11. RENDERIZADOR SUPREMO DE ESP (v1.7)
 -- ==========================================
 
 local ESPContainer = Instance.new("Folder")
 ESPContainer.Name = "BK_ESP_v15"
 ESPContainer.Parent = ScreenGui
+
+-- Desenha conexões de esqueleto dinâmico em 2D usando Frames
+local function DrawLine(parent, thickness)
+    local l = Instance.new("Frame")
+    l.BorderSizePixel = 0
+    l.AnchorPoint = Vector2.new(0.5, 0.5)
+    l.Visible = false
+    l.Parent = parent
+    return l
+end
 
 local function ApplyESP(player)
     if player == LocalPlayer then return end
@@ -1057,15 +1320,37 @@ local function ApplyESP(player)
     -- Estrutura ESP NOME
     local NameTag = Instance.new("TextLabel")
     NameTag.BackgroundTransparency = 1
-    NameTag.Text = player.DisplayName
     NameTag.Font = Enum.Font.GothamBold
+    NameTag.Text = player.DisplayName
     NameTag.Visible = false
     NameTag.Parent = PlayerFolder
+
+    -- Estrutura ESP DISTÂNCIA
+    local DistTag = Instance.new("TextLabel")
+    DistTag.BackgroundTransparency = 1
+    DistTag.Font = Enum.Font.GothamBold
+    DistTag.Visible = false
+    DistTag.Parent = PlayerFolder
+
+    -- Estrutura ESP ESQUELETO (Articulações Suportadas R6/R15)
+    local SkeletonFolder = Instance.new("Folder")
+    SkeletonFolder.Name = "Skeleton"
+    SkeletonFolder.Parent = PlayerFolder
+
+    -- Pool de 16 linhas para cobrir todo o esqueleto R15
+    local lines = {}
+    for i = 1, 16 do
+        lines[i] = DrawLine(SkeletonFolder, 1.5)
+    end
 
     local function Clear()
         FrameLine.Visible = false
         FrameBox.Visible = false
         NameTag.Visible = false
+        DistTag.Visible = false
+        for _, line in ipairs(lines) do
+            line.Visible = false
+        end
     end
 
     local connection
@@ -1110,21 +1395,29 @@ local function ApplyESP(player)
                 FrameLine.Visible = false
             end
 
-            -- RENDERIZAR ESP BOX
+            -- RENDERIZAR ESP BOX (CENTRALIZADO PERFEITO NO PERSONAGEM)
             if ESP_Config.BoxActive then
-                -- Calcula dimensão responsiva baseado na distância
-                local DistFromCamera = (Camera.CoordinateFrame.p - RootPart.Position).Magnitude
-                local BoxW = (1200 / DistFromCamera) * ESP_Config.BoxSize
-                local BoxH = (1600 / DistFromCamera) * ESP_Config.BoxSize
+                -- Define a posição 3D do topo e da base real do modelo do personagem
+                local TopPos, OnScreenTop = Camera:WorldToViewportPoint(RootPart.Position + Vector3.new(0, 3, 0))
+                local BottomPos, OnScreenBottom = Camera:WorldToViewportPoint(RootPart.Position - Vector3.new(0, 3.5, 0))
 
-                FrameBox.Size = UDim2.new(0, BoxW, 0, BoxH)
-                FrameBox.Position = UDim2.new(0, ScreenPos.X - (BoxW / 2), 0, ScreenPos.Y - (BoxH / 2))
-                
-                BoxStroke.Color = ESP_Config.BoxColor
-                BoxStroke.Thickness = ESP_Config.BoxThickness
-                BoxCorner.CornerRadius = ESP_Config.BoxRound and UDim.new(1, 0) or UDim.new(0, 0)
-                
-                FrameBox.Visible = true
+                if OnScreenTop and OnScreenBottom then
+                    -- Determina a altura exata com base na projeção da tela
+                    local BoxHeight = math.abs(TopPos.Y - BottomPos.Y) * ESP_Config.BoxSize
+                    local BoxWidth = (BoxHeight * 0.65) -- Relação de proporção ideal de corpo de pé
+
+                    FrameBox.Size = UDim2.new(0, BoxWidth, 0, BoxHeight)
+                    -- Centraliza horizontalmente e verticalmente no HumanoidRootPart projetado
+                    FrameBox.Position = UDim2.new(0, ScreenPos.X - (BoxWidth / 2), 0, ScreenPos.Y - (BoxHeight / 2))
+                    
+                    BoxStroke.Color = ESP_Config.BoxColor
+                    BoxStroke.Thickness = ESP_Config.BoxThickness
+                    BoxCorner.CornerRadius = ESP_Config.BoxRound and UDim.new(1, 0) or UDim.new(0, 0)
+                    
+                    FrameBox.Visible = true
+                else
+                    FrameBox.Visible = false
+                end
             else
                 FrameBox.Visible = false
             end
@@ -1132,15 +1425,106 @@ local function ApplyESP(player)
             -- RENDERIZAR ESP NOME
             if ESP_Config.NameActive then
                 local DistFromCamera = (Camera.CoordinateFrame.p - RootPart.Position).Magnitude
-                local OffsetY = (800 / DistFromCamera) -- Posiciona acima da cabeça de forma dinâmica
+                local OffsetY = (800 / DistFromCamera)
 
                 NameTag.Size = UDim2.new(0, 150, 0, 20)
-                NameTag.Position = UDim2.new(0, ScreenPos.X - 75, 0, ScreenPos.Y - OffsetY - 15)
+                NameTag.Position = UDim2.new(0, ScreenPos.X - 75, 0, ScreenPos.Y - OffsetY - 18)
                 NameTag.TextSize = ESP_Config.NameSize
                 NameTag.TextColor3 = ESP_Config.NameRGB and GlobalRGB or ESP_Config.NameColor
                 NameTag.Visible = true
             else
                 NameTag.Visible = false
+            end
+
+            -- RENDERIZAR ESP DISTÂNCIA
+            if ESP_Config.DistActive then
+                local DistFromCamera = math.floor((Camera.CoordinateFrame.p - RootPart.Position).Magnitude)
+                local OffsetY = (800 / DistFromCamera)
+
+                DistTag.Size = UDim2.new(0, 100, 0, 15)
+                -- Posicionado estrategicamente logo abaixo do personagem
+                DistTag.Position = UDim2.new(0, ScreenPos.X - 50, 0, ScreenPos.Y + OffsetY + 5)
+                DistTag.Text = "[" .. tostring(DistFromCamera) .. "m]"
+                DistTag.TextSize = ESP_Config.DistSize
+                DistTag.TextColor3 = ESP_Config.DistRGB and GlobalRGB or ESP_Config.DistColor
+                DistTag.Visible = true
+            else
+                DistTag.Visible = false
+            end
+
+            -- RENDERIZAR ESP ESQUELETO REAL (R6 / R15 DINÂMICO)
+            if ESP_Config.SkelActive then
+                local lineIndex = 1
+                local rigType = Humanoid.RigType
+
+                local function ConnectJoints(p1Name, p2Name)
+                    local part1 = Char:FindFirstChild(p1Name)
+                    local part2 = Char:FindFirstChild(p2Name)
+
+                    if part1 and part2 and lines[lineIndex] then
+                        local screen1, on1 = Camera:WorldToViewportPoint(part1.Position)
+                        local screen2, on2 = Camera:WorldToViewportPoint(part2.Position)
+
+                        if on1 and on2 then
+                            local line = lines[lineIndex]
+                            local dx = screen2.X - screen1.X
+                            local dy = screen2.Y - screen1.Y
+                            local dist = math.sqrt(dx^2 + dy^2)
+                            local angle = math.atan2(dy, dx)
+
+                            line.Size = UDim2.new(0, dist, 0, ESP_Config.SkelThickness)
+                            line.BackgroundColor3 = ESP_Config.SkelColor
+                            line.Position = UDim2.new(0, (screen1.X + screen2.X) / 2, 0, (screen1.Y + screen2.Y) / 2)
+                            line.Rotation = math.deg(angle)
+                            line.Visible = true
+                            
+                            lineIndex = lineIndex + 1
+                        end
+                    end
+                end
+
+                -- Mapeia as conexões baseado na estrutura anatômica R15 ou R6 detectada
+                if rigType == Enum.HumanoidRigType.R15 then
+                    -- Tronco e Cabeça
+                    ConnectJoints("Head", "UpperTorso")
+                    ConnectJoints("UpperTorso", "LowerTorso")
+                    
+                    -- Braço Esquerdo
+                    ConnectJoints("UpperTorso", "LeftUpperArm")
+                    ConnectJoints("LeftUpperArm", "LeftLowerArm")
+                    ConnectJoints("LeftLowerArm", "LeftHand")
+
+                    -- Braço Direito
+                    ConnectJoints("UpperTorso", "RightUpperArm")
+                    ConnectJoints("RightUpperArm", "RightLowerArm")
+                    ConnectJoints("RightLowerArm", "RightHand")
+
+                    -- Perna Esquerda
+                    ConnectJoints("LowerTorso", "LeftUpperLeg")
+                    ConnectJoints("LeftUpperLeg", "LeftLowerLeg")
+                    ConnectJoints("LeftLowerLeg", "LeftFoot")
+
+                    -- Perna Direito
+                    ConnectJoints("LowerTorso", "RightUpperLeg")
+                    ConnectJoints("RightUpperLeg", "RightLowerLeg")
+                    ConnectJoints("RightLowerLeg", "RightFoot")
+                else
+                    -- R6 Clássico estruturado
+                    ConnectJoints("Head", "Torso")
+                    ConnectJoints("Torso", "Left Arm")
+                    ConnectJoints("Torso", "Right Arm")
+                    ConnectJoints("Torso", "Left Leg")
+                    ConnectJoints("Torso", "Right Leg")
+                end
+
+                -- Esconde as linhas sobressalentes que não foram utilizadas
+                for i = lineIndex, #lines do
+                    lines[i].Visible = false
+                end
+            else
+                for _, line in ipairs(lines) do
+                    line.Visible = false
+                end
             end
         else
             Clear()
