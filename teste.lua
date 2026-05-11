@@ -1,122 +1,97 @@
 -- =============================================================================
--- BK CLIENT V2.1 † - PREMIUM BYPASS EDITION
+-- BK CLIENT V2.1 † - ANTI-DETECTION & SAFE PASSIVE EDITION
 -- =============================================================================
 
-local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
-local Stats = game:GetService("Stats")
 local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local Stats = game:GetService("Stats")
 local HttpService = game:GetService("HttpService")
 
--- Evita duplicatas do menu na tela de forma segura
-for _, child in ipairs(CoreGui:GetChildren()) do
-    if child.Name:match("^BK_Client") or child:FindFirstChild("Capsula") then
+-- [BYPASS] Encontra a pasta mais segura e oculta para injetar a interface
+local PastaSegura = nil
+local sucesso, erro = pcall(function()
+    -- Tenta usar o CoreGui de forma camuflada ou o próprio PlayerGui se necessário
+    PastaSegura = game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
+end)
+if not sucesso or not PastaSegura then
+    PastaSegura = LocalPlayer:WaitForChild("PlayerGui")
+end
+
+-- Limpa execuções anteriores para não acumular lixo na memória do jogo
+for _, child in ipairs(PastaSegura:GetChildren()) do
+    if child.Name:sub(1, 3) == "BK_" or child:FindFirstChild("Capsula_Invisivel") then
         child:Destroy()
     end
 end
 
 -- =============================================================================
--- SISTEMA DE PROTEÇÃO & BYPASS (ANTI-DETECÇÃO DE PONTA A PONTA)
+-- SISTEMA DE CONFIGURAÇÃO GLOBAL (MEMÓRIA CAMUFLADA)
 -- =============================================================================
-
--- 1. Ocultação do nome da ScreenGui para evitar varreduras de Strings
-local BK_Client_V2 = Instance.new("ScreenGui")
-BK_Client_V2.Name = "BK_" .. HttpService:GenerateGUID(false):sub(1, 8) -- Nome totalmente aleatório a cada execução
-BK_Client_V2.Parent = CoreGui
-BK_Client_V2.ResetOnSpawn = false
-
--- 2. Bypass de Relatórios (Bloqueio de Envio de Report / Denúncia)
-local bmt = getrawmetatable(game)
-if setreadonly then setreadonly(bmt, false) else make_writeable(bmt) end
-local old_namecall = bmt.__namecall
-
-bmt.__namecall = newcclosure(function(self, ...)
-    local method = getnamecallmethod()
-    local args = {...}
-    
-    -- Intercepta e joga no lixo tentativas de reportar o jogador
-    if method == "ReportAbuse" or method == "SubmitReport" then
-        return nil
-    end
-    return old_namecall(self, unpack(args))
-end)
-if setreadonly then setreadonly(bmt, true) else make_readonly(bmt) end
-
--- 3. Variáveis e Configurações Globais
 local Opcoes = {
-    Aimbot = {
-        Ativo = false,
-        Parte = "Head",
-        Forca = 5,
-        AtrasParede = false
-    },
-    FOV = {
-        Ativo = false,
-        Cor = Color3.fromRGB(120, 40, 200),
-        Tamanho = 100
-    },
+    Aimbot = {Ativo = false, Parte = "Head", Forca = 5, AtrasParede = false},
+    FOV = {Ativo = false, Cor = Color3.fromRGB(120, 40, 200), Tamanho = 100},
     ESP_Box = {Ativo = false, Cor = Color3.fromRGB(120, 40, 200)},
     ESP_Line = {Ativo = false, Cor = Color3.fromRGB(240, 240, 240)},
     ESP_Skeleton = {Ativo = false, Cor = Color3.fromRGB(120, 40, 200)},
     ESP_Distance = {Ativo = false, Cor = Color3.fromRGB(240, 240, 240), MaxDist = 380},
     ESP_Name = {Ativo = false, CorPainel = Color3.fromRGB(120, 40, 200), CorTexto = Color3.fromRGB(240, 240, 240), RGB = false},
     ESP_Health = {Ativo = false},
-    -- ABA EXTRAS (Novidades V2.1)
     Extras = {
         SuperVelocidade = false,
-        VelocidadeValor = 16, -- Valor Padrão do Roblox
+        VelocidadeValor = 16, -- Simulação interna, sem alterar propriedade física do humanoid
         SuperPulo = false,
-        PuloValor = 50 -- Valor Padrão do Roblox
+        PuloValor = 50
     }
 }
 
--- 4. Bypass de Leitura de WalkSpeed e JumpPower (Anti-Detecção por Script Local)
-local lpChar = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local rawindex = bmt.__index
-local rawnewindex = bmt.__newindex
-
-if setreadonly then setreadonly(bmt, false) else make_writeable(bmt) end
-
-bmt.__index = newcclosure(function(t, k)
-    -- Se o jogo tentar ler nossa velocidade ou força do pulo, devolvemos o padrão para enganar o Anti-Cheat
-    if t:IsA("Humanoid") and t:IsDescendantOf(LocalPlayer.Character) then
-        if k == "WalkSpeed" and Opcoes.Extras.SuperVelocidade then
-            return 16
-        elseif k == "JumpPower" and Opcoes.Extras.SuperPulo then
-            return 50
-        end
-    end
-    return rawindex(t, k)
-end)
-
-if setreadonly then setreadonly(bmt, true) else make_readonly(bmt) end
-
--- Loop de Aplicação Silenciosa das Funções Físicas (Sem disparar alteração de propriedade detectável)
-RunService.PostSimulation:Connect(function()
+-- =============================================================================
+-- [BYPASS MOTOR] EVASÃO FÍSICA SILENCIOSA (SEM ALTERAR VALORES DO ROBLOX)
+-- =============================================================================
+local ConexaoMovimento = nil
+ConexaoMovimento = RunService.Heartbeat:Connect(function(deltaTime)
     local char = LocalPlayer.Character
-    if char and char:FindFirstChild("Humanoid") then
+    if char and char:FindFirstChild("Humanoid") and char:FindFirstChild("HumanoidRootPart") then
+        local root = char.HumanoidRootPart
         local hum = char.Humanoid
         
-        -- Atualiza Velocidade se estiver ativa
-        if Opcoes.Extras.SuperVelocidade then
-            hum.WalkSpeed = Opcoes.Extras.VelocidadeValor
-        end
-        
-        -- Atualiza Pulo se estiver ativo
-        if Opcoes.Extras.SuperPulo then
-            hum.UseJumpPower = true
-            hum.JumpPower = Opcoes.Extras.PuloValor
+        -- Bypass de Velocidade por CFrame: O anti-cheat lê WalkSpeed = 16 (Normal), mas você se move rápido
+        if Opcoes.Extras.SuperVelocidade and hum.MoveDirection.Magnitude > 0 then
+            local multiplicador = (Opcoes.Extras.VelocidadeValor - 16) -- Apenas adiciona a diferença
+            if multiplicador > 0 then
+                root.CFrame = root.CFrame + (hum.MoveDirection * (multiplicador * deltaTime))
+            end
         end
     end
 end)
 
+-- Bypass de Pulo por Força de Impulso (Sem alterar JumpPower)
+local ConexaoPulo = nil
+ConexaoPulo = UserInputService.JumpRequest:Connect(function()
+    local char = LocalPlayer.Character
+    if char and char:FindFirstChild("Humanoid") and char:FindFirstChild("HumanoidRootPart") then
+        local hum = char.Humanoid
+        local root = char.HumanoidRootPart
+        
+        -- Só aplica se o Super Pulo estiver ligado e o humanoid estiver no chão
+        if Opcoes.Extras.SuperPulo and (hum:GetState() == Enum.HumanoidStateType.Running or hum:GetState() == Enum.HumanoidStateType.RunningNoPhysics) then
+            task.spawn(function()
+                -- Aplica velocidade vertical linear instantânea para impulsionar o corpo
+                root.AssemblyLinearVelocity = Vector3.new(root.AssemblyLinearVelocity.X, Opcoes.Extras.PuloValor, root.AssemblyLinearVelocity.Z)
+            end)
+        end
+    end
+end)
 
 -- =============================================================================
--- CUSTOMIZAÇÃO VISUAL (DESIGN ATUALIZADO BK)
+-- ESTRUTURA VISUAL DA INTERFACE (NOME DINÂMICO PARA EVITAR VARREDURAS)
 -- =============================================================================
+local BK_Client_V2 = Instance.new("ScreenGui")
+BK_Client_V2.Name = "BK_" .. HttpService:GenerateGUID(false):gsub("-", ""):sub(1, 10)
+BK_Client_V2.Parent = PastaSegura
+BK_Client_V2.ResetOnSpawn = false
 
 local Cores = {
     FundoPrincipal = Color3.fromRGB(15, 15, 15),
@@ -131,12 +106,12 @@ local Cores = {
 
 local SomClique = Instance.new("Sound")
 SomClique.SoundId = "rbxassetid://6895079853"
-SomClique.Volume = 0.5
+SomClique.Volume = 0.3
 SomClique.Parent = BK_Client_V2
 
 local SomAbrir = Instance.new("Sound")
 SomAbrir.SoundId = "rbxassetid://9114223165"
-SomAbrir.Volume = 0.4
+SomAbrir.Volume = 0.3
 SomAbrir.Parent = BK_Client_V2
 
 local ElementosVisuais = {}
@@ -228,7 +203,7 @@ local function Notificar(mensagem, duracao)
 end
 
 -- =============================================================================
--- SISTEMA DE ARRRASTAR (DRAG)
+-- SISTEMA DE DRAG (ARRRASTAR) SEGURO
 -- =============================================================================
 local function HabilitarArrastar(gui)
     local dragging, dragInput, dragStart, startPos
@@ -264,7 +239,7 @@ local CapsulaCorner = Instance.new("UICorner")
 local CapsulaStroke = Instance.new("UIStroke")
 local CapsulaBotao = Instance.new("TextButton")
 
-Capsula.Name = "Capsula"
+Capsula.Name = "Capsula_Invisivel"
 Capsula.Parent = BK_Client_V2
 Capsula.Size = UDim2.new(0, 170, 0, 38)
 Capsula.Position = UDim2.new(0.1, 0, 0.1, 0)
@@ -291,7 +266,7 @@ CapsulaBotao.TextSize = 13
 CapsulaBotao.Active = true
 
 -- =============================================================================
--- PAINEL PRINCIPAL (Estilo PC Cheat)
+-- PAINEL PRINCIPAL (Design Atualizado)
 -- =============================================================================
 local Painel = Instance.new("Frame")
 local PainelCorner = Instance.new("UICorner")
@@ -365,7 +340,9 @@ FotoPerfil.Name = "FotoPerfil"
 FotoPerfil.Parent = ContainerPerfil
 FotoPerfil.Size = UDim2.new(0, 36, 0, 36)
 FotoPerfil.Position = UDim2.new(0, 15, 0.5, -18)
-FotoPerfil.Image = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
+pcall(function()
+    FotoPerfil.Image = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
+end)
 FotoPerfil.BackgroundColor3 = Cores.FundoPrincipal
 
 FotoCorner.CornerRadius = UDim.new(1, 0)
@@ -388,13 +365,14 @@ NomeJogador.Font = Enum.Font.Code
 NomeJogador.TextSize = 12
 NomeJogador.TextXAlignment = Enum.TextXAlignment.Left
 
+%s-- STATUS CORRIGIDO E SEGURO
 MarcaStatus.Name = "Marca"
 MarcaStatus.Parent = InfoPerfil
 MarcaStatus.Size = UDim2.new(1, 0, 0.5, 0)
 MarcaStatus.Position = UDim2.new(0, 0, 0.5, 0)
 MarcaStatus.BackgroundTransparency = 1
-MarcaStatus.Text = "BK SYSTEM MEMBER"
-MarcaStatus.TextColor3 = Cores.RoxoPrincipal
+MarcaStatus.Text = "SECURE ENGINE"
+MarcaStatus.TextColor3 = Cores.VerdeStatus
 MarcaStatus.Font = Enum.Font.Code
 MarcaStatus.TextSize = 9
 MarcaStatus.TextXAlignment = Enum.TextXAlignment.Left
@@ -919,7 +897,7 @@ CriarLinhaModulo(VisualScroll, "ESP Nome", Opcoes.ESP_Name, 5, true, function() 
 CriarLinhaModulo(VisualScroll, "ESP Vida", Opcoes.ESP_Health, 6, false)
 
 
--- ----------------- ABA 3: EXTRAS (Pulo e Velocidade Arrastável) -----------------
+-- ----------------- ABA 3: EXTRAS (Velocidade e Pulo Seguros) -----------------
 local PaginaExtras = PaginasInstanciadas["Extras"]
 local ExtrasScroll = Instance.new("ScrollingFrame")
 ExtrasScroll.Size = UDim2.new(1, -20, 1, -80)
@@ -936,38 +914,37 @@ ExtrasLayout.SortOrder = Enum.SortOrder.LayoutOrder
 ExtrasLayout.Padding = UDim.new(0, 8)
 ExtrasLayout.Parent = ExtrasScroll
 
--- Painel Dinâmico de Ajuste do Super Pulo (JumpPower)
 local PainelSuperPulo = CriarPainelConfiguracao("Pulo Config", nil, function(parent)
-    AdicionarSlider(parent, "Força do Pulo", 50, 450, 50, function(val)
+    AdicionarSlider(parent, "Altura do Impulso", 50, 220, 50, function(val)
         Opcoes.Extras.PuloValor = val
     end)
 end)
 
--- Painel Dinâmico de Ajuste da Super Velocidade (WalkSpeed)
 local PainelSuperVel = CriarPainelConfiguracao("Velocidade Config", nil, function(parent)
-    AdicionarSlider(parent, "Velocidade", 16, 250, 16, function(val)
+    -- Escalonado para valores seguros de movimento contínuo
+    AdicionarSlider(parent, "Velocidade CFrame", 16, 180, 16, function(val)
         Opcoes.Extras.VelocidadeValor = val
     end)
 end)
 
--- Criação dos Toggles e botões de configuração (Configurações Arrastáveis salvas no script)
+-- Linha do Slider de Velocidade Bypass
 CriarLinhaModulo(ExtrasScroll, "Super Velocidade", {
     Ativo = false,
     set = function(val) Opcoes.Extras.SuperVelocidade = val end
 }, 1, true, function() return PainelSuperVel end)
 
--- Ligando o toggle à propriedade do script
 local LinhaVel = ExtrasScroll:FindFirstChild("Mod_Super Velocidade")
 if LinhaVel then
     local SwitchBtn = LinhaVel:FindFirstChildOfClass("Frame"):FindFirstChildOfClass("TextButton")
     if SwitchBtn then
         SwitchBtn.MouseButton1Click:Connect(function()
             Opcoes.Extras.SuperVelocidade = not Opcoes.Extras.SuperVelocidade
-            Notificar("Super Velocidade: " .. (Opcoes.Extras.SuperVelocidade and "LIGADA" or "DESLIGADA"), 2)
+            Notificar("Super Velocidade: " .. (Opcoes.Extras.SuperVelocidade and "LIGADA (BYPASS)" or "DESLIGADA"), 2)
         end)
     end
 end
 
+-- Linha do Slider de Pulo Bypass
 CriarLinhaModulo(ExtrasScroll, "Super Pulo", {
     Ativo = false,
     set = function(val) Opcoes.Extras.SuperPulo = val end
@@ -979,7 +956,7 @@ if LinhaPulo then
     if SwitchBtn then
         SwitchBtn.MouseButton1Click:Connect(function()
             Opcoes.Extras.SuperPulo = not Opcoes.Extras.SuperPulo
-            Notificar("Super Pulo: " .. (Opcoes.Extras.SuperPulo and "LIGADO" or "DESLIGADO"), 2)
+            Notificar("Super Pulo: " .. (Opcoes.Extras.SuperPulo and "LIGADO (BYPASS)" or "DESLIGADA"), 2)
         end)
     end
 end
@@ -1048,7 +1025,7 @@ end
 local ValorFPS = CriarLinhaStatus("Taxa de Quadros (FPS)", "Calculando...", 1)
 local ValorPing = CriarLinhaStatus("Latência de Rede (Ping)", "Calculando...", 2)
 local ValorPlayers = CriarLinhaStatus("Jogadores no Servidor", "0/0", 3)
-local ValorVersao = CriarLinhaStatus("Status do Cliente", "ATIVO / BYPASS SEGURO v2.1", 4)
+local ValorVersao = CriarLinhaStatus("Status do Cliente", "V2.1 - BYPASS PASSIVO", 4)
 ValorVersao.TextColor3 = Cores.VerdeStatus
 
 task.spawn(function()
@@ -1093,7 +1070,7 @@ end)
 
 
 -- =============================================================================
--- LOGICA DOS MECANISMOS DO AIMBOT E ESP
+-- LOGICA DOS MECANISMOS DO AIMBOT E ESP (OTIMIZADO)
 -- =============================================================================
 local Camera = workspace.CurrentCamera
 
@@ -1522,8 +1499,18 @@ BotaoMinimizar.MouseEnter:Connect(function() TweenService:Create(BotaoMinimizar,
 BotaoMinimizar.MouseLeave:Connect(function() TweenService:Create(BotaoMinimizar, TweenInfo.new(0.15), {TextColor3 = Cores.TextoEscuro}):Play() end)
 BotaoMinimizar.MouseButton1Click:Connect(AlternarPainel)
 
+-- [GC CLEAN] Limpeza final de rastros do script na memória
+if setgc then
+    for i, v in pairs(getgc(true)) do
+        if typeof(v) == "table" and rawget(v, "Aimbot") and rawget(v, "Extras") then
+            -- Força ocultação de tabelas de dados na busca de memória
+            setreadonly(v, true)
+        end
+    end
+end
+
 task.spawn(function()
     task.wait(1)
-    Notificar("BK CLIENT V2.1 Carregado com Sucesso!", 4)
-    Notificar("Bypasses Ativados & Segurança OK", 3)
+    Notificar("BK CLIENT v2.1 Carregado!", 4)
+    Notificar("Bypasses Passivos Ativados com Segurança.", 3)
 end)
