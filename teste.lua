@@ -1,28 +1,40 @@
 -- =============================================================================
--- BK CLIENT V2.2 † - ANTI-DETECTION & FLIGHT ENGINE EDITION
+-- BK CLIENT V2.3 † - ANTI-DETECTION & INSTANT RENDER EDITION
 -- =============================================================================
+
+-- Garante que o jogo esteja totalmente carregado antes de iniciar a interface
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+
+-- Garante que o PlayerGui exista antes de prosseguir
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui", 10)
+
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local Stats = game:GetService("Stats")
 local HttpService = game:GetService("HttpService")
 
--- [BYPASS] Encontra a pasta mais segura e oculta para injetar a interface
-local PastaSegura = nil
+-- [BYPASS INJEÇÃO] Encontra o melhor e mais seguro local para a interface
+local ContainerInterface = nil
 local sucesso, erro = pcall(function()
-    PastaSegura = game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
+    -- Tenta o CoreGui primeiro (mais seguro contra detecção de tela)
+    ContainerInterface = game:GetService("CoreGui")
 end)
-if not sucesso or not PastaSegura then
-    PastaSegura = LocalPlayer:WaitForChild("PlayerGui")
+
+-- Se o executor não tiver permissão para o CoreGui, usa o PlayerGui de forma segura
+if not sucesso or not ContainerInterface then
+    ContainerInterface = PlayerGui
 end
 
--- Limpa execuções anteriores para não acumular lixo na memória do jogo
-for _, child in ipairs(PastaSegura:GetChildren()) do
+-- Limpa execuções anteriores para evitar clonagem de telas e consumo de memória
+for _, child in ipairs(ContainerInterface:GetChildren()) do
     if child.Name:sub(1, 3) == "BK_" or child:FindFirstChild("Capsula_Invisivel") or child.Name == "Capsula_Invisivel" then
-        child:Destroy()
+        pcall(function() child:Destroy() end)
     end
 end
 
@@ -83,7 +95,6 @@ ConexaoMovimento = RunService.Heartbeat:Connect(function(deltaTime)
             
             -- Suporte para analógico de Celular ou Controle
             if hum.MoveDirection.Magnitude > 0 and direcaoMovimento.Magnitude == 0 then
-                -- Usa a direção de movimento projetando na rotação tridimensional da câmera
                 local projecaoCâmera = Camera.CFrame:VectorToWorldSpace(Vector3.new(
                     hum.MoveDirection.X, 
                     Camera.CFrame.LookVector.Y * hum.MoveDirection.Z, 
@@ -130,8 +141,9 @@ end)
 -- =============================================================================
 local BK_Client_V2 = Instance.new("ScreenGui")
 BK_Client_V2.Name = "BK_" .. HttpService:GenerateGUID(false):gsub("-", ""):sub(1, 10)
-BK_Client_V2.Parent = PastaSegura
+BK_Client_V2.Parent = ContainerInterface
 BK_Client_V2.ResetOnSpawn = false
+BK_Client_V2.Enabled = true -- Força a exibição imediata do elemento
 
 local Cores = {
     FundoPrincipal = Color3.fromRGB(15, 15, 15),
@@ -304,6 +316,7 @@ Capsula.BackgroundColor3 = Cores.FundoPrincipal
 Capsula.BorderSizePixel = 0
 Capsula.ClipsDescendants = true
 Capsula.Active = true
+Capsula.Visible = true -- Garante visibilidade ao injetar
 
 CapsulaCorner.CornerRadius = UDim.new(0.5, 0)
 CapsulaCorner.Parent = Capsula
@@ -316,7 +329,7 @@ CapsulaBotao.Name = "Botao"
 CapsulaBotao.Parent = Capsula
 CapsulaBotao.Size = UDim2.new(1, 0, 1, 0)
 CapsulaBotao.BackgroundTransparency = 1
-CapsulaBotao.Text = "BK CLIENT V2.2 †"
+CapsulaBotao.Text = "BK CLIENT V2.3 †"
 CapsulaBotao.TextColor3 = Cores.TextoClaro
 CapsulaBotao.Font = Enum.Font.Code
 CapsulaBotao.TextSize = 12
@@ -1105,7 +1118,7 @@ end
 local ValorFPS = CriarLinhaStatus("Taxa de Quadros (FPS)", "Calculando...", 1)
 local ValorPing = CriarLinhaStatus("Latência de Rede (Ping)", "Calculando...", 2)
 local ValorPlayers = CriarLinhaStatus("Jogadores no Servidor", "0/0", 3)
-local ValorVersao = CriarLinhaStatus("Status do Cliente", "V2.2 - FLIGHT ENGINE", 4)
+local ValorVersao = CriarLinhaStatus("Status do Cliente", "V2.3 - INSTANT RENDER", 4)
 ValorVersao.TextColor3 = Cores.VerdeStatus
 
 -- SISTEMA PRECISO DE CALCULO DE FPS REAL
@@ -1170,9 +1183,9 @@ local function LimparJogador(player)
     if ElementosVisuais[player] then
         for _, obj in pairs(ElementosVisuais[player]) do
             if typeof(obj) == "table" then
-                for _, subObj in pairs(obj) do subObj:Destroy() end
+                for _, subObj in pairs(obj) do pcall(function() subObj:Destroy() end) end
             else
-                obj:Destroy()
+                pcall(function() obj:Destroy() end)
             end
         end
         ElementosVisuais[player] = nil
@@ -1607,8 +1620,9 @@ if setgc then
     end
 end
 
+-- Feedback instantâneo do carregamento
 task.spawn(function()
-    task.wait(1)
-    Notificar("BK CLIENT v2.2 Carregado!", 4)
-    Notificar("Engine de Voo Segura Iniciada.", 3)
+    task.wait(0.2)
+    Notificar("BK CLIENT v2.3 Injetado!", 4)
+    Notificar("Aperte no botão flutuante para abrir o menu.", 4)
 end)
