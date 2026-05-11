@@ -46,6 +46,19 @@ SomAbrir.Parent = BK_Client_V2
 
 -- Tabela global de configurações das funções
 local Opcoes = {
+    -- ABA MIRA
+    Aimbot = {
+        Ativo = false,
+        Parte = "Head", -- "Head" ou "Torso"
+        Forca = 5, -- Suavização do Aimbot (1 = Ultra Suave, 10 = Travamento Bruto)
+        AtrasParede = false -- Se true, mira através das paredes (ignora Raycast)
+    },
+    FOV = {
+        Ativo = false,
+        Cor = Color3.fromRGB(120, 40, 200),
+        Tamanho = 100
+    },
+    -- ABA VISUAL
     ESP_Box = {Ativo = false, Cor = Color3.fromRGB(120, 40, 200)},
     ESP_Line = {Ativo = false, Cor = Color3.fromRGB(240, 240, 240)},
     ESP_Skeleton = {Ativo = false, Cor = Color3.fromRGB(120, 40, 200)},
@@ -56,6 +69,12 @@ local Opcoes = {
 
 -- Armazenamento das instâncias visuais para limpeza e atualização em tempo real
 local ElementosVisuais = {}
+
+-- Instância de Desenho do Círculo de FOV
+local CirculoFOV = Drawing.new("Circle")
+CirculoFOV.Thickness = 1.5
+CirculoFOV.Filled = false
+CirculoFOV.Visible = false
 
 -- =============================================================================
 -- SISTEMA DE NOTIFICAÇÕES (BK System Notify)
@@ -75,7 +94,11 @@ NotificationLayout.Padding = UDim.new(0, 10)
 
 local function Notificar(mensagem, duracao)
     duracao = duracao or 3.5
-    SomAbrir:Play()
+    task.spawn(function()
+        pcall(function()
+            SomAbrir:Play()
+        end)
+    end)
 
     local Card = Instance.new("Frame")
     local CardCorner = Instance.new("UICorner")
@@ -118,18 +141,15 @@ local function Notificar(mensagem, duracao)
     BarraProgresso.BorderSizePixel = 0
     BarraProgresso.BackgroundTransparency = 1
 
-    -- Animação de Entrada (Slide + Fade)
     TweenService:Create(Card, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {BackgroundTransparency = 0}):Play()
     TweenService:Create(CardStroke, TweenInfo.new(0.35), {Transparency = 0}):Play()
     TweenService:Create(Texto, TweenInfo.new(0.35), {TextTransparency = 0}):Play()
     TweenService:Create(BarraProgresso, TweenInfo.new(0.35), {BackgroundTransparency = 0}):Play()
 
-    -- Barra de carregamento consumindo o tempo
     local animTime = TweenService:Create(BarraProgresso, TweenInfo.new(duracao, Enum.EasingStyle.Linear), {Size = UDim2.new(0, 0, 0, 3)})
     animTime:Play()
 
     task.delay(duracao, function()
-        -- Animação de Saída
         local sumir = TweenService:Create(Card, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0)})
         TweenService:Create(CardStroke, TweenInfo.new(0.25), {Transparency = 1}):Play()
         TweenService:Create(Texto, TweenInfo.new(0.25), {TextTransparency = 1}):Play()
@@ -182,7 +202,7 @@ local function HabilitarArrastar(gui)
 end
 
 -- =============================================================================
--- CÁPSULA FLUTUANTE (Botão de Ativação) - AGORA 100% ARRASTÁVEL E DINÂMICA
+-- CÁPSULA FLUTUANTE (Botão de Ativação) - 100% MÓVEL
 -- =============================================================================
 local Capsula = Instance.new("Frame")
 local CapsulaCorner = Instance.new("UICorner")
@@ -196,7 +216,7 @@ Capsula.Position = UDim2.new(0.1, 0, 0.1, 0)
 Capsula.BackgroundColor3 = Cores.FundoPrincipal
 Capsula.BorderSizePixel = 0
 Capsula.ClipsDescendants = true
-HabilitarArrastar(Capsula) -- ATIVAÇÃO DO ARRASTAR NA BOLHA
+HabilitarArrastar(Capsula)
 
 CapsulaCorner.CornerRadius = UDim.new(0.5, 0)
 CapsulaCorner.Parent = Capsula
@@ -232,7 +252,7 @@ Painel.Position = UDim2.new(0.5, -290, 0.5, -180)
 Painel.BackgroundColor3 = Cores.FundoPrincipal
 Painel.BorderSizePixel = 0
 Painel.Visible = false
-Painel.ClipsDescendants = false -- Permite que os mini painéis estéticos saltem para fora do painel
+Painel.ClipsDescendants = false
 HabilitarArrastar(Painel)
 
 PainelCorner.CornerRadius = UDim.new(0, 10)
@@ -252,7 +272,6 @@ BarraLateral.BorderSizePixel = 0
 LateralCorner.CornerRadius = UDim.new(0, 10)
 LateralCorner.Parent = BarraLateral
 
--- Elemento estético para manter o canto interno reto
 local FlatPatch = Instance.new("Frame")
 FlatPatch.Size = UDim2.new(0, 10, 1, 0)
 FlatPatch.Position = UDim2.new(1, -10, 0, 0)
@@ -260,7 +279,6 @@ FlatPatch.BackgroundColor3 = Cores.FundoLateral
 FlatPatch.BorderSizePixel = 0
 FlatPatch.Parent = BarraLateral
 
--- Linha vertical central
 local DivisorVertical = Instance.new("Frame")
 DivisorVertical.Size = UDim2.new(0, 1, 1, 0)
 DivisorVertical.Position = UDim2.new(1, 0, 0, 0)
@@ -268,7 +286,7 @@ DivisorVertical.BackgroundColor3 = Cores.Borda
 DivisorVertical.BorderSizePixel = 0
 DivisorVertical.Parent = BarraLateral
 
--- Painel de Conteúdo
+-- Painel de Conteúdo (Direita)
 AreaConteudo.Name = "AreaConteudo"
 AreaConteudo.Parent = Painel
 AreaConteudo.Size = UDim2.new(1, -160, 1, 0)
@@ -641,154 +659,8 @@ local function AdicionarSeletorCores(parent, labelText, getCor, setCor)
 end
 
 -- =============================================================================
--- INTERFACE COMPACTA DE INTERRUPTORES (Toggles) E SLIDERS
+-- GERADOR DE SLIDER DINÂMICO
 -- =============================================================================
-local PaginaVisual = PaginasInstanciadas["Visual"]
-
-local VisualScroll = Instance.new("ScrollingFrame")
-VisualScroll.Size = UDim2.new(1, -20, 1, -80)
-VisualScroll.Position = UDim2.new(0, 10, 0, 70)
-VisualScroll.BackgroundTransparency = 1
-VisualScroll.BorderSizePixel = 0
-VisualScroll.CanvasSize = UDim2.new(0, 0, 0, 450)
-VisualScroll.ScrollBarThickness = 3
-VisualScroll.ScrollBarImageColor3 = Cores.RoxoPrincipal
-VisualScroll.Parent = PaginaVisual
-
-local VisualLayout = Instance.new("UIListLayout")
-VisualLayout.SortOrder = Enum.SortOrder.LayoutOrder
-VisualLayout.Padding = UDim.new(0, 8)
-VisualLayout.Parent = VisualScroll
-
--- Construtor de Linha de Modulo Visual
-local function CriarLinhaModulo(titulo, configRef, layoutOrder, temConfig, customConfigCallback)
-    local Frame = Instance.new("Frame")
-    local Corner = Instance.new("UICorner")
-    local Stroke = Instance.new("UIStroke")
-    local Label = Instance.new("TextLabel")
-    local ControlGroup = Instance.new("Frame")
-
-    Frame.Name = "Mod_" .. titulo
-    Frame.Size = UDim2.new(1, -10, 0, 44)
-    Frame.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
-    Frame.BorderSizePixel = 0
-    Frame.LayoutOrder = layoutOrder
-    Frame.Parent = VisualScroll
-
-    Corner.CornerRadius = UDim.new(0, 6)
-    Corner.Parent = Frame
-
-    Stroke.Thickness = 1
-    Stroke.Color = Cores.Borda
-    Stroke.Parent = Frame
-
-    Label.Size = UDim2.new(0.5, 0, 1, 0)
-    Label.Position = UDim2.new(0, 15, 0, 0)
-    Label.BackgroundTransparency = 1
-    Label.Text = string.upper(titulo)
-    Label.TextColor3 = Cores.TextoClaro
-    Label.Font = Enum.Font.Code
-    Label.TextSize = 11
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = Frame
-
-    ControlGroup.Size = UDim2.new(0.5, -15, 1, 0)
-    ControlGroup.Position = UDim2.new(0.5, 0, 0, 0)
-    ControlGroup.BackgroundTransparency = 1
-    ControlGroup.Parent = Frame
-
-    local LayoutControle = Instance.new("UIListLayout")
-    LayoutControle.FillDirection = Enum.FillDirection.Horizontal
-    LayoutControle.HorizontalAlignment = Enum.HorizontalAlignment.Right
-    LayoutControle.VerticalAlignment = Enum.VerticalAlignment.Center
-    LayoutControle.Padding = UDim.new(0, 8)
-    LayoutControle.Parent = ControlGroup
-
-    -- Botão de Toggle Deslizante (Switch)
-    local Switch = Instance.new("TextButton")
-    local SwitchCorner = Instance.new("UICorner")
-    local SwitchStroke = Instance.new("UIStroke")
-    local Knob = Instance.new("Frame")
-    local KnobCorner = Instance.new("UICorner")
-
-    Switch.Size = UDim2.new(0, 42, 0, 22)
-    Switch.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
-    Switch.BorderSizePixel = 0
-    Switch.Text = ""
-    Switch.Parent = ControlGroup
-
-    SwitchCorner.CornerRadius = UDim.new(0.5, 0)
-    SwitchCorner.Parent = Switch
-
-    SwitchStroke.Thickness = 1
-    SwitchStroke.Color = Cores.Borda
-    SwitchStroke.Parent = Switch
-
-    Knob.Size = UDim2.new(0, 16, 0, 16)
-    Knob.Position = UDim2.new(0, 3, 0.5, -8)
-    Knob.BackgroundColor3 = Cores.TextoEscuro
-    Knob.BorderSizePixel = 0
-    Knob.Parent = Switch
-
-    KnobCorner.CornerRadius = UDim.new(0.5, 0)
-    KnobCorner.Parent = Knob
-
-    local function RenderSwitch(anim)
-        local targetPos = configRef.Ativo and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)
-        local targetColor = configRef.Ativo and Cores.RoxoPrincipal or Color3.fromRGB(24, 24, 24)
-        local targetKnob = configRef.Ativo and Cores.TextoClaro or Cores.TextoEscuro
-
-        if anim then
-            TweenService:Create(Knob, TweenInfo.new(0.18, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = targetPos, BackgroundColor3 = targetKnob}):Play()
-            TweenService:Create(Switch, TweenInfo.new(0.18), {BackgroundColor3 = targetColor}):Play()
-        else
-            Knob.Position = targetPos
-            Knob.BackgroundColor3 = targetKnob
-            Switch.BackgroundColor3 = targetColor
-        end
-    end
-
-    Switch.MouseButton1Click:Connect(function()
-        SomClique:Play()
-        configRef.Ativo = not configRef.Ativo
-        RenderSwitch(true)
-        Notificar(titulo .. " " .. (configRef.Ativo and "Habilitado" or "Desabilitado"), 2)
-    end)
-
-    RenderSwitch(false)
-
-    -- Botão de Configurações '≡'
-    if temConfig and customConfigCallback then
-        local ConfigBtn = Instance.new("TextButton")
-        local ConfigCorner = Instance.new("UICorner")
-        local ConfigStroke = Instance.new("UIStroke")
-
-        ConfigBtn.Size = UDim2.new(0, 26, 0, 26)
-        ConfigBtn.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
-        ConfigBtn.BorderSizePixel = 0
-        ConfigBtn.Text = "≡"
-        ConfigBtn.TextColor3 = Cores.TextoClaro
-        ConfigBtn.Font = Enum.Font.Code
-        ConfigBtn.TextSize = 13
-        ConfigBtn.Parent = ControlGroup
-
-        ConfigCorner.CornerRadius = UDim.new(0, 4)
-        ConfigCorner.Parent = ConfigBtn
-
-        ConfigStroke.Thickness = 1
-        ConfigStroke.Color = Cores.Borda
-        ConfigStroke.Parent = ConfigBtn
-
-        local PainelCustom = customConfigCallback()
-
-        ConfigBtn.MouseButton1Click:Connect(function()
-            SomClique:Play()
-            PainelCustom.Visible = not PainelCustom.Visible
-        end)
-    end
-end
-
--- Slider Dinâmico
 local function AdicionarSlider(parent, labelText, min, max, defaultVal, callback)
     local Label = Instance.new("TextLabel")
     Label.Size = UDim2.new(1, 0, 0, 15)
@@ -859,23 +731,251 @@ local function AdicionarSlider(parent, labelText, min, max, defaultVal, callback
 end
 
 -- =============================================================================
--- INSTANCIAÇÃO DAS FUNÇÕES NA ABA VISUAL COM MINI PAINÉIS
+-- GERADOR DE ENTRADA DO MÓDULO (Toggle Switch)
 -- =============================================================================
+local function CriarLinhaModulo(parent, titulo, configRef, layoutOrder, temConfig, customConfigCallback)
+    local Frame = Instance.new("Frame")
+    local Corner = Instance.new("UICorner")
+    local Stroke = Instance.new("UIStroke")
+    local Label = Instance.new("TextLabel")
+    local ControlGroup = Instance.new("Frame")
+
+    Frame.Name = "Mod_" .. titulo
+    Frame.Size = UDim2.new(1, -10, 0, 44)
+    Frame.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+    Frame.BorderSizePixel = 0
+    Frame.LayoutOrder = layoutOrder
+    Frame.Parent = parent
+
+    Corner.CornerRadius = UDim.new(0, 6)
+    Corner.Parent = Frame
+
+    Stroke.Thickness = 1
+    Stroke.Color = Cores.Borda
+    Stroke.Parent = Frame
+
+    Label.Size = UDim2.new(0.5, 0, 1, 0)
+    Label.Position = UDim2.new(0, 15, 0, 0)
+    Label.BackgroundTransparency = 1
+    Label.Text = string.upper(titulo)
+    Label.TextColor3 = Cores.TextoClaro
+    Label.Font = Enum.Font.Code
+    Label.TextSize = 11
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Parent = Frame
+
+    ControlGroup.Size = UDim2.new(0.5, -15, 1, 0)
+    ControlGroup.Position = UDim2.new(0.5, 0, 0, 0)
+    ControlGroup.BackgroundTransparency = 1
+    ControlGroup.Parent = Frame
+
+    local LayoutControle = Instance.new("UIListLayout")
+    LayoutControle.FillDirection = Enum.FillDirection.Horizontal
+    LayoutControle.HorizontalAlignment = Enum.HorizontalAlignment.Right
+    LayoutControle.VerticalAlignment = Enum.VerticalAlignment.Center
+    LayoutControle.Padding = UDim.new(0, 8)
+    LayoutControle.Parent = ControlGroup
+
+    local Switch = Instance.new("TextButton")
+    local SwitchCorner = Instance.new("UICorner")
+    local SwitchStroke = Instance.new("UIStroke")
+    local Knob = Instance.new("Frame")
+    local KnobCorner = Instance.new("UICorner")
+
+    Switch.Size = UDim2.new(0, 42, 0, 22)
+    Switch.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
+    Switch.BorderSizePixel = 0
+    Switch.Text = ""
+    Switch.Parent = ControlGroup
+
+    SwitchCorner.CornerRadius = UDim.new(0.5, 0)
+    SwitchCorner.Parent = Switch
+
+    SwitchStroke.Thickness = 1
+    SwitchStroke.Color = Cores.Borda
+    SwitchStroke.Parent = Switch
+
+    Knob.Size = UDim2.new(0, 16, 0, 16)
+    Knob.Position = UDim2.new(0, 3, 0.5, -8)
+    Knob.BackgroundColor3 = Cores.TextoEscuro
+    Knob.BorderSizePixel = 0
+    Knob.Parent = Switch
+
+    KnobCorner.CornerRadius = UDim.new(0.5, 0)
+    KnobCorner.Parent = Knob
+
+    local function RenderSwitch(anim)
+        local targetPos = configRef.Ativo and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)
+        local targetColor = configRef.Ativo and Cores.RoxoPrincipal or Color3.fromRGB(24, 24, 24)
+        local targetKnob = configRef.Ativo and Cores.TextoClaro or Cores.TextoEscuro
+
+        if anim then
+            TweenService:Create(Knob, TweenInfo.new(0.18, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = targetPos, BackgroundColor3 = targetKnob}):Play()
+            TweenService:Create(Switch, TweenInfo.new(0.18), {BackgroundColor3 = targetColor}):Play()
+        else
+            Knob.Position = targetPos
+            Knob.BackgroundColor3 = targetKnob
+            Switch.BackgroundColor3 = targetColor
+        end
+    end
+
+    Switch.MouseButton1Click:Connect(function()
+        SomClique:Play()
+        configRef.Ativo = not configRef.Ativo
+        RenderSwitch(true)
+        Notificar(titulo .. " " .. (configRef.Ativo and "Habilitado" or "Desabilitado"), 2)
+    end)
+
+    RenderSwitch(false)
+
+    if temConfig and customConfigCallback then
+        local ConfigBtn = Instance.new("TextButton")
+        local ConfigCorner = Instance.new("UICorner")
+        local ConfigStroke = Instance.new("UIStroke")
+
+        ConfigBtn.Size = UDim2.new(0, 26, 0, 26)
+        ConfigBtn.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
+        ConfigBtn.BorderSizePixel = 0
+        ConfigBtn.Text = "≡"
+        ConfigBtn.TextColor3 = Cores.TextoClaro
+        ConfigBtn.Font = Enum.Font.Code
+        ConfigBtn.TextSize = 13
+        ConfigBtn.Parent = ControlGroup
+
+        ConfigCorner.CornerRadius = UDim.new(0, 4)
+        ConfigCorner.Parent = ConfigBtn
+
+        ConfigStroke.Thickness = 1
+        ConfigStroke.Color = Cores.Borda
+        ConfigStroke.Parent = ConfigBtn
+
+        local PainelCustom = customConfigCallback()
+
+        ConfigBtn.MouseButton1Click:Connect(function()
+            SomClique:Play()
+            PainelCustom.Visible = not PainelCustom.Visible
+        end)
+    end
+end
+
+-- =============================================================================
+-- INTERFACE DA ABA "MIRA" (Aimbot & FOV Dinâmico)
+-- =============================================================================
+local PaginaMira = PaginasInstanciadas["Mira"]
+
+local MiraScroll = Instance.new("ScrollingFrame")
+MiraScroll.Size = UDim2.new(1, -20, 1, -80)
+MiraScroll.Position = UDim2.new(0, 10, 0, 70)
+MiraScroll.BackgroundTransparency = 1
+MiraScroll.BorderSizePixel = 0
+MiraScroll.CanvasSize = UDim2.new(0, 0, 0, 300)
+MiraScroll.ScrollBarThickness = 3
+MiraScroll.ScrollBarImageColor3 = Cores.RoxoPrincipal
+MiraScroll.Parent = PaginaMira
+
+local MiraLayout = Instance.new("UIListLayout")
+MiraLayout.SortOrder = Enum.SortOrder.LayoutOrder
+MiraLayout.Padding = UDim.new(0, 8)
+MiraLayout.Parent = MiraScroll
+
+-- 1. Mini Painel do Aimbot (Seletor Head/Torso, Força)
+local PainelAimbot = CriarPainelConfiguracao("Aimbot Config", nil, function(parent)
+    -- Botão para Alternar Parte do Corpo
+    local BtnParte = Instance.new("TextButton")
+    local Corner = Instance.new("UICorner")
+    BtnParte.Size = UDim2.new(1, 0, 0, 24)
+    BtnParte.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
+    BtnParte.Text = "ALVO: CABEÇA"
+    BtnParte.TextColor3 = Cores.TextoClaro
+    BtnParte.Font = Enum.Font.Code
+    BtnParte.TextSize = 10
+    BtnParte.Parent = parent
+    Corner.CornerRadius = UDim.new(0, 4)
+    Corner.Parent = BtnParte
+
+    BtnParte.MouseButton1Click:Connect(function()
+        SomClique:Play()
+        if Opcoes.Aimbot.Parte == "Head" then
+            Opcoes.Aimbot.Parte = "Torso"
+            BtnParte.Text = "ALVO: PEITO (TORSO)"
+        else
+            Opcoes.Aimbot.Parte = "Head"
+            BtnParte.Text = "ALVO: CABEÇA"
+        end
+    end)
+
+    -- Slider para regular a Suavização (Força do Imã)
+    AdicionarSlider(parent, "Suavização (Força)", 1, 10, Opcoes.Aimbot.Forca, function(val)
+        Opcoes.Aimbot.Forca = val
+    end)
+end)
+
+-- Linha do Aimbot
+CriarLinhaModulo(MiraScroll, "Aimbot Principal", Opcoes.Aimbot, 1, true, function() return PainelAimbot end)
+
+-- Linha do Wallcheck (Atras da Parede)
+CriarLinhaModulo(MiraScroll, "Mirar Atraves da Parede", {
+    Ativo = Opcoes.AtrasParede,
+    set = function(val) Opcoes.Aimbot.AtrasParede = val end
+}, 2, false)
+-- Ajuste dinâmico do toggle do Wallcheck diretamente nas configurações globais
+local LinhaWall = MiraScroll:FindFirstChild("Mod_Mirar Atraves da Parede")
+if LinhaWall then
+    local SwitchBtn = LinhaWall:FindFirstChildOfClass("Frame"):FindFirstChildOfClass("TextButton")
+    if SwitchBtn then
+        SwitchBtn.MouseButton1Click:Connect(function()
+            Opcoes.Aimbot.AtrasParede = not Opcoes.Aimbot.AtrasParede
+            Notificar("Atras da Parede: " .. (Opcoes.Aimbot.AtrasParede and "ATIVADO" or "DESATIVADO"), 2)
+        end)
+    end
+end
+
+-- 2. Mini Painel do FOV
+local PainelFOV = CriarPainelConfiguracao("FOV Config", nil, function(parent)
+    AdicionarSeletorCores(parent, "Cor do Circulo", function() return Opcoes.FOV.Cor end, function(cor) Opcoes.FOV.Cor = cor end)
+    AdicionarSlider(parent, "Tamanho (Raio)", 30, 300, Opcoes.FOV.Tamanho, function(val)
+        Opcoes.FOV.Tamanho = val
+    end)
+end)
+
+-- Linha do FOV
+CriarLinhaModulo(MiraScroll, "Circulo FOV Visual", Opcoes.FOV, 3, true, function() return PainelFOV end)
+
+
+-- =============================================================================
+-- INTERFACE DA ABA "VISUAL"
+-- =============================================================================
+local PaginaVisual = PaginasInstanciadas["Visual"]
+
+local VisualScroll = Instance.new("ScrollingFrame")
+VisualScroll.Size = UDim2.new(1, -20, 1, -80)
+VisualScroll.Position = UDim2.new(0, 10, 0, 70)
+VisualScroll.BackgroundTransparency = 1
+VisualScroll.BorderSizePixel = 0
+VisualScroll.CanvasSize = UDim2.new(0, 0, 0, 450)
+VisualScroll.ScrollBarThickness = 3
+VisualScroll.ScrollBarImageColor3 = Cores.RoxoPrincipal
+VisualScroll.Parent = PaginaVisual
+
+local VisualLayout = Instance.new("UIListLayout")
+VisualLayout.SortOrder = Enum.SortOrder.LayoutOrder
+VisualLayout.Padding = UDim.new(0, 8)
+VisualLayout.Parent = VisualScroll
 
 -- 1. ESP BOX
 local PainelBox = CriarPainelConfiguracao("Box Config", nil, function(parent)
     AdicionarSeletorCores(parent, "Cor da Caixa", function() return Opcoes.ESP_Box.Cor end, function(cor) Opcoes.ESP_Box.Cor = cor end)
 end)
-CriarLinhaModulo("ESP Box", Opcoes.ESP_Box, 1, true, function() return PainelBox end)
+CriarLinhaModulo(VisualScroll, "ESP Box", Opcoes.ESP_Box, 1, true, function() return PainelBox end)
 
 -- 2. ESP LINE
-CriarLinhaModulo("ESP Line", Opcoes.ESP_Line, 2, false)
+CriarLinhaModulo(VisualScroll, "ESP Line", Opcoes.ESP_Line, 2, false)
 
 -- 3. ESP SKELETON
 local PainelSkel = CriarPainelConfiguracao("Skeleton Config", nil, function(parent)
     AdicionarSeletorCores(parent, "Cor das Articulações", function() return Opcoes.ESP_Skeleton.Cor end, function(cor) Opcoes.ESP_Skeleton.Cor = cor end)
 end)
-CriarLinhaModulo("ESP Esqueleto", Opcoes.ESP_Skeleton, 3, true, function() return PainelSkel end)
+CriarLinhaModulo(VisualScroll, "ESP Esqueleto", Opcoes.ESP_Skeleton, 3, true, function() return PainelSkel end)
 
 -- 4. ESP DISTANCE
 local PainelDist = CriarPainelConfiguracao("Distance Config", nil, function(parent)
@@ -884,14 +984,13 @@ local PainelDist = CriarPainelConfiguracao("Distance Config", nil, function(pare
         Opcoes.ESP_Distance.MaxDist = val
     end)
 end)
-CriarLinhaModulo("ESP Distancia", Opcoes.ESP_Distance, 4, true, function() return PainelDist end)
+CriarLinhaModulo(VisualScroll, "ESP Distancia", Opcoes.ESP_Distance, 4, true, function() return PainelDist end)
 
 -- 5. ESP NAME (Nome)
 local PainelNome = CriarPainelConfiguracao("Name Config", nil, function(parent)
     AdicionarSeletorCores(parent, "Cor do Painel", function() return Opcoes.ESP_Name.CorPainel end, function(cor) Opcoes.ESP_Name.CorPainel = cor end)
     AdicionarSeletorCores(parent, "Cor do Texto", function() return Opcoes.ESP_Name.CorTexto end, function(cor) Opcoes.ESP_Name.CorTexto = cor end)
     
-    -- Seletor RGB
     local BtnRGB = Instance.new("TextButton")
     local Corner = Instance.new("UICorner")
     BtnRGB.Size = UDim2.new(1, 0, 0, 24)
@@ -910,14 +1009,14 @@ local PainelNome = CriarPainelConfiguracao("Name Config", nil, function(parent)
         BtnRGB.TextColor3 = Opcoes.ESP_Name.RGB and Cores.RoxoPrincipal or Cores.TextoEscuro
     end)
 end)
-CriarLinhaModulo("ESP Nome", Opcoes.ESP_Name, 5, true, function() return PainelNome end)
+CriarLinhaModulo(VisualScroll, "ESP Nome", Opcoes.ESP_Name, 5, true, function() return PainelNome end)
 
 -- 6. ESP HEALTH (Vida)
-CriarLinhaModulo("ESP Vida", Opcoes.ESP_Health, 6, false)
+CriarLinhaModulo(VisualScroll, "ESP Vida", Opcoes.ESP_Health, 6, false)
 
 
 -- =============================================================================
--- ENGINE DE DESENHO ESP EM TEMPO REAL (MUITO POTENTE E ESTÁVEL)
+-- ENGINE DE DESENHO ESP E SISTEMA DE AIMBOT (MOBILE & PC)
 -- =============================================================================
 local Camera = workspace.CurrentCamera
 
@@ -945,7 +1044,100 @@ local function LimparJogador(player)
     end
 end
 
-local function RenderizarESP()
+-- Verifica se há algum obstáculo entre a câmera e o alvo (Wallcheck)
+local function EstaVisivel(personagem, parte)
+    if Opcoes.Aimbot.AtrasParede then return true end
+    if not personagem or not personagem:FindFirstChild(parte) then return false end
+    
+    local pontoOrigem = Camera.CFrame.Position
+    local pontoDestino = personagem[parte].Position
+    local direcao = (pontoDestino - pontoOrigem).Unit * (pontoDestino - pontoOrigem).Magnitude
+
+    local params = RaycastParams.new()
+    params.FilterType = Enum.RaycastFilterType.Exclude
+    params.FilterDescendantsInstances = {LocalPlayer.Character, Camera}
+    params.IgnoreWater = true
+
+    local resultado = workspace:Raycast(pontoOrigem, direcao, params)
+
+    if resultado then
+        return resultado.Instance:IsDescendantOf(personagem)
+    end
+    return true
+end
+
+-- Busca o jogador mais próximo da mira do jogador (Mobile & PC)
+local function ObterJogadorMaisProximo()
+    local menorDistancia = math.huge
+    local jogadorAlvo = nil
+
+    local centroTela = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            local char = player.Character
+            if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0 then
+                
+                -- Detecta o alvo dinâmico (Cabeça ou Peito)
+                local nomeParteAlvo = "Head"
+                if Opcoes.Aimbot.Parte == "Torso" then
+                    nomeParteAlvo = char:FindFirstChild("UpperTorso") and "UpperTorso" or "Torso"
+                end
+
+                local parteAlvo = char:FindFirstChild(nomeParteAlvo)
+                if parteAlvo then
+                    local pos, naTela = Camera:WorldToViewportPoint(parteAlvo.Position)
+
+                    if naTela then
+                        local distanciaFov = (Vector2.new(pos.X, pos.Y) - centroTela).Magnitude
+
+                        -- Verifica se está dentro do limite do FOV e se respeita o Wallcheck
+                        if distanciaFov <= Opcoes.FOV.Tamanho and distanciaFov < menorDistancia then
+                            if EstaVisivel(char, nomeParteAlvo) then
+                                menorDistancia = distanciaFov
+                                jogadorAlvo = parteAlvo
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    return jogadorAlvo
+end
+
+-- Loop de renderização contínua de todo o sistema
+RunService.RenderStepped:Connect(function()
+    
+    -- 1. ATUALIZAÇÃO DO CÍRCULO DO FOV
+    if Opcoes.FOV.Ativo then
+        CirculoFOV.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+        CirculoFOV.Radius = Opcoes.FOV.Tamanho
+        CirculoFOV.Color = Opcoes.FOV.Cor
+        CirculoFOV.Visible = true
+    else
+        CirculoFOV.Visible = false
+    end
+
+    -- 2. ENGENHARIA DE TRAVAMENTO DO AIMBOT (MOBILE & PC)
+    if Opcoes.Aimbot.Ativo then
+        local alvo = ObterJogadorMaisProximo()
+        if alvo then
+            -- Suavização calculada de acordo com o Slider
+            local smoothValue = math.clamp((11 - Opcoes.Aimbot.Forca) * 0.05, 0.01, 1)
+            local posAlvo = Camera:WorldToViewportPoint(alvo.Position)
+            local centroTela = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+            
+            -- Move a câmera suavemente em direção ao alvo
+            local moverPara = (Vector2.new(posAlvo.X, posAlvo.Y) - centroTela) * smoothValue
+            
+            -- Função nativa de simulação de movimento de mouse/touch
+            mousemoverel(moverPara.X, moverPara.Y)
+        end
+    end
+
+    -- 3. RENDERIZADOR COMPLETO DA SUÍTE DE ESP
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
             local char = player.Character
@@ -957,7 +1149,6 @@ local function RenderizarESP()
                 if visivel then
                     local distanciaMetros = math.round((LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and (LocalPlayer.Character.HumanoidRootPart.Position - root.Position).Magnitude) or 0)
                     
-                    -- Cria contêiner do jogador se não existir
                     if not ElementosVisuais[player] then
                         ElementosVisuais[player] = {
                             Box = Drawing.new("Square"),
@@ -969,7 +1160,6 @@ local function RenderizarESP()
                             HealthBar = Instance.new("Frame")
                         }
                         
-                        -- Configurando Billboard Estilizada de Nome e Vida
                         local visual = ElementosVisuais[player]
                         visual.Billboard.Adornee = root
                         visual.Billboard.Size = UDim2.new(0, 110, 0, 45)
@@ -991,7 +1181,6 @@ local function RenderizarESP()
                         visual.BillboardLabel.TextSize = 10
                         visual.BillboardLabel.Parent = visual.BillboardFrame
 
-                        -- Barra de Vida estilizada integrada
                         visual.HealthBar.Size = UDim2.new(1, 0, 0, 4)
                         visual.HealthBar.Position = UDim2.new(0, 0, 1, 3)
                         visual.HealthBar.BorderSizePixel = 0
@@ -1005,7 +1194,7 @@ local function RenderizarESP()
                     local boxSize = Vector2.new(3000 / pos.Z, 4500 / pos.Z)
                     local boxPos = Vector2.new(pos.X - boxSize.X / 2, pos.Y - boxSize.Y / 2)
 
-                    -- 1. BOX RENDER
+                    -- Render da Caixa
                     if Opcoes.ESP_Box.Ativo then
                         visual.Box.Size = boxSize
                         visual.Box.Position = boxPos
@@ -1017,7 +1206,7 @@ local function RenderizarESP()
                         visual.Box.Visible = false
                     end
 
-                    -- 2. LINE RENDER
+                    -- Render da Linha
                     if Opcoes.ESP_Line.Ativo then
                         visual.Line.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
                         visual.Line.To = Vector2.new(pos.X, pos.Y)
@@ -1028,12 +1217,11 @@ local function RenderizarESP()
                         visual.Line.Visible = false
                     end
 
-                    -- 3. DISTANCE RENDER
+                    -- Render da Distância
                     if Opcoes.ESP_Distance.Ativo and distanciaMetros <= Opcoes.ESP_Distance.MaxDist then
                         visual.Billboard.Enabled = true
                         visual.Billboard.ExtentsOffset = Vector3.new(0, 3.5, 0)
                         
-                        -- Se o nome estiver desativado mas a distância ativa, ajusta display
                         if not Opcoes.ESP_Name.Ativo then
                             visual.BillboardFrame.BackgroundTransparency = 1
                             visual.BillboardLabel.Text = "[" .. tostring(distanciaMetros) .. "m]"
@@ -1043,12 +1231,11 @@ local function RenderizarESP()
                         end
                     end
 
-                    -- 4. NAME & HEALTH BAR (Vida)
+                    -- Render do Nome e da Barra de Vida
                     if Opcoes.ESP_Name.Ativo then
                         visual.Billboard.Enabled = true
                         visual.BillboardFrame.BackgroundTransparency = 0
                         
-                        -- Efeito RGB dinâmico no painel se ativo
                         if Opcoes.ESP_Name.RGB then
                             local hue = (tick() % 4) / 4
                             visual.BillboardFrame.BackgroundColor3 = Color3.fromHSV(hue, 0.8, 0.8)
@@ -1064,19 +1251,17 @@ local function RenderizarESP()
                         end
                         visual.BillboardLabel.Text = textoExibir
 
-                        -- Render da Barra de Vida
                         if Opcoes.ESP_Health.Ativo then
                             visual.HealthBar.Visible = true
                             local percent = hum.Health / hum.MaxHealth
                             visual.HealthBar.Size = UDim2.new(percent, 0, 0, 4)
                             
-                            -- Gradiente dinâmico de cores (Verde -> Amarelo -> Vermelho)
                             if percent > 0.5 then
-                                visual.HealthBar.BackgroundColor3 = Color3.fromRGB(46, 204, 113) -- Verde
+                                visual.HealthBar.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
                             elseif percent > 0.2 then
-                                visual.HealthBar.BackgroundColor3 = Color3.fromRGB(241, 196, 15) -- Amarelo
+                                visual.HealthBar.BackgroundColor3 = Color3.fromRGB(241, 196, 15)
                             else
-                                visual.HealthBar.BackgroundColor3 = Color3.fromRGB(231, 76, 60) -- Vermelho
+                                visual.HealthBar.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
                             end
                         else
                             visual.HealthBar.Visible = false
@@ -1087,7 +1272,7 @@ local function RenderizarESP()
                         end
                     end
 
-                    -- 5. SKELETON (Suporta R6 e R15)
+                    -- Render do Esqueleto (R6 e R15)
                     if Opcoes.ESP_Skeleton.Ativo then
                         local parts = {}
                         local skeletonCor = Opcoes.ESP_Skeleton.Cor
@@ -1120,7 +1305,7 @@ local function RenderizarESP()
                                 {parts.LowerTorso, parts.RightUpperLeg},
                                 {parts.RightUpperLeg, parts.RightLowerLeg}
                             }
-                        else -- R6 Rig
+                        else
                             parts = {
                                 Head = char:FindFirstChild("Head"),
                                 Torso = char:FindFirstChild("Torso"),
@@ -1174,12 +1359,9 @@ local function RenderizarESP()
             end
         end
     end
-end
+end)
 
--- Thread de limpeza de saídas e renderização contínua
 Players.PlayerRemoving:Connect(LimparJogador)
-RunService.RenderStepped:Connect(RenderizarESP)
-
 
 -- =============================================================================
 -- LOGICA DE ALTERNAR ABAS
