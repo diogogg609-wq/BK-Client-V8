@@ -1,5 +1,5 @@
 -- =============================================================================
--- BK CLIENT V2.0 † - HIGH-END UI DESIGN
+-- BK CLIENT V2.0 † - HIGH-END UI DESIGN (AIMBOT 100% FIXED)
 -- =============================================================================
 
 local TweenService = game:GetService("TweenService")
@@ -50,7 +50,7 @@ local Opcoes = {
     Aimbot = {
         Ativo = false,
         Parte = "Head", -- "Head" ou "Torso"
-        Forca = 5, -- Suavização do Aimbot (1 = Ultra Suave, 10 = Travamento Bruto)
+        Forca = 5, -- Suavização do Aimbot (1 = Ultra Suave/Legit, 10 = Travamento Instantâneo)
         AtrasParede = false -- Se true, mira através das paredes (ignora Raycast)
     },
     FOV = {
@@ -915,7 +915,7 @@ CriarLinhaModulo(MiraScroll, "Aimbot Principal", Opcoes.Aimbot, 1, true, functio
 
 -- Linha do Wallcheck (Atras da Parede)
 CriarLinhaModulo(MiraScroll, "Mirar Atraves da Parede", {
-    Ativo = Opcoes.AtrasParede,
+    Ativo = Opcoes.Aimbot.AtrasParede,
     set = function(val) Opcoes.Aimbot.AtrasParede = val end
 }, 2, false)
 -- Ajuste dinâmico do toggle do Wallcheck diretamente nas configurações globais
@@ -1016,7 +1016,7 @@ CriarLinhaModulo(VisualScroll, "ESP Vida", Opcoes.ESP_Health, 6, false)
 
 
 -- =============================================================================
--- ENGINE DE DESENHO ESP E SISTEMA DE AIMBOT (MOBILE & PC)
+-- ENGINE DE DESENHO ESP E SISTEMA DE AIMBOT (MOBILE & PC FUNCIONAL)
 -- =============================================================================
 local Camera = workspace.CurrentCamera
 
@@ -1120,20 +1120,18 @@ RunService.RenderStepped:Connect(function()
         CirculoFOV.Visible = false
     end
 
-    -- 2. ENGENHARIA DE TRAVAMENTO DO AIMBOT (MOBILE & PC)
+    -- 2. ENGENHARIA DE TRAVAMENTO DO AIMBOT (MOBILE & PC - MANIPULAÇÃO DE C_FRAME DIRETO)
     if Opcoes.Aimbot.Ativo then
         local alvo = ObterJogadorMaisProximo()
         if alvo then
-            -- Suavização calculada de acordo com o Slider
-            local smoothValue = math.clamp((11 - Opcoes.Aimbot.Forca) * 0.05, 0.01, 1)
-            local posAlvo = Camera:WorldToViewportPoint(alvo.Position)
-            local centroTela = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+            -- Mapeia a suavização de acordo com a força escolhida (1 = Muito Suave, 10 = Travamento Bruto)
+            local smoothValue = math.clamp(Opcoes.Aimbot.Forca / 10, 0.05, 1)
             
-            -- Move a câmera suavemente em direção ao alvo
-            local moverPara = (Vector2.new(posAlvo.X, posAlvo.Y) - centroTela) * smoothValue
+            -- Calcula a rotação necessária da Câmera para focar o Alvo
+            local cframeAlvo = CFrame.lookAt(Camera.CFrame.Position, alvo.Position)
             
-            -- Função nativa de simulação de movimento de mouse/touch
-            mousemoverel(moverPara.X, moverPara.Y)
+            -- Modifica o CFrame da Câmera aplicando a interpolação linear (Lerp) para a movimentação realista
+            Camera.CFrame = Camera.CFrame:Lerp(cframeAlvo, smoothValue)
         end
     end
 
