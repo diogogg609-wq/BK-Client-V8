@@ -1,40 +1,28 @@
 -- =============================================================================
--- BK CLIENT V2.3 † - ANTI-DETECTION & INSTANT RENDER EDITION
+-- BK CLIENT V2.1 † - ANTI-DETECTION & FIXED INTERACTION EDITION
 -- =============================================================================
-
--- Garante que o jogo esteja totalmente carregado antes de iniciar a interface
-if not game:IsLoaded() then
-    game.Loaded:Wait()
-end
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-
--- Garante que o PlayerGui exista antes de prosseguir
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui", 10)
-
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local Stats = game:GetService("Stats")
 local HttpService = game:GetService("HttpService")
 
--- [BYPASS INJEÇÃO] Encontra o melhor e mais seguro local para a interface
-local ContainerInterface = nil
+-- [BYPASS] Encontra a pasta mais segura e oculta para injetar a interface
+local PastaSegura = nil
 local sucesso, erro = pcall(function()
-    -- Tenta o CoreGui primeiro (mais seguro contra detecção de tela)
-    ContainerInterface = game:GetService("CoreGui")
+    PastaSegura = game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
 end)
-
--- Se o executor não tiver permissão para o CoreGui, usa o PlayerGui de forma segura
-if not sucesso or not ContainerInterface then
-    ContainerInterface = PlayerGui
+if not sucesso or not PastaSegura then
+    PastaSegura = LocalPlayer:WaitForChild("PlayerGui")
 end
 
--- Limpa execuções anteriores para evitar clonagem de telas e consumo de memória
-for _, child in ipairs(ContainerInterface:GetChildren()) do
+-- Limpa execuções anteriores para não acumular lixo na memória do jogo
+for _, child in ipairs(PastaSegura:GetChildren()) do
     if child.Name:sub(1, 3) == "BK_" or child:FindFirstChild("Capsula_Invisivel") or child.Name == "Capsula_Invisivel" then
-        pcall(function() child:Destroy() end)
+        child:Destroy()
     end
 end
 
@@ -54,68 +42,24 @@ local Opcoes = {
         SuperVelocidade = false,
         VelocidadeValor = 16, 
         SuperPulo = false,
-        PuloValor = 50,
-        Fly = false,
-        FlyVelocidade = 50
+        PuloValor = 50
     }
 }
 
 -- =============================================================================
 -- [BYPASS MOTOR] EVASÃO FÍSICA SILENCIOSA (SEM ALTERAR VALORES DO ROBLOX)
 -- =============================================================================
-local Camera = workspace.CurrentCamera
 local ConexaoMovimento = nil
-
 ConexaoMovimento = RunService.Heartbeat:Connect(function(deltaTime)
     local char = LocalPlayer.Character
     if char and char:FindFirstChild("Humanoid") and char:FindFirstChild("HumanoidRootPart") then
         local root = char.HumanoidRootPart
         local hum = char.Humanoid
         
-        -- SISTEMA DE VOO (FLY) COM DIRECIONAMENTO DE CÂMERA
-        if Opcoes.Extras.Fly then
-            -- Cancela a física de gravidade para evitar queda livre brusca
-            root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            
-            local direcaoMovimento = Vector3.new(0, 0, 0)
-            
-            -- Detecta teclas ativas de movimentação de forma nativa e compatível com celular/PC
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-                direcaoMovimento = direcaoMovimento + Camera.CFrame.LookVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-                direcaoMovimento = direcaoMovimento - Camera.CFrame.LookVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-                direcaoMovimento = direcaoMovimento - Camera.CFrame.RightVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-                direcaoMovimento = direcaoMovimento + Camera.CFrame.RightVector
-            end
-            
-            -- Suporte para analógico de Celular ou Controle
-            if hum.MoveDirection.Magnitude > 0 and direcaoMovimento.Magnitude == 0 then
-                local projecaoCâmera = Camera.CFrame:VectorToWorldSpace(Vector3.new(
-                    hum.MoveDirection.X, 
-                    Camera.CFrame.LookVector.Y * hum.MoveDirection.Z, 
-                    hum.MoveDirection.Z
-                ))
-                if projecaoCâmera.Magnitude > 0 then
-                    direcaoMovimento = projecaoCâmera.Unit
-                end
-            end
-            
-            -- Executa o deslocamento por CFrame para não disparar logs de velocidade física do motor do jogo
-            if direcaoMovimento.Magnitude > 0 then
-                root.CFrame = root.CFrame + (direcaoMovimento.Unit * (Opcoes.Extras.FlyVelocidade * deltaTime))
-            end
-        else
-            -- SISTEMA DE VELOCIDADE CFRAME SE O VOO ESTIVER DESATIVADO
-            if Opcoes.Extras.SuperVelocidade and hum.MoveDirection.Magnitude > 0 then
-                local multiplicador = (Opcoes.Extras.VelocidadeValor - 16)
-                if multiplicador > 0 then
-                    root.CFrame = root.CFrame + (hum.MoveDirection * (multiplicador * deltaTime))
-                end
+        if Opcoes.Extras.SuperVelocidade and hum.MoveDirection.Magnitude > 0 then
+            local multiplicador = (Opcoes.Extras.VelocidadeValor - 16)
+            if multiplicador > 0 then
+                root.CFrame = root.CFrame + (hum.MoveDirection * (multiplicador * deltaTime))
             end
         end
     end
@@ -128,7 +72,7 @@ ConexaoPulo = UserInputService.JumpRequest:Connect(function()
         local hum = char.Humanoid
         local root = char.HumanoidRootPart
         
-        if Opcoes.Extras.SuperPulo and not Opcoes.Extras.Fly and (hum:GetState() == Enum.HumanoidStateType.Running or hum:GetState() == Enum.HumanoidStateType.RunningNoPhysics) then
+        if Opcoes.Extras.SuperPulo and (hum:GetState() == Enum.HumanoidStateType.Running or hum:GetState() == Enum.HumanoidStateType.RunningNoPhysics) then
             task.spawn(function()
                 root.AssemblyLinearVelocity = Vector3.new(root.AssemblyLinearVelocity.X, Opcoes.Extras.PuloValor, root.AssemblyLinearVelocity.Z)
             end)
@@ -141,9 +85,8 @@ end)
 -- =============================================================================
 local BK_Client_V2 = Instance.new("ScreenGui")
 BK_Client_V2.Name = "BK_" .. HttpService:GenerateGUID(false):gsub("-", ""):sub(1, 10)
-BK_Client_V2.Parent = ContainerInterface
+BK_Client_V2.Parent = PastaSegura
 BK_Client_V2.ResetOnSpawn = false
-BK_Client_V2.Enabled = true -- Força a exibição imediata do elemento
 
 local Cores = {
     FundoPrincipal = Color3.fromRGB(15, 15, 15),
@@ -255,7 +198,7 @@ local function Notificar(mensagem, duracao)
 end
 
 -- =============================================================================
--- MOTOR DE ARRASTAR (DRAG) ULTRA COMPATÍVEL E FLUIDO
+-- NOVO MOTOR DE ARRASTAR (DRAG) ULTRA COMPATÍVEL E FLUIDO
 -- =============================================================================
 local function HabilitarArrastar(gui)
     local dragging = false
@@ -316,7 +259,6 @@ Capsula.BackgroundColor3 = Cores.FundoPrincipal
 Capsula.BorderSizePixel = 0
 Capsula.ClipsDescendants = true
 Capsula.Active = true
-Capsula.Visible = true -- Garante visibilidade ao injetar
 
 CapsulaCorner.CornerRadius = UDim.new(0.5, 0)
 CapsulaCorner.Parent = Capsula
@@ -329,12 +271,13 @@ CapsulaBotao.Name = "Botao"
 CapsulaBotao.Parent = Capsula
 CapsulaBotao.Size = UDim2.new(1, 0, 1, 0)
 CapsulaBotao.BackgroundTransparency = 1
-CapsulaBotao.Text = "BK CLIENT V2.3 †"
+CapsulaBotao.Text = "BK CLIENT V2.1 †"
 CapsulaBotao.TextColor3 = Cores.TextoClaro
 CapsulaBotao.Font = Enum.Font.Code
 CapsulaBotao.TextSize = 12
 CapsulaBotao.Active = true
 
+-- Habilita o movimento de arrastar na cápsula inteira
 HabilitarArrastar(Capsula)
 
 -- =============================================================================
@@ -975,7 +918,7 @@ ExtrasScroll.Size = UDim2.new(1, -20, 1, -80)
 ExtrasScroll.Position = UDim2.new(0, 10, 0, 70)
 ExtrasScroll.BackgroundTransparency = 1
 ExtrasScroll.BorderSizePixel = 0
-ExtrasScroll.CanvasSize = UDim2.new(0, 0, 0, 360)
+ExtrasScroll.CanvasSize = UDim2.new(0, 0, 0, 300)
 ExtrasScroll.ScrollBarThickness = 3
 ExtrasScroll.ScrollBarImageColor3 = Cores.RoxoPrincipal
 ExtrasScroll.Parent = PaginaExtras
@@ -997,34 +940,10 @@ local PainelSuperVel = CriarPainelConfiguracao("Velocidade Config", nil, functio
     end)
 end)
 
-local PainelFly = CriarPainelConfiguracao("Fly Config", nil, function(parent)
-    AdicionarSlider(parent, "Velocidade do Voo", 20, 200, 50, function(val)
-        Opcoes.Extras.FlyVelocidade = val
-    end)
-end)
-
--- Linha 1: Fly (Voo Direto Bypass)
-CriarLinhaModulo(ExtrasScroll, "Voo Direto", {
-    Ativo = false,
-    set = function(val) Opcoes.Extras.Fly = val end
-}, 1, true, function() return PainelFly end)
-
-local LinhaFly = ExtrasScroll:FindFirstChild("Mod_Voo Direto")
-if LinhaFly then
-    local SwitchBtn = LinhaFly:FindFirstChildOfClass("Frame"):FindFirstChildOfClass("TextButton")
-    if SwitchBtn then
-        SwitchBtn.MouseButton1Click:Connect(function()
-            Opcoes.Extras.Fly = not Opcoes.Extras.Fly
-            Notificar("Voo Bypass: " .. (Opcoes.Extras.Fly and "ATIVO" or "INATIVO"), 2.5)
-        end)
-    end
-end
-
--- Linha 2: Velocidade
 CriarLinhaModulo(ExtrasScroll, "Super Velocidade", {
     Ativo = false,
     set = function(val) Opcoes.Extras.SuperVelocidade = val end
-}, 2, true, function() return PainelSuperVel end)
+}, 1, true, function() return PainelSuperVel end)
 
 local LinhaVel = ExtrasScroll:FindFirstChild("Mod_Super Velocidade")
 if LinhaVel then
@@ -1037,11 +956,10 @@ if LinhaVel then
     end
 end
 
--- Linha 3: Pulo
 CriarLinhaModulo(ExtrasScroll, "Super Pulo", {
     Ativo = false,
     set = function(val) Opcoes.Extras.SuperPulo = val end
-}, 3, true, function() return PainelSuperPulo end)
+}, 2, true, function() return PainelSuperPulo end)
 
 local LinhaPulo = ExtrasScroll:FindFirstChild("Mod_Super Pulo")
 if LinhaPulo then
@@ -1118,10 +1036,9 @@ end
 local ValorFPS = CriarLinhaStatus("Taxa de Quadros (FPS)", "Calculando...", 1)
 local ValorPing = CriarLinhaStatus("Latência de Rede (Ping)", "Calculando...", 2)
 local ValorPlayers = CriarLinhaStatus("Jogadores no Servidor", "0/0", 3)
-local ValorVersao = CriarLinhaStatus("Status do Cliente", "V2.3 - INSTANT RENDER", 4)
+local ValorVersao = CriarLinhaStatus("Status do Cliente", "V2.1 - BYPASS PASSIVO", 4)
 ValorVersao.TextColor3 = Cores.VerdeStatus
 
--- SISTEMA PRECISO DE CALCULO DE FPS REAL
 task.spawn(function()
     local LastIteration = os.clock()
     local FrameHistory = {}
@@ -1148,8 +1065,6 @@ task.spawn(function()
                     Count = Count + 1
                 end
             end
-            
-            -- Calculo baseado em Delta Preciso de Redesenho por Segundo
             local FPS = Count > 0 and math.round(Count / TotalTime) or 60
             ValorFPS.Text = tostring(FPS) .. " FPS"
 
@@ -1168,6 +1083,8 @@ end)
 -- =============================================================================
 -- LOGICA DOS MECANISMOS DO AIMBOT E ESP (OTIMIZADO)
 -- =============================================================================
+local Camera = workspace.CurrentCamera
+
 local function CriarEsqueletoDesenho()
     local Linhas = {}
     for i = 1, 15 do
@@ -1183,9 +1100,9 @@ local function LimparJogador(player)
     if ElementosVisuais[player] then
         for _, obj in pairs(ElementosVisuais[player]) do
             if typeof(obj) == "table" then
-                for _, subObj in pairs(obj) do pcall(function() subObj:Destroy() end) end
+                for _, subObj in pairs(obj) do subObj:Destroy() end
             else
-                pcall(function() obj:Destroy() end)
+                obj:Destroy()
             end
         end
         ElementosVisuais[player] = nil
@@ -1525,7 +1442,7 @@ end
 
 AlternarAba("Mira")
 
--- Transição de Painel (Minimizar / Abrir)
+-- Transição de Painel (Minimizar / Abrir) corrigido
 local PainelAberto, EmAnimacao = false, false
 local function AlternarPainel()
     if EmAnimacao then return end
@@ -1590,6 +1507,7 @@ CapsulaBotao.InputEnded:Connect(function(input)
         if dragStartPos then
             local dist = (input.Position - dragStartPos).Magnitude
             dragStartPos = nil
+            -- Se arrastou menos de 5 pixels, o jogador quis apenas Clicar para abrir/fechar
             if dist < 5 then
                 AlternarPainel()
             end
@@ -1620,9 +1538,8 @@ if setgc then
     end
 end
 
--- Feedback instantâneo do carregamento
 task.spawn(function()
-    task.wait(0.2)
-    Notificar("BK CLIENT v2.3 Injetado!", 4)
-    Notificar("Aperte no botão flutuante para abrir o menu.", 4)
+    task.wait(1)
+    Notificar("BK CLIENT v2.1 Carregado!", 4)
+    Notificar("Interface e Bypasses Ativados com Segurança.", 3)
 end)
