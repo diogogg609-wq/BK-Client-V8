@@ -1,5 +1,5 @@
 -- =============================================================================
--- BK CLIENT V2.1 † - ANTI-DETECTION & SAFE PASSIVE EDITION
+-- BK CLIENT V2.1 † - ANTI-DETECTION & FIXED INTERACTION EDITION
 -- =============================================================================
 
 local Players = game:GetService("Players")
@@ -13,7 +13,6 @@ local HttpService = game:GetService("HttpService")
 -- [BYPASS] Encontra a pasta mais segura e oculta para injetar a interface
 local PastaSegura = nil
 local sucesso, erro = pcall(function()
-    -- Tenta usar o CoreGui de forma camuflada ou o próprio PlayerGui se necessário
     PastaSegura = game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
 end)
 if not sucesso or not PastaSegura then
@@ -22,7 +21,7 @@ end
 
 -- Limpa execuções anteriores para não acumular lixo na memória do jogo
 for _, child in ipairs(PastaSegura:GetChildren()) do
-    if child.Name:sub(1, 3) == "BK_" or child:FindFirstChild("Capsula_Invisivel") then
+    if child.Name:sub(1, 3) == "BK_" or child:FindFirstChild("Capsula_Invisivel") or child.Name == "Capsula_Invisivel" then
         child:Destroy()
     end
 end
@@ -41,7 +40,7 @@ local Opcoes = {
     ESP_Health = {Ativo = false},
     Extras = {
         SuperVelocidade = false,
-        VelocidadeValor = 16, -- Simulação interna, sem alterar propriedade física do humanoid
+        VelocidadeValor = 16, 
         SuperPulo = false,
         PuloValor = 50
     }
@@ -57,9 +56,8 @@ ConexaoMovimento = RunService.Heartbeat:Connect(function(deltaTime)
         local root = char.HumanoidRootPart
         local hum = char.Humanoid
         
-        -- Bypass de Velocidade por CFrame: O anti-cheat lê WalkSpeed = 16 (Normal), mas você se move rápido
         if Opcoes.Extras.SuperVelocidade and hum.MoveDirection.Magnitude > 0 then
-            local multiplicador = (Opcoes.Extras.VelocidadeValor - 16) -- Apenas adiciona a diferença
+            local multiplicador = (Opcoes.Extras.VelocidadeValor - 16)
             if multiplicador > 0 then
                 root.CFrame = root.CFrame + (hum.MoveDirection * (multiplicador * deltaTime))
             end
@@ -67,7 +65,6 @@ ConexaoMovimento = RunService.Heartbeat:Connect(function(deltaTime)
     end
 end)
 
--- Bypass de Pulo por Força de Impulso (Sem alterar JumpPower)
 local ConexaoPulo = nil
 ConexaoPulo = UserInputService.JumpRequest:Connect(function()
     local char = LocalPlayer.Character
@@ -75,10 +72,8 @@ ConexaoPulo = UserInputService.JumpRequest:Connect(function()
         local hum = char.Humanoid
         local root = char.HumanoidRootPart
         
-        -- Só aplica se o Super Pulo estiver ligado e o humanoid estiver no chão
         if Opcoes.Extras.SuperPulo and (hum:GetState() == Enum.HumanoidStateType.Running or hum:GetState() == Enum.HumanoidStateType.RunningNoPhysics) then
             task.spawn(function()
-                -- Aplica velocidade vertical linear instantânea para impulsionar o corpo
                 root.AssemblyLinearVelocity = Vector3.new(root.AssemblyLinearVelocity.X, Opcoes.Extras.PuloValor, root.AssemblyLinearVelocity.Z)
             end)
         end
@@ -203,36 +198,53 @@ local function Notificar(mensagem, duracao)
 end
 
 -- =============================================================================
--- SISTEMA DE DRAG (ARRRASTAR) SEGURO
+-- NOVO MOTOR DE ARRASTAR (DRAG) ULTRA COMPATÍVEL E FLUIDO
 -- =============================================================================
 local function HabilitarArrastar(gui)
-    local dragging, dragInput, dragStart, startPos
+    local dragging = false
+    local dragInput
+    local dragStart
+    local startPos
+
     local function update(input)
         local delta = input.Position - dragStart
-        gui.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        gui.Position = UDim2.new(
+            startPos.X.Scale, 
+            startPos.X.Offset + delta.X, 
+            startPos.Y.Scale, 
+            startPos.Y.Offset + delta.Y
+        )
     end
+
     gui.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
             startPos = gui.Position
+            
             input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
             end)
         end
     end)
+
     gui.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
             dragInput = input
         end
     end)
+
     UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then update(input) end
+        if input == dragInput and dragging then
+            update(input)
+        end
     end)
 end
 
 -- =============================================================================
--- CÁPSULA FLUTUANTE (Botão de Ativação)
+-- CÁPSULA FLUTUANTE (DESIGN CORRIGIDO E SEM TRAVAMENTOS)
 -- =============================================================================
 local Capsula = Instance.new("Frame")
 local CapsulaCorner = Instance.new("UICorner")
@@ -241,12 +253,12 @@ local CapsulaBotao = Instance.new("TextButton")
 
 Capsula.Name = "Capsula_Invisivel"
 Capsula.Parent = BK_Client_V2
-Capsula.Size = UDim2.new(0, 170, 0, 38)
+Capsula.Size = UDim2.new(0, 160, 0, 38)
 Capsula.Position = UDim2.new(0.1, 0, 0.1, 0)
 Capsula.BackgroundColor3 = Cores.FundoPrincipal
 Capsula.BorderSizePixel = 0
 Capsula.ClipsDescendants = true
-HabilitarArrastar(Capsula)
+Capsula.Active = true
 
 CapsulaCorner.CornerRadius = UDim.new(0.5, 0)
 CapsulaCorner.Parent = Capsula
@@ -262,8 +274,11 @@ CapsulaBotao.BackgroundTransparency = 1
 CapsulaBotao.Text = "BK CLIENT V2.1 †"
 CapsulaBotao.TextColor3 = Cores.TextoClaro
 CapsulaBotao.Font = Enum.Font.Code
-CapsulaBotao.TextSize = 13
+CapsulaBotao.TextSize = 12
 CapsulaBotao.Active = true
+
+-- Habilita o movimento de arrastar na cápsula inteira
+HabilitarArrastar(Capsula)
 
 -- =============================================================================
 -- PAINEL PRINCIPAL (Design Atualizado)
@@ -365,7 +380,6 @@ NomeJogador.Font = Enum.Font.Code
 NomeJogador.TextSize = 12
 NomeJogador.TextXAlignment = Enum.TextXAlignment.Left
 
-%s-- STATUS CORRIGIDO E SEGURO
 MarcaStatus.Name = "Marca"
 MarcaStatus.Parent = InfoPerfil
 MarcaStatus.Size = UDim2.new(1, 0, 0.5, 0)
@@ -897,7 +911,7 @@ CriarLinhaModulo(VisualScroll, "ESP Nome", Opcoes.ESP_Name, 5, true, function() 
 CriarLinhaModulo(VisualScroll, "ESP Vida", Opcoes.ESP_Health, 6, false)
 
 
--- ----------------- ABA 3: EXTRAS (Velocidade e Pulo Seguros) -----------------
+-- ----------------- ABA 3: EXTRAS -----------------
 local PaginaExtras = PaginasInstanciadas["Extras"]
 local ExtrasScroll = Instance.new("ScrollingFrame")
 ExtrasScroll.Size = UDim2.new(1, -20, 1, -80)
@@ -921,13 +935,11 @@ local PainelSuperPulo = CriarPainelConfiguracao("Pulo Config", nil, function(par
 end)
 
 local PainelSuperVel = CriarPainelConfiguracao("Velocidade Config", nil, function(parent)
-    -- Escalonado para valores seguros de movimento contínuo
     AdicionarSlider(parent, "Velocidade CFrame", 16, 180, 16, function(val)
         Opcoes.Extras.VelocidadeValor = val
     end)
 end)
 
--- Linha do Slider de Velocidade Bypass
 CriarLinhaModulo(ExtrasScroll, "Super Velocidade", {
     Ativo = false,
     set = function(val) Opcoes.Extras.SuperVelocidade = val end
@@ -944,7 +956,6 @@ if LinhaVel then
     end
 end
 
--- Linha do Slider de Pulo Bypass
 CriarLinhaModulo(ExtrasScroll, "Super Pulo", {
     Ativo = false,
     set = function(val) Opcoes.Extras.SuperPulo = val end
@@ -1431,7 +1442,7 @@ end
 
 AlternarAba("Mira")
 
--- Transição de Painel (Minimizar / Abrir)
+-- Transição de Painel (Minimizar / Abrir) corrigido
 local PainelAberto, EmAnimacao = false, false
 local function AlternarPainel()
     if EmAnimacao then return end
@@ -1473,7 +1484,7 @@ local function AlternarPainel()
         Capsula.Visible = true
 
         local tweenCapsula = TweenService:Create(Capsula, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 170, 0, 38),
+            Size = UDim2.new(0, 160, 0, 38),
             BackgroundTransparency = 0
         })
         tweenCapsula:Play()
@@ -1483,7 +1494,26 @@ local function AlternarPainel()
     EmAnimacao = false
 end
 
-CapsulaBotao.MouseButton1Click:Connect(AlternarPainel)
+-- Detecção segura de clique independente de bugs do Roblox
+local dragStartPos = nil
+CapsulaBotao.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragStartPos = input.Position
+    end
+end)
+
+CapsulaBotao.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        if dragStartPos then
+            local dist = (input.Position - dragStartPos).Magnitude
+            dragStartPos = nil
+            -- Se arrastou menos de 5 pixels, o jogador quis apenas Clicar para abrir/fechar
+            if dist < 5 then
+                AlternarPainel()
+            end
+        end
+    end
+end)
 
 local BotaoMinimizar = Instance.new("TextButton")
 BotaoMinimizar.Parent = Painel
@@ -1503,7 +1533,6 @@ BotaoMinimizar.MouseButton1Click:Connect(AlternarPainel)
 if setgc then
     for i, v in pairs(getgc(true)) do
         if typeof(v) == "table" and rawget(v, "Aimbot") and rawget(v, "Extras") then
-            -- Força ocultação de tabelas de dados na busca de memória
             setreadonly(v, true)
         end
     end
@@ -1512,5 +1541,5 @@ end
 task.spawn(function()
     task.wait(1)
     Notificar("BK CLIENT v2.1 Carregado!", 4)
-    Notificar("Bypasses Passivos Ativados com Segurança.", 3)
+    Notificar("Interface e Bypasses Ativados com Segurança.", 3)
 end)
