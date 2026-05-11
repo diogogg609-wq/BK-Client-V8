@@ -1,5 +1,5 @@
 -- =============================================================================
--- BK CLIENT V2.1 † - ANTI-DETECTION & FIXED INTERACTION EDITION
+-- BK CLIENT V2.2 † - ANTI-DETECTION & FLIGHT ENGINE EDITION
 -- =============================================================================
 
 local Players = game:GetService("Players")
@@ -42,24 +42,69 @@ local Opcoes = {
         SuperVelocidade = false,
         VelocidadeValor = 16, 
         SuperPulo = false,
-        PuloValor = 50
+        PuloValor = 50,
+        Fly = false,
+        FlyVelocidade = 50
     }
 }
 
 -- =============================================================================
 -- [BYPASS MOTOR] EVASÃO FÍSICA SILENCIOSA (SEM ALTERAR VALORES DO ROBLOX)
 -- =============================================================================
+local Camera = workspace.CurrentCamera
 local ConexaoMovimento = nil
+
 ConexaoMovimento = RunService.Heartbeat:Connect(function(deltaTime)
     local char = LocalPlayer.Character
     if char and char:FindFirstChild("Humanoid") and char:FindFirstChild("HumanoidRootPart") then
         local root = char.HumanoidRootPart
         local hum = char.Humanoid
         
-        if Opcoes.Extras.SuperVelocidade and hum.MoveDirection.Magnitude > 0 then
-            local multiplicador = (Opcoes.Extras.VelocidadeValor - 16)
-            if multiplicador > 0 then
-                root.CFrame = root.CFrame + (hum.MoveDirection * (multiplicador * deltaTime))
+        -- SISTEMA DE VOO (FLY) COM DIRECIONAMENTO DE CÂMERA
+        if Opcoes.Extras.Fly then
+            -- Cancela a física de gravidade para evitar queda livre brusca
+            root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            
+            local direcaoMovimento = Vector3.new(0, 0, 0)
+            
+            -- Detecta teclas ativas de movimentação de forma nativa e compatível com celular/PC
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                direcaoMovimento = direcaoMovimento + Camera.CFrame.LookVector
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                direcaoMovimento = direcaoMovimento - Camera.CFrame.LookVector
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                direcaoMovimento = direcaoMovimento - Camera.CFrame.RightVector
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                direcaoMovimento = direcaoMovimento + Camera.CFrame.RightVector
+            end
+            
+            -- Suporte para analógico de Celular ou Controle
+            if hum.MoveDirection.Magnitude > 0 and direcaoMovimento.Magnitude == 0 then
+                -- Usa a direção de movimento projetando na rotação tridimensional da câmera
+                local projecaoCâmera = Camera.CFrame:VectorToWorldSpace(Vector3.new(
+                    hum.MoveDirection.X, 
+                    Camera.CFrame.LookVector.Y * hum.MoveDirection.Z, 
+                    hum.MoveDirection.Z
+                ))
+                if projecaoCâmera.Magnitude > 0 then
+                    direcaoMovimento = projecaoCâmera.Unit
+                end
+            end
+            
+            -- Executa o deslocamento por CFrame para não disparar logs de velocidade física do motor do jogo
+            if direcaoMovimento.Magnitude > 0 then
+                root.CFrame = root.CFrame + (direcaoMovimento.Unit * (Opcoes.Extras.FlyVelocidade * deltaTime))
+            end
+        else
+            -- SISTEMA DE VELOCIDADE CFRAME SE O VOO ESTIVER DESATIVADO
+            if Opcoes.Extras.SuperVelocidade and hum.MoveDirection.Magnitude > 0 then
+                local multiplicador = (Opcoes.Extras.VelocidadeValor - 16)
+                if multiplicador > 0 then
+                    root.CFrame = root.CFrame + (hum.MoveDirection * (multiplicador * deltaTime))
+                end
             end
         end
     end
@@ -72,7 +117,7 @@ ConexaoPulo = UserInputService.JumpRequest:Connect(function()
         local hum = char.Humanoid
         local root = char.HumanoidRootPart
         
-        if Opcoes.Extras.SuperPulo and (hum:GetState() == Enum.HumanoidStateType.Running or hum:GetState() == Enum.HumanoidStateType.RunningNoPhysics) then
+        if Opcoes.Extras.SuperPulo and not Opcoes.Extras.Fly and (hum:GetState() == Enum.HumanoidStateType.Running or hum:GetState() == Enum.HumanoidStateType.RunningNoPhysics) then
             task.spawn(function()
                 root.AssemblyLinearVelocity = Vector3.new(root.AssemblyLinearVelocity.X, Opcoes.Extras.PuloValor, root.AssemblyLinearVelocity.Z)
             end)
@@ -198,7 +243,7 @@ local function Notificar(mensagem, duracao)
 end
 
 -- =============================================================================
--- NOVO MOTOR DE ARRASTAR (DRAG) ULTRA COMPATÍVEL E FLUIDO
+-- MOTOR DE ARRASTAR (DRAG) ULTRA COMPATÍVEL E FLUIDO
 -- =============================================================================
 local function HabilitarArrastar(gui)
     local dragging = false
@@ -271,13 +316,12 @@ CapsulaBotao.Name = "Botao"
 CapsulaBotao.Parent = Capsula
 CapsulaBotao.Size = UDim2.new(1, 0, 1, 0)
 CapsulaBotao.BackgroundTransparency = 1
-CapsulaBotao.Text = "BK CLIENT V2.1 †"
+CapsulaBotao.Text = "BK CLIENT V2.2 †"
 CapsulaBotao.TextColor3 = Cores.TextoClaro
 CapsulaBotao.Font = Enum.Font.Code
 CapsulaBotao.TextSize = 12
 CapsulaBotao.Active = true
 
--- Habilita o movimento de arrastar na cápsula inteira
 HabilitarArrastar(Capsula)
 
 -- =============================================================================
@@ -918,7 +962,7 @@ ExtrasScroll.Size = UDim2.new(1, -20, 1, -80)
 ExtrasScroll.Position = UDim2.new(0, 10, 0, 70)
 ExtrasScroll.BackgroundTransparency = 1
 ExtrasScroll.BorderSizePixel = 0
-ExtrasScroll.CanvasSize = UDim2.new(0, 0, 0, 300)
+ExtrasScroll.CanvasSize = UDim2.new(0, 0, 0, 360)
 ExtrasScroll.ScrollBarThickness = 3
 ExtrasScroll.ScrollBarImageColor3 = Cores.RoxoPrincipal
 ExtrasScroll.Parent = PaginaExtras
@@ -940,10 +984,34 @@ local PainelSuperVel = CriarPainelConfiguracao("Velocidade Config", nil, functio
     end)
 end)
 
+local PainelFly = CriarPainelConfiguracao("Fly Config", nil, function(parent)
+    AdicionarSlider(parent, "Velocidade do Voo", 20, 200, 50, function(val)
+        Opcoes.Extras.FlyVelocidade = val
+    end)
+end)
+
+-- Linha 1: Fly (Voo Direto Bypass)
+CriarLinhaModulo(ExtrasScroll, "Voo Direto", {
+    Ativo = false,
+    set = function(val) Opcoes.Extras.Fly = val end
+}, 1, true, function() return PainelFly end)
+
+local LinhaFly = ExtrasScroll:FindFirstChild("Mod_Voo Direto")
+if LinhaFly then
+    local SwitchBtn = LinhaFly:FindFirstChildOfClass("Frame"):FindFirstChildOfClass("TextButton")
+    if SwitchBtn then
+        SwitchBtn.MouseButton1Click:Connect(function()
+            Opcoes.Extras.Fly = not Opcoes.Extras.Fly
+            Notificar("Voo Bypass: " .. (Opcoes.Extras.Fly and "ATIVO" or "INATIVO"), 2.5)
+        end)
+    end
+end
+
+-- Linha 2: Velocidade
 CriarLinhaModulo(ExtrasScroll, "Super Velocidade", {
     Ativo = false,
     set = function(val) Opcoes.Extras.SuperVelocidade = val end
-}, 1, true, function() return PainelSuperVel end)
+}, 2, true, function() return PainelSuperVel end)
 
 local LinhaVel = ExtrasScroll:FindFirstChild("Mod_Super Velocidade")
 if LinhaVel then
@@ -956,10 +1024,11 @@ if LinhaVel then
     end
 end
 
+-- Linha 3: Pulo
 CriarLinhaModulo(ExtrasScroll, "Super Pulo", {
     Ativo = false,
     set = function(val) Opcoes.Extras.SuperPulo = val end
-}, 2, true, function() return PainelSuperPulo end)
+}, 3, true, function() return PainelSuperPulo end)
 
 local LinhaPulo = ExtrasScroll:FindFirstChild("Mod_Super Pulo")
 if LinhaPulo then
@@ -1036,9 +1105,10 @@ end
 local ValorFPS = CriarLinhaStatus("Taxa de Quadros (FPS)", "Calculando...", 1)
 local ValorPing = CriarLinhaStatus("Latência de Rede (Ping)", "Calculando...", 2)
 local ValorPlayers = CriarLinhaStatus("Jogadores no Servidor", "0/0", 3)
-local ValorVersao = CriarLinhaStatus("Status do Cliente", "V2.1 - BYPASS PASSIVO", 4)
+local ValorVersao = CriarLinhaStatus("Status do Cliente", "V2.2 - FLIGHT ENGINE", 4)
 ValorVersao.TextColor3 = Cores.VerdeStatus
 
+-- SISTEMA PRECISO DE CALCULO DE FPS REAL
 task.spawn(function()
     local LastIteration = os.clock()
     local FrameHistory = {}
@@ -1065,6 +1135,8 @@ task.spawn(function()
                     Count = Count + 1
                 end
             end
+            
+            -- Calculo baseado em Delta Preciso de Redesenho por Segundo
             local FPS = Count > 0 and math.round(Count / TotalTime) or 60
             ValorFPS.Text = tostring(FPS) .. " FPS"
 
@@ -1083,8 +1155,6 @@ end)
 -- =============================================================================
 -- LOGICA DOS MECANISMOS DO AIMBOT E ESP (OTIMIZADO)
 -- =============================================================================
-local Camera = workspace.CurrentCamera
-
 local function CriarEsqueletoDesenho()
     local Linhas = {}
     for i = 1, 15 do
@@ -1442,7 +1512,7 @@ end
 
 AlternarAba("Mira")
 
--- Transição de Painel (Minimizar / Abrir) corrigido
+-- Transição de Painel (Minimizar / Abrir)
 local PainelAberto, EmAnimacao = false, false
 local function AlternarPainel()
     if EmAnimacao then return end
@@ -1507,7 +1577,6 @@ CapsulaBotao.InputEnded:Connect(function(input)
         if dragStartPos then
             local dist = (input.Position - dragStartPos).Magnitude
             dragStartPos = nil
-            -- Se arrastou menos de 5 pixels, o jogador quis apenas Clicar para abrir/fechar
             if dist < 5 then
                 AlternarPainel()
             end
@@ -1540,6 +1609,6 @@ end
 
 task.spawn(function()
     task.wait(1)
-    Notificar("BK CLIENT v2.1 Carregado!", 4)
-    Notificar("Interface e Bypasses Ativados com Segurança.", 3)
+    Notificar("BK CLIENT v2.2 Carregado!", 4)
+    Notificar("Engine de Voo Segura Iniciada.", 3)
 end)
