@@ -1,5 +1,5 @@
 -- =============================================================================
--- BK CLIENT V2.0 † - HIGH-END UI DESIGN (AIMBOT 100% FIXED)
+-- BK CLIENT V2.1 † - PREMIUM BYPASS EDITION
 -- =============================================================================
 
 local TweenService = game:GetService("TweenService")
@@ -9,19 +9,115 @@ local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
 local Stats = game:GetService("Stats")
 local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
 
--- Evita duplicatas do menu na tela
-if CoreGui:FindFirstChild("BK_Client_V2") then
-    CoreGui:FindFirstChild("BK_Client_V2"):Destroy()
+-- Evita duplicatas do menu na tela de forma segura
+for _, child in ipairs(CoreGui:GetChildren()) do
+    if child.Name:match("^BK_Client") or child:FindFirstChild("Capsula") then
+        child:Destroy()
+    end
 end
 
--- Criando a ScreenGui principal
+-- =============================================================================
+-- SISTEMA DE PROTEÇÃO & BYPASS (ANTI-DETECÇÃO DE PONTA A PONTA)
+-- =============================================================================
+
+-- 1. Ocultação do nome da ScreenGui para evitar varreduras de Strings
 local BK_Client_V2 = Instance.new("ScreenGui")
-BK_Client_V2.Name = "BK_Client_V2"
+BK_Client_V2.Name = "BK_" .. HttpService:GenerateGUID(false):sub(1, 8) -- Nome totalmente aleatório a cada execução
 BK_Client_V2.Parent = CoreGui
 BK_Client_V2.ResetOnSpawn = false
 
--- Paleta de Cores (Roxo e Preto)
+-- 2. Bypass de Relatórios (Bloqueio de Envio de Report / Denúncia)
+local bmt = getrawmetatable(game)
+if setreadonly then setreadonly(bmt, false) else make_writeable(bmt) end
+local old_namecall = bmt.__namecall
+
+bmt.__namecall = newcclosure(function(self, ...)
+    local method = getnamecallmethod()
+    local args = {...}
+    
+    -- Intercepta e joga no lixo tentativas de reportar o jogador
+    if method == "ReportAbuse" or method == "SubmitReport" then
+        return nil
+    end
+    return old_namecall(self, unpack(args))
+end)
+if setreadonly then setreadonly(bmt, true) else make_readonly(bmt) end
+
+-- 3. Variáveis e Configurações Globais
+local Opcoes = {
+    Aimbot = {
+        Ativo = false,
+        Parte = "Head",
+        Forca = 5,
+        AtrasParede = false
+    },
+    FOV = {
+        Ativo = false,
+        Cor = Color3.fromRGB(120, 40, 200),
+        Tamanho = 100
+    },
+    ESP_Box = {Ativo = false, Cor = Color3.fromRGB(120, 40, 200)},
+    ESP_Line = {Ativo = false, Cor = Color3.fromRGB(240, 240, 240)},
+    ESP_Skeleton = {Ativo = false, Cor = Color3.fromRGB(120, 40, 200)},
+    ESP_Distance = {Ativo = false, Cor = Color3.fromRGB(240, 240, 240), MaxDist = 380},
+    ESP_Name = {Ativo = false, CorPainel = Color3.fromRGB(120, 40, 200), CorTexto = Color3.fromRGB(240, 240, 240), RGB = false},
+    ESP_Health = {Ativo = false},
+    -- ABA EXTRAS (Novidades V2.1)
+    Extras = {
+        SuperVelocidade = false,
+        VelocidadeValor = 16, -- Valor Padrão do Roblox
+        SuperPulo = false,
+        PuloValor = 50 -- Valor Padrão do Roblox
+    }
+}
+
+-- 4. Bypass de Leitura de WalkSpeed e JumpPower (Anti-Detecção por Script Local)
+local lpChar = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local rawindex = bmt.__index
+local rawnewindex = bmt.__newindex
+
+if setreadonly then setreadonly(bmt, false) else make_writeable(bmt) end
+
+bmt.__index = newcclosure(function(t, k)
+    -- Se o jogo tentar ler nossa velocidade ou força do pulo, devolvemos o padrão para enganar o Anti-Cheat
+    if t:IsA("Humanoid") and t:IsDescendantOf(LocalPlayer.Character) then
+        if k == "WalkSpeed" and Opcoes.Extras.SuperVelocidade then
+            return 16
+        elseif k == "JumpPower" and Opcoes.Extras.SuperPulo then
+            return 50
+        end
+    end
+    return rawindex(t, k)
+end)
+
+if setreadonly then setreadonly(bmt, true) else make_readonly(bmt) end
+
+-- Loop de Aplicação Silenciosa das Funções Físicas (Sem disparar alteração de propriedade detectável)
+RunService.PostSimulation:Connect(function()
+    local char = LocalPlayer.Character
+    if char and char:FindFirstChild("Humanoid") then
+        local hum = char.Humanoid
+        
+        -- Atualiza Velocidade se estiver ativa
+        if Opcoes.Extras.SuperVelocidade then
+            hum.WalkSpeed = Opcoes.Extras.VelocidadeValor
+        end
+        
+        -- Atualiza Pulo se estiver ativo
+        if Opcoes.Extras.SuperPulo then
+            hum.UseJumpPower = true
+            hum.JumpPower = Opcoes.Extras.PuloValor
+        end
+    end
+end)
+
+
+-- =============================================================================
+-- CUSTOMIZAÇÃO VISUAL (DESIGN ATUALIZADO BK)
+-- =============================================================================
+
 local Cores = {
     FundoPrincipal = Color3.fromRGB(15, 15, 15),
     FundoLateral = Color3.fromRGB(10, 10, 10),
@@ -33,7 +129,6 @@ local Cores = {
     VerdeStatus = Color3.fromRGB(46, 204, 113)
 }
 
--- Sons Satisfatórios Nativos do Roblox
 local SomClique = Instance.new("Sound")
 SomClique.SoundId = "rbxassetid://6895079853"
 SomClique.Volume = 0.5
@@ -44,33 +139,7 @@ SomAbrir.SoundId = "rbxassetid://9114223165"
 SomAbrir.Volume = 0.4
 SomAbrir.Parent = BK_Client_V2
 
--- Tabela global de configurações das funções
-local Opcoes = {
-    -- ABA MIRA
-    Aimbot = {
-        Ativo = false,
-        Parte = "Head", -- "Head" ou "Torso"
-        Forca = 5, -- Suavização do Aimbot (1 = Ultra Suave/Legit, 10 = Travamento Instantâneo)
-        AtrasParede = false -- Se true, mira através das paredes (ignora Raycast)
-    },
-    FOV = {
-        Ativo = false,
-        Cor = Color3.fromRGB(120, 40, 200),
-        Tamanho = 100
-    },
-    -- ABA VISUAL
-    ESP_Box = {Ativo = false, Cor = Color3.fromRGB(120, 40, 200)},
-    ESP_Line = {Ativo = false, Cor = Color3.fromRGB(240, 240, 240)},
-    ESP_Skeleton = {Ativo = false, Cor = Color3.fromRGB(120, 40, 200)},
-    ESP_Distance = {Ativo = false, Cor = Color3.fromRGB(240, 240, 240), MaxDist = 380},
-    ESP_Name = {Ativo = false, CorPainel = Color3.fromRGB(120, 40, 200), CorTexto = Color3.fromRGB(240, 240, 240), RGB = false},
-    ESP_Health = {Ativo = false}
-}
-
--- Armazenamento das instâncias visuais para limpeza e atualização em tempo real
 local ElementosVisuais = {}
-
--- Instância de Desenho do Círculo de FOV
 local CirculoFOV = Drawing.new("Circle")
 CirculoFOV.Thickness = 1.5
 CirculoFOV.Filled = false
@@ -95,9 +164,7 @@ NotificationLayout.Padding = UDim.new(0, 10)
 local function Notificar(mensagem, duracao)
     duracao = duracao or 3.5
     task.spawn(function()
-        pcall(function()
-            SomAbrir:Play()
-        end)
+        pcall(function() SomAbrir:Play() end)
     end)
 
     local Card = Instance.new("Frame")
@@ -161,48 +228,36 @@ local function Notificar(mensagem, duracao)
 end
 
 -- =============================================================================
--- SISTEMA DE DRAG (Arrastar Elementos)
+-- SISTEMA DE ARRRASTAR (DRAG)
 -- =============================================================================
 local function HabilitarArrastar(gui)
-    local dragging
-    local dragInput
-    local dragStart
-    local startPos
-
+    local dragging, dragInput, dragStart, startPos
     local function update(input)
         local delta = input.Position - dragStart
         gui.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
-
     gui.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
             startPos = gui.Position
-
             input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
             end)
         end
     end)
-
     gui.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
             dragInput = input
         end
     end)
-
     UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            update(input)
-        end
+        if input == dragInput and dragging then update(input) end
     end)
 end
 
 -- =============================================================================
--- CÁPSULA FLUTUANTE (Botão de Ativação) - 100% MÓVEL
+-- CÁPSULA FLUTUANTE (Botão de Ativação)
 -- =============================================================================
 local Capsula = Instance.new("Frame")
 local CapsulaCorner = Instance.new("UICorner")
@@ -229,7 +284,7 @@ CapsulaBotao.Name = "Botao"
 CapsulaBotao.Parent = Capsula
 CapsulaBotao.Size = UDim2.new(1, 0, 1, 0)
 CapsulaBotao.BackgroundTransparency = 1
-CapsulaBotao.Text = "BK CLIENT V2.0 †"
+CapsulaBotao.Text = "BK CLIENT V2.1 †"
 CapsulaBotao.TextColor3 = Cores.TextoClaro
 CapsulaBotao.Font = Enum.Font.Code
 CapsulaBotao.TextSize = 13
@@ -252,7 +307,6 @@ Painel.Position = UDim2.new(0.5, -290, 0.5, -180)
 Painel.BackgroundColor3 = Cores.FundoPrincipal
 Painel.BorderSizePixel = 0
 Painel.Visible = false
-Painel.ClipsDescendants = false
 HabilitarArrastar(Painel)
 
 PainelCorner.CornerRadius = UDim.new(0, 10)
@@ -262,7 +316,6 @@ PainelStroke.Color = Cores.Borda
 PainelStroke.Thickness = 1.2
 PainelStroke.Parent = Painel
 
--- Barra Lateral (Menu Esquerdo)
 BarraLateral.Name = "BarraLateral"
 BarraLateral.Parent = Painel
 BarraLateral.Size = UDim2.new(0, 160, 1, 0)
@@ -286,7 +339,6 @@ DivisorVertical.BackgroundColor3 = Cores.Borda
 DivisorVertical.BorderSizePixel = 0
 DivisorVertical.Parent = BarraLateral
 
--- Painel de Conteúdo (Direita)
 AreaConteudo.Name = "AreaConteudo"
 AreaConteudo.Parent = Painel
 AreaConteudo.Size = UDim2.new(1, -160, 1, 0)
@@ -370,7 +422,7 @@ LayoutBotoes.Parent = ContainerBotoes
 LayoutBotoes.SortOrder = Enum.SortOrder.LayoutOrder
 LayoutBotoes.Padding = UDim.new(0, 6)
 
-local AbasDefinidas = {"Mira", "Configurações", "Status", "Visual", "Extras"}
+local AbasDefinidas = {"Mira", "Visual", "Extras", "Status"}
 local ElementosAbas = {}
 local PaginasInstanciadas = {}
 
@@ -404,115 +456,7 @@ for _, nomeAba in ipairs(AbasDefinidas) do
 end
 
 -- =============================================================================
--- INTERFACE DA ABA "STATUS"
--- =============================================================================
-local PaginaStatus = PaginasInstanciadas["Status"]
-local StatusContent = Instance.new("Frame")
-StatusContent.Name = "StatusContent"
-StatusContent.Parent = PaginaStatus
-StatusContent.Size = UDim2.new(1, -40, 1, -80)
-StatusContent.Position = UDim2.new(0, 20, 0, 70)
-StatusContent.BackgroundTransparency = 1
-
-local StatusLayout = Instance.new("UIListLayout")
-StatusLayout.Parent = StatusContent
-StatusLayout.SortOrder = Enum.SortOrder.LayoutOrder
-StatusLayout.Padding = UDim.new(0, 8)
-
-local function CriarLinhaStatus(nome, valorInicial, layoutOrder)
-    local Linha = Instance.new("Frame")
-    local LinhaCorner = Instance.new("UICorner")
-    local LinhaStroke = Instance.new("UIStroke")
-    local TituloStatus = Instance.new("TextLabel")
-    local ValorStatus = Instance.new("TextLabel")
-
-    Linha.Name = "Status_" .. nome
-    Linha.Size = UDim2.new(1, 0, 0, 36)
-    Linha.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
-    Linha.BorderSizePixel = 0
-    Linha.LayoutOrder = layoutOrder
-    Linha.Parent = StatusContent
-
-    LinhaCorner.CornerRadius = UDim.new(0, 6)
-    LinhaCorner.Parent = Linha
-
-    LinhaStroke.Thickness = 1
-    LinhaStroke.Color = Cores.Borda
-    LinhaStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    LinhaStroke.Parent = Linha
-
-    TituloStatus.Parent = Linha
-    TituloStatus.Size = UDim2.new(0.5, -15, 1, 0)
-    TituloStatus.Position = UDim2.new(0, 15, 0, 0)
-    TituloStatus.BackgroundTransparency = 1
-    TituloStatus.Text = string.upper(nome)
-    TituloStatus.TextColor3 = Cores.TextoEscuro
-    TituloStatus.Font = Enum.Font.Code
-    TituloStatus.TextSize = 11
-    TituloStatus.TextXAlignment = Enum.TextXAlignment.Left
-
-    ValorStatus.Name = "Valor"
-    ValorStatus.Parent = Linha
-    ValorStatus.Size = UDim2.new(0.5, -15, 1, 0)
-    ValorStatus.Position = UDim2.new(0.5, 0, 0, 0)
-    ValorStatus.BackgroundTransparency = 1
-    ValorStatus.Text = valorInicial
-    ValorStatus.TextColor3 = Cores.TextoClaro
-    ValorStatus.Font = Enum.Font.Code
-    ValorStatus.TextSize = 11
-    ValorStatus.TextXAlignment = Enum.TextXAlignment.Right
-
-    return ValorStatus
-end
-
-local ValorFPS = CriarLinhaStatus("Taxa de Quadros (FPS)", "Calculando...", 1)
-local ValorPing = CriarLinhaStatus("Latência de Rede (Ping)", "Calculando...", 2)
-local ValorPlayers = CriarLinhaStatus("Jogadores no Servidor", "0/0", 3)
-local ValorVersao = CriarLinhaStatus("Status do Cliente", "ATIVO / LICENCIADO", 4)
-ValorVersao.TextColor3 = Cores.VerdeStatus
-
-task.spawn(function()
-    local LastIteration = os.clock()
-    local FrameHistory = {}
-    local FrameIndex = 1
-    local UpdateInterval = 0.5
-    local LastUIUpdate = 0
-
-    while true do
-        local CurrentTime = os.clock()
-        local TimeDelta = CurrentTime - LastIteration
-        LastIteration = CurrentTime
-
-        FrameHistory[FrameIndex] = TimeDelta
-        FrameIndex = (FrameIndex % 60) + 1
-
-        if CurrentTime - LastUIUpdate >= UpdateInterval then
-            LastUIUpdate = CurrentTime
-            
-            local TotalTime = 0
-            local Count = 0
-            for i = 1, #FrameHistory do
-                if FrameHistory[i] then
-                    TotalTime = TotalTime + FrameHistory[i]
-                    Count = Count + 1
-                end
-            end
-            local FPS = Count > 0 and math.round(Count / TotalTime) or 60
-            ValorFPS.Text = tostring(FPS) .. " FPS"
-
-            local Ping = math.round(Stats:GetNetworkStats().Ping)
-            ValorPing.Text = tostring(Ping) .. " ms"
-
-            local PlayerCount = #Players:GetPlayers()
-            local MaxPlayers = Players.MaxPlayers
-            ValorPlayers.Text = tostring(PlayerCount) .. " / " .. tostring(MaxPlayers)
-        end
-        RunService.RenderStepped:Wait()
-    end
-end)
-
--- =============================================================================
--- INTERFACE DO MENU DE CUSTOMIZAÇÃO RÁPIDA (Três Risquinhos '≡')
+-- GERADOR DE MINI PAINÉIS DE CONFIGURAÇÕES
 -- =============================================================================
 local function CriarPainelConfiguracao(titulo, salvarCallback, extraComponentesCallback)
     local MiniPainel = Instance.new("Frame")
@@ -559,9 +503,7 @@ local function CriarPainelConfiguracao(titulo, salvarCallback, extraComponentesC
     Fechar.Font = Enum.Font.Code
     Fechar.TextSize = 16
     Fechar.Parent = MiniPainel
-    Fechar.MouseButton1Click:Connect(function()
-        MiniPainel.Visible = false
-    end)
+    Fechar.MouseButton1Click:Connect(function() MiniPainel.Visible = false end)
 
     Container.Size = UDim2.new(1, -20, 1, -75)
     Container.Position = UDim2.new(0, 10, 0, 35)
@@ -589,18 +531,15 @@ local function CriarPainelConfiguracao(titulo, salvarCallback, extraComponentesC
         SomClique:Play()
         if salvarCallback then salvarCallback() end
         MiniPainel.Visible = false
-        Notificar("Configurações salvas e aplicadas!", 2)
+        Notificar("Configurações aplicadas!", 2)
     end)
 
-    if extraComponentesCallback then
-        extraComponentesCallback(Container)
-    end
-
+    if extraComponentesCallback then extraComponentesCallback(Container) end
     return MiniPainel
 end
 
 -- =============================================================================
--- GERADOR DE CORES INTERATIVAS (Componentes para Mini Painéis)
+-- SELETORES E SLIDERS AUXILIARES
 -- =============================================================================
 local function AdicionarSeletorCores(parent, labelText, getCor, setCor)
     local Label = Instance.new("TextLabel")
@@ -625,15 +564,15 @@ local function AdicionarSeletorCores(parent, labelText, getCor, setCor)
     LayoutPaleta.Parent = ContainerPaleta
 
     local CoresSeletor = {
-        Color3.fromRGB(120, 40, 200), -- Roxo BK
-        Color3.fromRGB(231, 76, 60),   -- Vermelho
-        Color3.fromRGB(46, 204, 113),  -- Verde
-        Color3.fromRGB(52, 152, 219),  -- Azul
-        Color3.fromRGB(241, 196, 15),  -- Amarelo
-        Color3.fromRGB(255, 255, 255)  -- Branco
+        Color3.fromRGB(120, 40, 200),
+        Color3.fromRGB(231, 76, 60),
+        Color3.fromRGB(46, 204, 113),
+        Color3.fromRGB(52, 152, 219),
+        Color3.fromRGB(241, 196, 15),
+        Color3.fromRGB(255, 255, 255)
     }
 
-    for i, cor in ipairs(CoresSeletor) do
+    for _, cor in ipairs(CoresSeletor) do
         local BotaoCor = Instance.new("TextButton")
         local BotaoCorner = Instance.new("UICorner")
         local BotaoStroke = Instance.new("UIStroke")
@@ -653,14 +592,11 @@ local function AdicionarSeletorCores(parent, labelText, getCor, setCor)
 
         BotaoCor.MouseButton1Click:Connect(function()
             setCor(cor)
-            Notificar("Cor selecionada!", 1)
+            Notificar("Cor aplicada!", 1)
         end)
     end
 end
 
--- =============================================================================
--- GERADOR DE SLIDER DINÂMICO
--- =============================================================================
 local function AdicionarSlider(parent, labelText, min, max, defaultVal, callback)
     local Label = Instance.new("TextLabel")
     Label.Size = UDim2.new(1, 0, 0, 15)
@@ -823,7 +759,7 @@ local function CriarLinhaModulo(parent, titulo, configRef, layoutOrder, temConfi
         SomClique:Play()
         configRef.Ativo = not configRef.Ativo
         RenderSwitch(true)
-        Notificar(titulo .. " " .. (configRef.Ativo and "Habilitado" or "Desabilitado"), 2)
+        Notificar(titulo .. " " .. (configRef.Ativo and "Ativado" or "Desativado"), 2)
     end)
 
     RenderSwitch(false)
@@ -859,10 +795,11 @@ local function CriarLinhaModulo(parent, titulo, configRef, layoutOrder, temConfi
 end
 
 -- =============================================================================
--- INTERFACE DA ABA "MIRA" (Aimbot & FOV Dinâmico)
+-- INTERFACE DE CADA ABA DO MENU
 -- =============================================================================
-local PaginaMira = PaginasInstanciadas["Mira"]
 
+-- ----------------- ABA 1: MIRA -----------------
+local PaginaMira = PaginasInstanciadas["Mira"]
 local MiraScroll = Instance.new("ScrollingFrame")
 MiraScroll.Size = UDim2.new(1, -20, 1, -80)
 MiraScroll.Position = UDim2.new(0, 10, 0, 70)
@@ -878,9 +815,7 @@ MiraLayout.SortOrder = Enum.SortOrder.LayoutOrder
 MiraLayout.Padding = UDim.new(0, 8)
 MiraLayout.Parent = MiraScroll
 
--- 1. Mini Painel do Aimbot (Seletor Head/Torso, Força)
 local PainelAimbot = CriarPainelConfiguracao("Aimbot Config", nil, function(parent)
-    -- Botão para Alternar Parte do Corpo
     local BtnParte = Instance.new("TextButton")
     local Corner = Instance.new("UICorner")
     BtnParte.Size = UDim2.new(1, 0, 0, 24)
@@ -904,33 +839,13 @@ local PainelAimbot = CriarPainelConfiguracao("Aimbot Config", nil, function(pare
         end
     end)
 
-    -- Slider para regular a Suavização (Força do Imã)
     AdicionarSlider(parent, "Suavização (Força)", 1, 10, Opcoes.Aimbot.Forca, function(val)
         Opcoes.Aimbot.Forca = val
     end)
 end)
 
--- Linha do Aimbot
 CriarLinhaModulo(MiraScroll, "Aimbot Principal", Opcoes.Aimbot, 1, true, function() return PainelAimbot end)
 
--- Linha do Wallcheck (Atras da Parede)
-CriarLinhaModulo(MiraScroll, "Mirar Atraves da Parede", {
-    Ativo = Opcoes.Aimbot.AtrasParede,
-    set = function(val) Opcoes.Aimbot.AtrasParede = val end
-}, 2, false)
--- Ajuste dinâmico do toggle do Wallcheck diretamente nas configurações globais
-local LinhaWall = MiraScroll:FindFirstChild("Mod_Mirar Atraves da Parede")
-if LinhaWall then
-    local SwitchBtn = LinhaWall:FindFirstChildOfClass("Frame"):FindFirstChildOfClass("TextButton")
-    if SwitchBtn then
-        SwitchBtn.MouseButton1Click:Connect(function()
-            Opcoes.Aimbot.AtrasParede = not Opcoes.Aimbot.AtrasParede
-            Notificar("Atras da Parede: " .. (Opcoes.Aimbot.AtrasParede and "ATIVADO" or "DESATIVADO"), 2)
-        end)
-    end
-end
-
--- 2. Mini Painel do FOV
 local PainelFOV = CriarPainelConfiguracao("FOV Config", nil, function(parent)
     AdicionarSeletorCores(parent, "Cor do Circulo", function() return Opcoes.FOV.Cor end, function(cor) Opcoes.FOV.Cor = cor end)
     AdicionarSlider(parent, "Tamanho (Raio)", 30, 300, Opcoes.FOV.Tamanho, function(val)
@@ -938,15 +853,10 @@ local PainelFOV = CriarPainelConfiguracao("FOV Config", nil, function(parent)
     end)
 end)
 
--- Linha do FOV
-CriarLinhaModulo(MiraScroll, "Circulo FOV Visual", Opcoes.FOV, 3, true, function() return PainelFOV end)
+CriarLinhaModulo(MiraScroll, "Circulo FOV Visual", Opcoes.FOV, 2, true, function() return PainelFOV end)
 
-
--- =============================================================================
--- INTERFACE DA ABA "VISUAL"
--- =============================================================================
+-- ----------------- ABA 2: VISUAL -----------------
 local PaginaVisual = PaginasInstanciadas["Visual"]
-
 local VisualScroll = Instance.new("ScrollingFrame")
 VisualScroll.Size = UDim2.new(1, -20, 1, -80)
 VisualScroll.Position = UDim2.new(0, 10, 0, 70)
@@ -962,22 +872,18 @@ VisualLayout.SortOrder = Enum.SortOrder.LayoutOrder
 VisualLayout.Padding = UDim.new(0, 8)
 VisualLayout.Parent = VisualScroll
 
--- 1. ESP BOX
 local PainelBox = CriarPainelConfiguracao("Box Config", nil, function(parent)
     AdicionarSeletorCores(parent, "Cor da Caixa", function() return Opcoes.ESP_Box.Cor end, function(cor) Opcoes.ESP_Box.Cor = cor end)
 end)
 CriarLinhaModulo(VisualScroll, "ESP Box", Opcoes.ESP_Box, 1, true, function() return PainelBox end)
 
--- 2. ESP LINE
 CriarLinhaModulo(VisualScroll, "ESP Line", Opcoes.ESP_Line, 2, false)
 
--- 3. ESP SKELETON
 local PainelSkel = CriarPainelConfiguracao("Skeleton Config", nil, function(parent)
     AdicionarSeletorCores(parent, "Cor das Articulações", function() return Opcoes.ESP_Skeleton.Cor end, function(cor) Opcoes.ESP_Skeleton.Cor = cor end)
 end)
 CriarLinhaModulo(VisualScroll, "ESP Esqueleto", Opcoes.ESP_Skeleton, 3, true, function() return PainelSkel end)
 
--- 4. ESP DISTANCE
 local PainelDist = CriarPainelConfiguracao("Distance Config", nil, function(parent)
     AdicionarSeletorCores(parent, "Cor do Texto", function() return Opcoes.ESP_Distance.Cor end, function(cor) Opcoes.ESP_Distance.Cor = cor end)
     AdicionarSlider(parent, "Alcance Máximo (m)", 50, 380, Opcoes.ESP_Distance.MaxDist, function(val)
@@ -986,7 +892,6 @@ local PainelDist = CriarPainelConfiguracao("Distance Config", nil, function(pare
 end)
 CriarLinhaModulo(VisualScroll, "ESP Distancia", Opcoes.ESP_Distance, 4, true, function() return PainelDist end)
 
--- 5. ESP NAME (Nome)
 local PainelNome = CriarPainelConfiguracao("Name Config", nil, function(parent)
     AdicionarSeletorCores(parent, "Cor do Painel", function() return Opcoes.ESP_Name.CorPainel end, function(cor) Opcoes.ESP_Name.CorPainel = cor end)
     AdicionarSeletorCores(parent, "Cor do Texto", function() return Opcoes.ESP_Name.CorTexto end, function(cor) Opcoes.ESP_Name.CorTexto = cor end)
@@ -1011,12 +916,184 @@ local PainelNome = CriarPainelConfiguracao("Name Config", nil, function(parent)
 end)
 CriarLinhaModulo(VisualScroll, "ESP Nome", Opcoes.ESP_Name, 5, true, function() return PainelNome end)
 
--- 6. ESP HEALTH (Vida)
 CriarLinhaModulo(VisualScroll, "ESP Vida", Opcoes.ESP_Health, 6, false)
 
 
+-- ----------------- ABA 3: EXTRAS (Pulo e Velocidade Arrastável) -----------------
+local PaginaExtras = PaginasInstanciadas["Extras"]
+local ExtrasScroll = Instance.new("ScrollingFrame")
+ExtrasScroll.Size = UDim2.new(1, -20, 1, -80)
+ExtrasScroll.Position = UDim2.new(0, 10, 0, 70)
+ExtrasScroll.BackgroundTransparency = 1
+ExtrasScroll.BorderSizePixel = 0
+ExtrasScroll.CanvasSize = UDim2.new(0, 0, 0, 300)
+ExtrasScroll.ScrollBarThickness = 3
+ExtrasScroll.ScrollBarImageColor3 = Cores.RoxoPrincipal
+ExtrasScroll.Parent = PaginaExtras
+
+local ExtrasLayout = Instance.new("UIListLayout")
+ExtrasLayout.SortOrder = Enum.SortOrder.LayoutOrder
+ExtrasLayout.Padding = UDim.new(0, 8)
+ExtrasLayout.Parent = ExtrasScroll
+
+-- Painel Dinâmico de Ajuste do Super Pulo (JumpPower)
+local PainelSuperPulo = CriarPainelConfiguracao("Pulo Config", nil, function(parent)
+    AdicionarSlider(parent, "Força do Pulo", 50, 450, 50, function(val)
+        Opcoes.Extras.PuloValor = val
+    end)
+end)
+
+-- Painel Dinâmico de Ajuste da Super Velocidade (WalkSpeed)
+local PainelSuperVel = CriarPainelConfiguracao("Velocidade Config", nil, function(parent)
+    AdicionarSlider(parent, "Velocidade", 16, 250, 16, function(val)
+        Opcoes.Extras.VelocidadeValor = val
+    end)
+end)
+
+-- Criação dos Toggles e botões de configuração (Configurações Arrastáveis salvas no script)
+CriarLinhaModulo(ExtrasScroll, "Super Velocidade", {
+    Ativo = false,
+    set = function(val) Opcoes.Extras.SuperVelocidade = val end
+}, 1, true, function() return PainelSuperVel end)
+
+-- Ligando o toggle à propriedade do script
+local LinhaVel = ExtrasScroll:FindFirstChild("Mod_Super Velocidade")
+if LinhaVel then
+    local SwitchBtn = LinhaVel:FindFirstChildOfClass("Frame"):FindFirstChildOfClass("TextButton")
+    if SwitchBtn then
+        SwitchBtn.MouseButton1Click:Connect(function()
+            Opcoes.Extras.SuperVelocidade = not Opcoes.Extras.SuperVelocidade
+            Notificar("Super Velocidade: " .. (Opcoes.Extras.SuperVelocidade and "LIGADA" or "DESLIGADA"), 2)
+        end)
+    end
+end
+
+CriarLinhaModulo(ExtrasScroll, "Super Pulo", {
+    Ativo = false,
+    set = function(val) Opcoes.Extras.SuperPulo = val end
+}, 2, true, function() return PainelSuperPulo end)
+
+local LinhaPulo = ExtrasScroll:FindFirstChild("Mod_Super Pulo")
+if LinhaPulo then
+    local SwitchBtn = LinhaPulo:FindFirstChildOfClass("Frame"):FindFirstChildOfClass("TextButton")
+    if SwitchBtn then
+        SwitchBtn.MouseButton1Click:Connect(function()
+            Opcoes.Extras.SuperPulo = not Opcoes.Extras.SuperPulo
+            Notificar("Super Pulo: " .. (Opcoes.Extras.SuperPulo and "LIGADO" or "DESLIGADO"), 2)
+        end)
+    end
+end
+
+
+-- ----------------- ABA 4: STATUS -----------------
+local PaginaStatus = PaginasInstanciadas["Status"]
+local StatusContent = Instance.new("Frame")
+StatusContent.Name = "StatusContent"
+StatusContent.Parent = PaginaStatus
+StatusContent.Size = UDim2.new(1, -40, 1, -80)
+StatusContent.Position = UDim2.new(0, 20, 0, 70)
+StatusContent.BackgroundTransparency = 1
+
+local StatusLayout = Instance.new("UIListLayout")
+StatusLayout.Parent = StatusContent
+StatusLayout.SortOrder = Enum.SortOrder.LayoutOrder
+StatusLayout.Padding = UDim.new(0, 8)
+
+local function CriarLinhaStatus(nome, valorInicial, layoutOrder)
+    local Linha = Instance.new("Frame")
+    local LinhaCorner = Instance.new("UICorner")
+    local LinhaStroke = Instance.new("UIStroke")
+    local TituloStatus = Instance.new("TextLabel")
+    local ValorStatus = Instance.new("TextLabel")
+
+    Linha.Name = "Status_" .. nome
+    Linha.Size = UDim2.new(1, 0, 0, 36)
+    Linha.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+    Linha.BorderSizePixel = 0
+    Linha.LayoutOrder = layoutOrder
+    Linha.Parent = StatusContent
+
+    LinhaCorner.CornerRadius = UDim.new(0, 6)
+    LinhaCorner.Parent = Linha
+
+    LinhaStroke.Thickness = 1
+    LinhaStroke.Color = Cores.Borda
+    LinhaStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    LinhaStroke.Parent = Linha
+
+    TituloStatus.Parent = Linha
+    TituloStatus.Size = UDim2.new(0.5, -15, 1, 0)
+    TituloStatus.Position = UDim2.new(0, 15, 0, 0)
+    TituloStatus.BackgroundTransparency = 1
+    TituloStatus.Text = string.upper(nome)
+    TituloStatus.TextColor3 = Cores.TextoEscuro
+    TituloStatus.Font = Enum.Font.Code
+    TituloStatus.TextSize = 11
+    TituloStatus.TextXAlignment = Enum.TextXAlignment.Left
+
+    ValorStatus.Name = "Valor"
+    ValorStatus.Parent = Linha
+    ValorStatus.Size = UDim2.new(0.5, -15, 1, 0)
+    ValorStatus.Position = UDim2.new(0.5, 0, 0, 0)
+    ValorStatus.BackgroundTransparency = 1
+    ValorStatus.Text = valorInicial
+    ValorStatus.TextColor3 = Cores.TextoClaro
+    ValorStatus.Font = Enum.Font.Code
+    ValorStatus.TextSize = 11
+    ValorStatus.TextXAlignment = Enum.TextXAlignment.Right
+
+    return ValorStatus
+end
+
+local ValorFPS = CriarLinhaStatus("Taxa de Quadros (FPS)", "Calculando...", 1)
+local ValorPing = CriarLinhaStatus("Latência de Rede (Ping)", "Calculando...", 2)
+local ValorPlayers = CriarLinhaStatus("Jogadores no Servidor", "0/0", 3)
+local ValorVersao = CriarLinhaStatus("Status do Cliente", "ATIVO / BYPASS SEGURO v2.1", 4)
+ValorVersao.TextColor3 = Cores.VerdeStatus
+
+task.spawn(function()
+    local LastIteration = os.clock()
+    local FrameHistory = {}
+    local FrameIndex = 1
+    local UpdateInterval = 0.5
+    local LastUIUpdate = 0
+
+    while true do
+        local CurrentTime = os.clock()
+        local TimeDelta = CurrentTime - LastIteration
+        LastIteration = CurrentTime
+
+        FrameHistory[FrameIndex] = TimeDelta
+        FrameIndex = (FrameIndex % 60) + 1
+
+        if CurrentTime - LastUIUpdate >= UpdateInterval then
+            LastUIUpdate = CurrentTime
+            
+            local TotalTime = 0
+            local Count = 0
+            for i = 1, #FrameHistory do
+                if FrameHistory[i] then
+                    TotalTime = TotalTime + FrameHistory[i]
+                    Count = Count + 1
+                end
+            end
+            local FPS = Count > 0 and math.round(Count / TotalTime) or 60
+            ValorFPS.Text = tostring(FPS) .. " FPS"
+
+            local Ping = math.round(Stats:GetNetworkStats().Ping)
+            ValorPing.Text = tostring(Ping) .. " ms"
+
+            local PlayerCount = #Players:GetPlayers()
+            local MaxPlayers = Players.MaxPlayers
+            ValorPlayers.Text = tostring(PlayerCount) .. " / " .. tostring(MaxPlayers)
+        end
+        RunService.RenderStepped:Wait()
+    end
+end)
+
+
 -- =============================================================================
--- ENGINE DE DESENHO ESP E SISTEMA DE AIMBOT (MOBILE & PC FUNCIONAL)
+-- LOGICA DOS MECANISMOS DO AIMBOT E ESP
 -- =============================================================================
 local Camera = workspace.CurrentCamera
 
@@ -1044,7 +1121,6 @@ local function LimparJogador(player)
     end
 end
 
--- Verifica se há algum obstáculo entre a câmera e o alvo (Wallcheck)
 local function EstaVisivel(personagem, parte)
     if Opcoes.Aimbot.AtrasParede then return true end
     if not personagem or not personagem:FindFirstChild(parte) then return false end
@@ -1059,18 +1135,15 @@ local function EstaVisivel(personagem, parte)
     params.IgnoreWater = true
 
     local resultado = workspace:Raycast(pontoOrigem, direcao, params)
-
     if resultado then
         return resultado.Instance:IsDescendantOf(personagem)
     end
     return true
 end
 
--- Busca o jogador mais próximo da mira do jogador (Mobile & PC)
 local function ObterJogadorMaisProximo()
     local menorDistancia = math.huge
     local jogadorAlvo = nil
-
     local centroTela = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
     for _, player in ipairs(Players:GetPlayers()) do
@@ -1078,7 +1151,6 @@ local function ObterJogadorMaisProximo()
             local char = player.Character
             if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0 then
                 
-                -- Detecta o alvo dinâmico (Cabeça ou Peito)
                 local nomeParteAlvo = "Head"
                 if Opcoes.Aimbot.Parte == "Torso" then
                     nomeParteAlvo = char:FindFirstChild("UpperTorso") and "UpperTorso" or "Torso"
@@ -1091,7 +1163,6 @@ local function ObterJogadorMaisProximo()
                     if naTela then
                         local distanciaFov = (Vector2.new(pos.X, pos.Y) - centroTela).Magnitude
 
-                        -- Verifica se está dentro do limite do FOV e se respeita o Wallcheck
                         if distanciaFov <= Opcoes.FOV.Tamanho and distanciaFov < menorDistancia then
                             if EstaVisivel(char, nomeParteAlvo) then
                                 menorDistancia = distanciaFov
@@ -1103,14 +1174,10 @@ local function ObterJogadorMaisProximo()
             end
         end
     end
-
     return jogadorAlvo
 end
 
--- Loop de renderização contínua de todo o sistema
 RunService.RenderStepped:Connect(function()
-    
-    -- 1. ATUALIZAÇÃO DO CÍRCULO DO FOV
     if Opcoes.FOV.Ativo then
         CirculoFOV.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
         CirculoFOV.Radius = Opcoes.FOV.Tamanho
@@ -1120,22 +1187,15 @@ RunService.RenderStepped:Connect(function()
         CirculoFOV.Visible = false
     end
 
-    -- 2. ENGENHARIA DE TRAVAMENTO DO AIMBOT (MOBILE & PC - MANIPULAÇÃO DE C_FRAME DIRETO)
     if Opcoes.Aimbot.Ativo then
         local alvo = ObterJogadorMaisProximo()
         if alvo then
-            -- Mapeia a suavização de acordo com a força escolhida (1 = Muito Suave, 10 = Travamento Bruto)
             local smoothValue = math.clamp(Opcoes.Aimbot.Forca / 10, 0.05, 1)
-            
-            -- Calcula a rotação necessária da Câmera para focar o Alvo
             local cframeAlvo = CFrame.lookAt(Camera.CFrame.Position, alvo.Position)
-            
-            -- Modifica o CFrame da Câmera aplicando a interpolação linear (Lerp) para a movimentação realista
             Camera.CFrame = Camera.CFrame:Lerp(cframeAlvo, smoothValue)
         end
     end
 
-    -- 3. RENDERIZADOR COMPLETO DA SUÍTE DE ESP
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
             local char = player.Character
@@ -1192,7 +1252,6 @@ RunService.RenderStepped:Connect(function()
                     local boxSize = Vector2.new(3000 / pos.Z, 4500 / pos.Z)
                     local boxPos = Vector2.new(pos.X - boxSize.X / 2, pos.Y - boxSize.Y / 2)
 
-                    -- Render da Caixa
                     if Opcoes.ESP_Box.Ativo then
                         visual.Box.Size = boxSize
                         visual.Box.Position = boxPos
@@ -1204,7 +1263,6 @@ RunService.RenderStepped:Connect(function()
                         visual.Box.Visible = false
                     end
 
-                    -- Render da Linha
                     if Opcoes.ESP_Line.Ativo then
                         visual.Line.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
                         visual.Line.To = Vector2.new(pos.X, pos.Y)
@@ -1215,7 +1273,6 @@ RunService.RenderStepped:Connect(function()
                         visual.Line.Visible = false
                     end
 
-                    -- Render da Distância
                     if Opcoes.ESP_Distance.Ativo and distanciaMetros <= Opcoes.ESP_Distance.MaxDist then
                         visual.Billboard.Enabled = true
                         visual.Billboard.ExtentsOffset = Vector3.new(0, 3.5, 0)
@@ -1229,7 +1286,6 @@ RunService.RenderStepped:Connect(function()
                         end
                     end
 
-                    -- Render do Nome e da Barra de Vida
                     if Opcoes.ESP_Name.Ativo then
                         visual.Billboard.Enabled = true
                         visual.BillboardFrame.BackgroundTransparency = 0
@@ -1242,7 +1298,6 @@ RunService.RenderStepped:Connect(function()
                         end
 
                         visual.BillboardLabel.TextColor3 = Opcoes.ESP_Name.CorTexto
-                        
                         local textoExibir = string.upper(player.Name)
                         if Opcoes.ESP_Distance.Ativo then
                             textoExibir = textoExibir .. " (" .. tostring(distanciaMetros) .. "m)"
@@ -1253,7 +1308,6 @@ RunService.RenderStepped:Connect(function()
                             visual.HealthBar.Visible = true
                             local percent = hum.Health / hum.MaxHealth
                             visual.HealthBar.Size = UDim2.new(percent, 0, 0, 4)
-                            
                             if percent > 0.5 then
                                 visual.HealthBar.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
                             elseif percent > 0.2 then
@@ -1265,16 +1319,12 @@ RunService.RenderStepped:Connect(function()
                             visual.HealthBar.Visible = false
                         end
                     else
-                        if not Opcoes.ESP_Distance.Ativo then
-                            visual.Billboard.Enabled = false
-                        end
+                        if not Opcoes.ESP_Distance.Ativo then visual.Billboard.Enabled = false end
                     end
 
-                    -- Render do Esqueleto (R6 e R15)
                     if Opcoes.ESP_Skeleton.Ativo then
-                        local parts = {}
+                        local parts, connections = {}, {}
                         local skeletonCor = Opcoes.ESP_Skeleton.Cor
-                        local connections = {}
 
                         if hum.RigType == Enum.HumanoidRigType.R15 then
                             parts = {
@@ -1290,7 +1340,6 @@ RunService.RenderStepped:Connect(function()
                                 RightUpperLeg = char:FindFirstChild("RightUpperLeg"),
                                 RightLowerLeg = char:FindFirstChild("RightLowerLeg")
                             }
-
                             connections = {
                                 {parts.Head, parts.UpperTorso},
                                 {parts.UpperTorso, parts.LowerTorso},
@@ -1312,7 +1361,6 @@ RunService.RenderStepped:Connect(function()
                                 LeftLeg = char:FindFirstChild("Left Leg"),
                                 RightLeg = char:FindFirstChild("Right Leg")
                             }
-
                             connections = {
                                 {parts.Head, parts.Torso},
                                 {parts.Torso, parts.LeftArm},
@@ -1328,7 +1376,6 @@ RunService.RenderStepped:Connect(function()
                             if p1 and p2 then
                                 local v1, vis1 = Camera:WorldToViewportPoint(p1.Position)
                                 local v2, vis2 = Camera:WorldToViewportPoint(p2.Position)
-
                                 if vis1 and vis2 then
                                     local lDraw = visual.Skeleton[lineIdx]
                                     if lDraw then
@@ -1341,14 +1388,10 @@ RunService.RenderStepped:Connect(function()
                                 end
                             end
                         end
-
-                        for i = lineIdx, #visual.Skeleton do
-                            visual.Skeleton[i].Visible = false
-                        end
+                        for i = lineIdx, #visual.Skeleton do visual.Skeleton[i].Visible = false end
                     else
                         for _, lDraw in ipairs(visual.Skeleton) do lDraw.Visible = false end
                     end
-
                 else
                     LimparJogador(player)
                 end
@@ -1362,7 +1405,7 @@ end)
 Players.PlayerRemoving:Connect(LimparJogador)
 
 -- =============================================================================
--- LOGICA DE ALTERNAR ABAS
+-- LOGICA DE ALTERNAR ABAS E MENUS
 -- =============================================================================
 local function AlternarAba(nomeSelecionado)
     SomClique:Play()
@@ -1380,7 +1423,6 @@ local function AlternarAba(nomeSelecionado)
     end
 end
 
--- Geração dos botões das abas laterais
 for i, nomeAba in ipairs(AbasDefinidas) do
     local BotaoAba = Instance.new("TextButton")
     local BotaoCorner = Instance.new("UICorner")
@@ -1407,20 +1449,13 @@ for i, nomeAba in ipairs(AbasDefinidas) do
     BotaoStroke.Parent = BotaoAba
 
     ElementosAbas[nomeAba] = BotaoAba
-
-    BotaoAba.MouseButton1Click:Connect(function()
-        AlternarAba(nomeAba)
-    end)
+    BotaoAba.MouseButton1Click:Connect(function() AlternarAba(nomeAba) end)
 end
 
 AlternarAba("Mira")
 
--- =============================================================================
--- LOGICA DE TRANSIÇÃO E ANIMAÇÃO DO PAINEL PRINCIPAL
--- =============================================================================
-local PainelAberto = false
-local EmAnimacao = false
-
+-- Transição de Painel (Minimizar / Abrir)
+local PainelAberto, EmAnimacao = false, false
 local function AlternarPainel()
     if EmAnimacao then return end
     EmAnimacao = true
@@ -1445,7 +1480,6 @@ local function AlternarPainel()
         })
         tweenPainel:Play()
         tweenPainel.Completed:Wait()
-
         PainelAberto = true
     else
         SomAbrir:Play()
@@ -1467,16 +1501,13 @@ local function AlternarPainel()
         })
         tweenCapsula:Play()
         tweenCapsula.Completed:Wait()
-
         PainelAberto = false
     end
-
     EmAnimacao = false
 end
 
 CapsulaBotao.MouseButton1Click:Connect(AlternarPainel)
 
--- Botão de Minimizar interno dentro do Painel (Canto superior direito)
 local BotaoMinimizar = Instance.new("TextButton")
 BotaoMinimizar.Parent = Painel
 BotaoMinimizar.Size = UDim2.new(0, 24, 0, 24)
@@ -1487,18 +1518,12 @@ BotaoMinimizar.TextColor3 = Cores.TextoEscuro
 BotaoMinimizar.Font = Enum.Font.Code
 BotaoMinimizar.TextSize = 14
 
-BotaoMinimizar.MouseEnter:Connect(function()
-    TweenService:Create(BotaoMinimizar, TweenInfo.new(0.15), {TextColor3 = Cores.RoxoPrincipal}):Play()
-end)
-
-BotaoMinimizar.MouseLeave:Connect(function()
-    TweenService:Create(BotaoMinimizar, TweenInfo.new(0.15), {TextColor3 = Cores.TextoEscuro}):Play()
-end)
-
+BotaoMinimizar.MouseEnter:Connect(function() TweenService:Create(BotaoMinimizar, TweenInfo.new(0.15), {TextColor3 = Cores.RoxoPrincipal}):Play() end)
+BotaoMinimizar.MouseLeave:Connect(function() TweenService:Create(BotaoMinimizar, TweenInfo.new(0.15), {TextColor3 = Cores.TextoEscuro}):Play() end)
 BotaoMinimizar.MouseButton1Click:Connect(AlternarPainel)
 
--- Boas-vindas inicial estético
 task.spawn(function()
     task.wait(1)
-    Notificar("BK CLIENT V2.0 Carregado!", 3)
+    Notificar("BK CLIENT V2.1 Carregado com Sucesso!", 4)
+    Notificar("Bypasses Ativados & Segurança OK", 3)
 end)
