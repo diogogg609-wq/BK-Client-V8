@@ -1,1545 +1,740 @@
--- =============================================================================
--- BK CLIENT V2.1 † - ANTI-DETECTION & FIXED INTERACTION EDITION
--- =============================================================================
+-- ========================================================
+-- BK CLIENT V4.5 † - EXECUTIVE PREMIUM (CLOUD SAVE UPDATE)
+-- Tema: Dark Cyber / Neon Purple Ultra | 100% Salve Automático
+-- ========================================================
 
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
+local SoundService = game:GetService("SoundService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local Stats = game:GetService("Stats")
 local HttpService = game:GetService("HttpService")
+local LocalPlayer = Players.LocalPlayer
 
--- [BYPASS] Encontra a pasta mais segura e oculta para injetar a interface
-local PastaSegura = nil
-local sucesso, erro = pcall(function()
-    PastaSegura = game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
-end)
-if not sucesso or not PastaSegura then
-    PastaSegura = LocalPlayer:WaitForChild("PlayerGui")
-end
+-- Proteção contra Duplicação
+local GuiName = "BKClient_V4_Premium"
+if CoreGui:FindFirstChild(GuiName) then CoreGui[GuiName]:Destroy() end
 
--- Limpa execuções anteriores para não acumular lixo na memória do jogo
-for _, child in ipairs(PastaSegura:GetChildren()) do
-    if child.Name:sub(1, 3) == "BK_" or child:FindFirstChild("Capsula_Invisivel") or child.Name == "Capsula_Invisivel" then
-        child:Destroy()
-    end
-end
+-- CORES DA PALETA CYBER VIP (PADRÃO INICIAL)
+local C_FundoBreu   = Color3.fromRGB(10, 10, 13)    
+local C_Painel     = Color3.fromRGB(16, 16, 22)    
+local C_Card       = Color3.fromRGB(24, 24, 32)    
+local C_RoxoNeon   = Color3.fromRGB(157, 38, 255)  -- Será sobrescrito pelo Save se existir
+local C_TextoClaro = Color3.fromRGB(245, 245, 250)
+local C_TextoEscuro = Color3.fromRGB(120, 120, 135)
 
--- =============================================================================
--- SISTEMA DE CONFIGURAÇÃO GLOBAL (MEMÓRIA CAMUFLADA)
--- =============================================================================
-local Opcoes = {
-    Aimbot = {Ativo = false, Parte = "Head", Forca = 5, AtrasParede = false},
-    FOV = {Ativo = false, Cor = Color3.fromRGB(120, 40, 200), Tamanho = 100},
-    ESP_Box = {Ativo = false, Cor = Color3.fromRGB(120, 40, 200)},
-    ESP_Line = {Ativo = false, Cor = Color3.fromRGB(240, 240, 240)},
-    ESP_Skeleton = {Ativo = false, Cor = Color3.fromRGB(120, 40, 200)},
-    ESP_Distance = {Ativo = false, Cor = Color3.fromRGB(240, 240, 240), MaxDist = 380},
-    ESP_Name = {Ativo = false, CorPainel = Color3.fromRGB(120, 40, 200), CorTexto = Color3.fromRGB(240, 240, 240), RGB = false},
-    ESP_Health = {Ativo = false},
-    Extras = {
-        SuperVelocidade = false,
-        VelocidadeValor = 16, 
-        SuperPulo = false,
-        PuloValor = 50
+-- INSTÂNCIA MÃE
+local ScreenGui = Instance.new("ScreenGui", CoreGui)
+ScreenGui.Name = GuiName
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- TABELA GLOBAL DE CONFIGURAÇÕES (O QUE SERÁ SALVO)
+local BK_Config = {
+    TemaCor = {157, 38, 255}, -- R, G, B
+    PainelAltura = 390,
+    Toggles = {
+        ["Chamber ESP Silhouette"] = false,
+        ["Streamer Mode Bypass"] = false,
+        ["Silent Aim Method"] = false
     }
 }
 
--- =============================================================================
--- [BYPASS MOTOR] EVASÃO FÍSICA SILENCIOSA (SEM ALTERAR VALORES DO ROBLOX)
--- =============================================================================
-local ConexaoMovimento = nil
-ConexaoMovimento = RunService.Heartbeat:Connect(function(deltaTime)
-    local char = LocalPlayer.Character
-    if char and char:FindFirstChild("Humanoid") and char:FindFirstChild("HumanoidRootPart") then
-        local root = char.HumanoidRootPart
-        local hum = char.Humanoid
-        
-        if Opcoes.Extras.SuperVelocidade and hum.MoveDirection.Magnitude > 0 then
-            local multiplicador = (Opcoes.Extras.VelocidadeValor - 16)
-            if multiplicador > 0 then
-                root.CFrame = root.CFrame + (hum.MoveDirection * (multiplicador * deltaTime))
-            end
+-- Arquivos de salvamento local no Executador
+local PastaSave = "BK_Client_Data"
+local ArquivoSave = PastaSave .. "/config_v4.json"
+
+-- Função para Salvar as Configurações
+local function SalvarConfiguracoes()
+    if writefile then
+        if makefolder then makefolder(PastaSave) end
+        local sucesso, textoJson = pcall(function()
+            return HttpService:JSONEncode(BK_Config)
+        end)
+        if sucesso then
+            writefile(ArquivoSave, textoJson)
         end
     end
-end)
+end
 
-local ConexaoPulo = nil
-ConexaoPulo = UserInputService.JumpRequest:Connect(function()
-    local char = LocalPlayer.Character
-    if char and char:FindFirstChild("Humanoid") and char:FindFirstChild("HumanoidRootPart") then
-        local hum = char.Humanoid
-        local root = char.HumanoidRootPart
-        
-        if Opcoes.Extras.SuperPulo and (hum:GetState() == Enum.HumanoidStateType.Running or hum:GetState() == Enum.HumanoidStateType.RunningNoPhysics) then
-            task.spawn(function()
-                root.AssemblyLinearVelocity = Vector3.new(root.AssemblyLinearVelocity.X, Opcoes.Extras.PuloValor, root.AssemblyLinearVelocity.Z)
-            end)
+-- Tabela de elementos para mudança dinâmica de cor
+local ElementosColoridos = {}
+
+local function RegistrarElementoColorido(instancia, propriedade)
+    table.insert(ElementosColoridos, {Inst = instancia, Prop = propriedade})
+end
+
+local function MudarCorTema(novaCor, evitarSalvar)
+    C_RoxoNeon = novaCor
+    for _, dado in ipairs(ElementosColoridos) do
+        if dado.Inst and dado.Inst.Parent then
+            dado.Inst[dado.Prop] = novaCor
         end
     end
-end)
+    if not evitarSalvar then
+        BK_Config.TemaCor = {math.floor(novaCor.R * 255), math.floor(novaCor.G * 255), math.floor(novaCor.B * 255)}
+        SalvarConfiguracoes()
+    end
+end
 
--- =============================================================================
--- ESTRUTURA VISUAL DA INTERFACE (NOME DINÂMICO PARA EVITAR VARREDURAS)
--- =============================================================================
-local BK_Client_V2 = Instance.new("ScreenGui")
-BK_Client_V2.Name = "BK_" .. HttpService:GenerateGUID(false):gsub("-", ""):sub(1, 10)
-BK_Client_V2.Parent = PastaSegura
-BK_Client_V2.ResetOnSpawn = false
-
-local Cores = {
-    FundoPrincipal = Color3.fromRGB(15, 15, 15),
-    FundoLateral = Color3.fromRGB(10, 10, 10),
-    RoxoPrincipal = Color3.fromRGB(120, 40, 200),
-    RoxoEscuro = Color3.fromRGB(60, 20, 100),
-    TextoClaro = Color3.fromRGB(240, 240, 240),
-    TextoEscuro = Color3.fromRGB(140, 140, 140),
-    Borda = Color3.fromRGB(30, 30, 30),
-    VerdeStatus = Color3.fromRGB(46, 204, 113)
-}
-
-local SomClique = Instance.new("Sound")
-SomClique.SoundId = "rbxassetid://6895079853"
-SomClique.Volume = 0.3
-SomClique.Parent = BK_Client_V2
-
-local SomAbrir = Instance.new("Sound")
-SomAbrir.SoundId = "rbxassetid://9114223165"
-SomAbrir.Volume = 0.3
-SomAbrir.Parent = BK_Client_V2
-
-local ElementosVisuais = {}
-local CirculoFOV = Drawing.new("Circle")
-CirculoFOV.Thickness = 1.5
-CirculoFOV.Filled = false
-CirculoFOV.Visible = false
-
--- =============================================================================
--- SISTEMA DE NOTIFICAÇÕES (BK System Notify)
--- =============================================================================
-local NotificationContainer = Instance.new("Frame")
+-- CONTAINER PARA NOTIFICAÇÕES
+local NotificationContainer = Instance.new("Frame", ScreenGui)
 NotificationContainer.Name = "NotificationContainer"
-NotificationContainer.Parent = BK_Client_V2
-NotificationContainer.Size = UDim2.new(0, 280, 1, 0)
-NotificationContainer.Position = UDim2.new(1, -290, 0, 0)
+NotificationContainer.Size = UDim2.new(0, 260, 1, -20)
+NotificationContainer.Position = UDim2.new(0, 15, 0, 10)
 NotificationContainer.BackgroundTransparency = 1
 
-local NotificationLayout = Instance.new("UIListLayout")
-NotificationLayout.Parent = NotificationContainer
-NotificationLayout.SortOrder = Enum.SortOrder.LayoutOrder
-NotificationLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
-NotificationLayout.Padding = UDim.new(0, 10)
+local NotifLayout = Instance.new("UIListLayout", NotificationContainer)
+NotifLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+NotifLayout.Padding = UDim.new(0, 8)
 
-local function Notificar(mensagem, duracao)
-    duracao = duracao or 3.5
-    task.spawn(function()
-        pcall(function() SomAbrir:Play() end)
-    end)
-
-    local Card = Instance.new("Frame")
-    local CardCorner = Instance.new("UICorner")
-    local CardStroke = Instance.new("UIStroke")
-    local Texto = Instance.new("TextLabel")
-    local BarraProgresso = Instance.new("Frame")
-
-    Card.Name = "Notif"
-    Card.Size = UDim2.new(1, 0, 0, 50)
-    Card.BackgroundColor3 = Cores.FundoLateral
-    Card.BorderSizePixel = 0
-    Card.BackgroundTransparency = 1
-    Card.ClipsDescendants = true
-    Card.Parent = NotificationContainer
-
-    CardCorner.CornerRadius = UDim.new(0, 6)
-    CardCorner.Parent = Card
-
-    CardStroke.Thickness = 1.2
-    CardStroke.Color = Cores.RoxoPrincipal
-    CardStroke.Transparency = 1
-    CardStroke.Parent = Card
-
-    Texto.Parent = Card
-    Texto.Size = UDim2.new(1, -20, 1, -6)
-    Texto.Position = UDim2.new(0, 10, 0, 0)
-    Texto.BackgroundTransparency = 1
-    Texto.Text = "[BK CLIENT] " .. mensagem
-    Texto.TextColor3 = Cores.TextoClaro
-    Texto.Font = Enum.Font.Code
-    Texto.TextSize = 11
-    Texto.TextXAlignment = Enum.TextXAlignment.Left
-    Texto.TextWrapped = true
-    Texto.TextTransparency = 1
-
-    BarraProgresso.Parent = Card
-    BarraProgresso.Size = UDim2.new(1, 0, 0, 3)
-    BarraProgresso.Position = UDim2.new(0, 0, 1, -3)
-    BarraProgresso.BackgroundColor3 = Cores.RoxoPrincipal
-    BarraProgresso.BorderSizePixel = 0
-    BarraProgresso.BackgroundTransparency = 1
-
-    TweenService:Create(Card, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {BackgroundTransparency = 0}):Play()
-    TweenService:Create(CardStroke, TweenInfo.new(0.35), {Transparency = 0}):Play()
-    TweenService:Create(Texto, TweenInfo.new(0.35), {TextTransparency = 0}):Play()
-    TweenService:Create(BarraProgresso, TweenInfo.new(0.35), {BackgroundTransparency = 0}):Play()
-
-    local animTime = TweenService:Create(BarraProgresso, TweenInfo.new(duracao, Enum.EasingStyle.Linear), {Size = UDim2.new(0, 0, 0, 3)})
-    animTime:Play()
-
-    task.delay(duracao, function()
-        local sumir = TweenService:Create(Card, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0)})
-        TweenService:Create(CardStroke, TweenInfo.new(0.25), {Transparency = 1}):Play()
-        TweenService:Create(Texto, TweenInfo.new(0.25), {TextTransparency = 1}):Play()
-        TweenService:Create(BarraProgresso, TweenInfo.new(0.25), {BackgroundTransparency = 1}):Play()
-        sumir:Play()
-        sumir.Completed:Wait()
-        Card:Destroy()
-    end)
-end
-
--- =============================================================================
--- NOVO MOTOR DE ARRASTAR (DRAG) ULTRA COMPATÍVEL E FLUIDO
--- =============================================================================
-local function HabilitarArrastar(gui)
-    local dragging = false
-    local dragInput
-    local dragStart
-    local startPos
-
-    local function update(input)
-        local delta = input.Position - dragStart
-        gui.Position = UDim2.new(
-            startPos.X.Scale, 
-            startPos.X.Offset + delta.X, 
-            startPos.Y.Scale, 
-            startPos.Y.Offset + delta.Y
-        )
-    end
-
-    gui.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = gui.Position
-            
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
-        end
-    end)
-
-    gui.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            update(input)
-        end
-    end)
-end
-
--- =============================================================================
--- CÁPSULA FLUTUANTE (DESIGN CORRIGIDO E SEM TRAVAMENTOS)
--- =============================================================================
-local Capsula = Instance.new("Frame")
-local CapsulaCorner = Instance.new("UICorner")
-local CapsulaStroke = Instance.new("UIStroke")
-local CapsulaBotao = Instance.new("TextButton")
-
-Capsula.Name = "Capsula_Invisivel"
-Capsula.Parent = BK_Client_V2
-Capsula.Size = UDim2.new(0, 160, 0, 38)
-Capsula.Position = UDim2.new(0.1, 0, 0.1, 0)
-Capsula.BackgroundColor3 = Cores.FundoPrincipal
-Capsula.BorderSizePixel = 0
-Capsula.ClipsDescendants = true
-Capsula.Active = true
-
-CapsulaCorner.CornerRadius = UDim.new(0.5, 0)
-CapsulaCorner.Parent = Capsula
-
-CapsulaStroke.Color = Cores.RoxoPrincipal
-CapsulaStroke.Thickness = 1.5
-CapsulaStroke.Parent = Capsula
-
-CapsulaBotao.Name = "Botao"
-CapsulaBotao.Parent = Capsula
-CapsulaBotao.Size = UDim2.new(1, 0, 1, 0)
-CapsulaBotao.BackgroundTransparency = 1
-CapsulaBotao.Text = "BK CLIENT V2.1 †"
-CapsulaBotao.TextColor3 = Cores.TextoClaro
-CapsulaBotao.Font = Enum.Font.Code
-CapsulaBotao.TextSize = 12
-CapsulaBotao.Active = true
-
--- Habilita o movimento de arrastar na cápsula inteira
-HabilitarArrastar(Capsula)
-
--- =============================================================================
--- PAINEL PRINCIPAL (Design Atualizado)
--- =============================================================================
-local Painel = Instance.new("Frame")
-local PainelCorner = Instance.new("UICorner")
-local PainelStroke = Instance.new("UIStroke")
-local BarraLateral = Instance.new("Frame")
-local LateralCorner = Instance.new("UICorner")
-local AreaConteudo = Instance.new("Frame")
-
-Painel.Name = "Painel"
-Painel.Parent = BK_Client_V2
-Painel.Size = UDim2.new(0, 580, 0, 360)
-Painel.Position = UDim2.new(0.5, -290, 0.5, -180)
-Painel.BackgroundColor3 = Cores.FundoPrincipal
-Painel.BorderSizePixel = 0
-Painel.Visible = false
-HabilitarArrastar(Painel)
-
-PainelCorner.CornerRadius = UDim.new(0, 10)
-PainelCorner.Parent = Painel
-
-PainelStroke.Color = Cores.Borda
-PainelStroke.Thickness = 1.2
-PainelStroke.Parent = Painel
-
-BarraLateral.Name = "BarraLateral"
-BarraLateral.Parent = Painel
-BarraLateral.Size = UDim2.new(0, 160, 1, 0)
-BarraLateral.BackgroundColor3 = Cores.FundoLateral
-BarraLateral.BorderSizePixel = 0
-
-LateralCorner.CornerRadius = UDim.new(0, 10)
-LateralCorner.Parent = BarraLateral
-
-local FlatPatch = Instance.new("Frame")
-FlatPatch.Size = UDim2.new(0, 10, 1, 0)
-FlatPatch.Position = UDim2.new(1, -10, 0, 0)
-FlatPatch.BackgroundColor3 = Cores.FundoLateral
-FlatPatch.BorderSizePixel = 0
-FlatPatch.Parent = BarraLateral
-
-local DivisorVertical = Instance.new("Frame")
-DivisorVertical.Size = UDim2.new(0, 1, 1, 0)
-DivisorVertical.Position = UDim2.new(1, 0, 0, 0)
-DivisorVertical.BackgroundColor3 = Cores.Borda
-DivisorVertical.BorderSizePixel = 0
-DivisorVertical.Parent = BarraLateral
-
-AreaConteudo.Name = "AreaConteudo"
-AreaConteudo.Parent = Painel
-AreaConteudo.Size = UDim2.new(1, -160, 1, 0)
-AreaConteudo.Position = UDim2.new(0, 160, 0, 0)
-AreaConteudo.BackgroundTransparency = 1
-
--- =============================================================================
--- PERFIL DO JOGADOR
--- =============================================================================
-local ContainerPerfil = Instance.new("Frame")
-local FotoPerfil = Instance.new("ImageLabel")
-local FotoCorner = Instance.new("UICorner")
-local InfoPerfil = Instance.new("Frame")
-local NomeJogador = Instance.new("TextLabel")
-local MarcaStatus = Instance.new("TextLabel")
-
-ContainerPerfil.Name = "ContainerPerfil"
-ContainerPerfil.Parent = BarraLateral
-ContainerPerfil.Size = UDim2.new(1, 0, 0, 60)
-ContainerPerfil.Position = UDim2.new(0, 0, 0, 15)
-ContainerPerfil.BackgroundTransparency = 1
-
-FotoPerfil.Name = "FotoPerfil"
-FotoPerfil.Parent = ContainerPerfil
-FotoPerfil.Size = UDim2.new(0, 36, 0, 36)
-FotoPerfil.Position = UDim2.new(0, 15, 0.5, -18)
-pcall(function()
-    FotoPerfil.Image = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
-end)
-FotoPerfil.BackgroundColor3 = Cores.FundoPrincipal
-
-FotoCorner.CornerRadius = UDim.new(1, 0)
-FotoCorner.Parent = FotoPerfil
-
-InfoPerfil.Name = "Info"
-InfoPerfil.Parent = ContainerPerfil
-InfoPerfil.Size = UDim2.new(1, -65, 1, 0)
-InfoPerfil.Position = UDim2.new(0, 60, 0, 0)
-InfoPerfil.BackgroundTransparency = 1
-
-NomeJogador.Name = "Nome"
-NomeJogador.Parent = InfoPerfil
-NomeJogador.Size = UDim2.new(1, 0, 0.5, 0)
-NomeJogador.Position = UDim2.new(0, 0, 0.1, 0)
-NomeJogador.BackgroundTransparency = 1
-NomeJogador.Text = string.upper(LocalPlayer.Name)
-NomeJogador.TextColor3 = Cores.TextoClaro
-NomeJogador.Font = Enum.Font.Code
-NomeJogador.TextSize = 12
-NomeJogador.TextXAlignment = Enum.TextXAlignment.Left
-
-MarcaStatus.Name = "Marca"
-MarcaStatus.Parent = InfoPerfil
-MarcaStatus.Size = UDim2.new(1, 0, 0.5, 0)
-MarcaStatus.Position = UDim2.new(0, 0, 0.5, 0)
-MarcaStatus.BackgroundTransparency = 1
-MarcaStatus.Text = "SECURE ENGINE"
-MarcaStatus.TextColor3 = Cores.VerdeStatus
-MarcaStatus.Font = Enum.Font.Code
-MarcaStatus.TextSize = 9
-MarcaStatus.TextXAlignment = Enum.TextXAlignment.Left
-
-local SeparadorPerfil = Instance.new("Frame")
-SeparadorPerfil.Size = UDim2.new(1, -30, 0, 1)
-SeparadorPerfil.Position = UDim2.new(0, 15, 0, 85)
-SeparadorPerfil.BackgroundColor3 = Cores.Borda
-SeparadorPerfil.BorderSizePixel = 0
-SeparadorPerfil.Parent = BarraLateral
-
--- =============================================================================
--- ESTRUTURA DE ABAS
--- =============================================================================
-local ContainerBotoes = Instance.new("Frame")
-local LayoutBotoes = Instance.new("UIListLayout")
-
-ContainerBotoes.Name = "ContainerBotoes"
-ContainerBotoes.Parent = BarraLateral
-ContainerBotoes.Size = UDim2.new(1, -20, 1, -110)
-ContainerBotoes.Position = UDim2.new(0, 10, 0, 100)
-ContainerBotoes.BackgroundTransparency = 1
-
-LayoutBotoes.Parent = ContainerBotoes
-LayoutBotoes.SortOrder = Enum.SortOrder.LayoutOrder
-LayoutBotoes.Padding = UDim.new(0, 6)
-
-local AbasDefinidas = {"Mira", "Visual", "Extras", "Status"}
-local ElementosAbas = {}
-local PaginasInstanciadas = {}
-
-for _, nomeAba in ipairs(AbasDefinidas) do
-    local Pagina = Instance.new("Frame")
-    Pagina.Name = "Pagina_" .. nomeAba
-    Pagina.Parent = AreaConteudo
-    Pagina.Size = UDim2.new(1, 0, 1, 0)
-    Pagina.BackgroundTransparency = 1
-    Pagina.Visible = false
+local function EnviarNotificacao(titulo, status)
+    local NotifFrame = Instance.new("Frame", NotificationContainer)
+    NotifFrame.Size = UDim2.new(1, 0, 0, 45)
+    NotifFrame.BackgroundColor3 = C_FundoBreu
+    Instance.new("UICorner", NotifFrame).CornerRadius = UDim.new(0, 4)
     
-    local TituloPagina = Instance.new("TextLabel")
-    TituloPagina.Parent = Pagina
-    TituloPagina.Size = UDim2.new(1, -30, 0, 40)
-    TituloPagina.Position = UDim2.new(0, 20, 0, 20)
-    TituloPagina.BackgroundTransparency = 1
-    TituloPagina.Text = string.upper(nomeAba)
-    TituloPagina.TextColor3 = Cores.TextoClaro
-    TituloPagina.Font = Enum.Font.Code
-    TituloPagina.TextSize = 16
-    TituloPagina.TextXAlignment = Enum.TextXAlignment.Left
-    
-    local Sublinha = Instance.new("Frame")
-    Sublinha.Size = UDim2.new(0, 30, 0, 2)
-    Sublinha.Position = UDim2.new(0, 20, 0, 55)
-    Sublinha.BackgroundColor3 = Cores.RoxoPrincipal
-    Sublinha.BorderSizePixel = 0
-    Sublinha.Parent = Pagina
+    local NStroke = Instance.new("UIStroke", NotifFrame)
+    NStroke.Color = C_RoxoNeon
+    RegistrarElementoColorido(NStroke, "Color")
+    NStroke.Thickness = 1
 
-    PaginasInstanciadas[nomeAba] = Pagina
-end
+    local NText = Instance.new("TextLabel", NotifFrame)
+    NText.Size = UDim2.new(1, -20, 1, 0)
+    NText.Position = UDim2.new(0, 10, 0, 0)
+    NText.BackgroundTransparency = 1
+    NText.Font = Enum.Font.GothamBold
+    NText.Text = string.format("[BK CLIENT] %s: <font color='rgb(245,245,250)'>%s</font>", titulo, status)
+    NText.RichText = true
+    NText.TextColor3 = C_TextoClaro
+    NText.TextSize = 12
+    NText.TextXAlignment = Enum.TextXAlignment.Left
 
--- =============================================================================
--- GERADOR DE MINI PAINÉIS DE CONFIGURAÇÕES
--- =============================================================================
-local function CriarPainelConfiguracao(titulo, salvarCallback, extraComponentesCallback)
-    local MiniPainel = Instance.new("Frame")
-    local Corner = Instance.new("UICorner")
-    local Stroke = Instance.new("UIStroke")
-    local Header = Instance.new("TextLabel")
-    local Fechar = Instance.new("TextButton")
-    local Container = Instance.new("Frame")
-    local Layout = Instance.new("UIListLayout")
-    local BotaoSalvar = Instance.new("TextButton")
-    local SalvarCorner = Instance.new("UICorner")
-
-    MiniPainel.Name = "Config_" .. titulo
-    MiniPainel.Size = UDim2.new(0, 220, 0, 180)
-    MiniPainel.Position = UDim2.new(1, 10, 0, 20)
-    MiniPainel.BackgroundColor3 = Cores.FundoPrincipal
-    MiniPainel.BorderSizePixel = 0
-    MiniPainel.Visible = false
-    MiniPainel.Parent = Painel
-    HabilitarArrastar(MiniPainel)
-
-    Corner.CornerRadius = UDim.new(0, 8)
-    Corner.Parent = MiniPainel
-
-    Stroke.Thickness = 1.2
-    Stroke.Color = Cores.RoxoPrincipal
-    Stroke.Parent = MiniPainel
-
-    Header.Size = UDim2.new(1, -30, 0, 30)
-    Header.Position = UDim2.new(0, 10, 0, 0)
-    Header.BackgroundTransparency = 1
-    Header.Text = string.upper(titulo)
-    Header.TextColor3 = Cores.TextoClaro
-    Header.Font = Enum.Font.Code
-    Header.TextSize = 11
-    Header.TextXAlignment = Enum.TextXAlignment.Left
-    Header.Parent = MiniPainel
-
-    Fechar.Size = UDim2.new(0, 24, 0, 24)
-    Fechar.Position = UDim2.new(1, -26, 0, 3)
-    Fechar.BackgroundTransparency = 1
-    Fechar.Text = "×"
-    Fechar.TextColor3 = Cores.TextoEscuro
-    Fechar.Font = Enum.Font.Code
-    Fechar.TextSize = 16
-    Fechar.Parent = MiniPainel
-    Fechar.MouseButton1Click:Connect(function() MiniPainel.Visible = false end)
-
-    Container.Size = UDim2.new(1, -20, 1, -75)
-    Container.Position = UDim2.new(0, 10, 0, 35)
-    Container.BackgroundTransparency = 1
-    Container.Parent = MiniPainel
-
-    Layout.Parent = Container
-    Layout.SortOrder = Enum.SortOrder.LayoutOrder
-    Layout.Padding = UDim.new(0, 6)
-
-    BotaoSalvar.Size = UDim2.new(1, 0, 0, 28)
-    BotaoSalvar.Position = UDim2.new(0, 10, 1, -38)
-    BotaoSalvar.BackgroundColor3 = Cores.RoxoEscuro
-    BotaoSalvar.BorderSizePixel = 0
-    BotaoSalvar.Text = "SALVAR CONFIG"
-    BotaoSalvar.TextColor3 = Cores.TextoClaro
-    BotaoSalvar.Font = Enum.Font.Code
-    BotaoSalvar.TextSize = 11
-    BotaoSalvar.Parent = MiniPainel
-
-    SalvarCorner.CornerRadius = UDim.new(0, 4)
-    SalvarCorner.Parent = BotaoSalvar
-
-    BotaoSalvar.MouseButton1Click:Connect(function()
-        SomClique:Play()
-        if salvarCallback then salvarCallback() end
-        MiniPainel.Visible = false
-        Notificar("Configurações aplicadas!", 2)
-    end)
-
-    if extraComponentesCallback then extraComponentesCallback(Container) end
-    return MiniPainel
-end
-
--- =============================================================================
--- SELETORES E SLIDERS AUXILIARES
--- =============================================================================
-local function AdicionarSeletorCores(parent, labelText, getCor, setCor)
-    local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(1, 0, 0, 15)
-    Label.BackgroundTransparency = 1
-    Label.Text = labelText
-    Label.TextColor3 = Cores.TextoEscuro
-    Label.Font = Enum.Font.Code
-    Label.TextSize = 10
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = parent
-
-    local ContainerPaleta = Instance.new("Frame")
-    ContainerPaleta.Size = UDim2.new(1, 0, 0, 24)
-    ContainerPaleta.BackgroundTransparency = 1
-    ContainerPaleta.Parent = parent
-
-    local LayoutPaleta = Instance.new("UIListLayout")
-    LayoutPaleta.FillDirection = Enum.FillDirection.Horizontal
-    LayoutPaleta.SortOrder = Enum.SortOrder.LayoutOrder
-    LayoutPaleta.Padding = UDim.new(0, 4)
-    LayoutPaleta.Parent = ContainerPaleta
-
-    local CoresSeletor = {
-        Color3.fromRGB(120, 40, 200),
-        Color3.fromRGB(231, 76, 60),
-        Color3.fromRGB(46, 204, 113),
-        Color3.fromRGB(52, 152, 219),
-        Color3.fromRGB(241, 196, 15),
-        Color3.fromRGB(255, 255, 255)
-    }
-
-    for _, cor in ipairs(CoresSeletor) do
-        local BotaoCor = Instance.new("TextButton")
-        local BotaoCorner = Instance.new("UICorner")
-        local BotaoStroke = Instance.new("UIStroke")
-
-        BotaoCor.Size = UDim2.new(0, 22, 1, 0)
-        BotaoCor.BackgroundColor3 = cor
-        BotaoCor.BorderSizePixel = 0
-        BotaoCor.Text = ""
-        BotaoCor.Parent = ContainerPaleta
-
-        BotaoCorner.CornerRadius = UDim.new(0, 4)
-        BotaoCorner.Parent = BotaoCor
-
-        BotaoStroke.Thickness = 1
-        BotaoStroke.Color = Cores.Borda
-        BotaoStroke.Parent = BotaoCor
-
-        BotaoCor.MouseButton1Click:Connect(function()
-            setCor(cor)
-            Notificar("Cor aplicada!", 1)
-        end)
-    end
-end
-
-local function AdicionarSlider(parent, labelText, min, max, defaultVal, callback)
-    local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(1, 0, 0, 15)
-    Label.BackgroundTransparency = 1
-    Label.Text = labelText .. ": " .. tostring(defaultVal)
-    Label.TextColor3 = Cores.TextoEscuro
-    Label.Font = Enum.Font.Code
-    Label.TextSize = 10
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = parent
-
-    local SliderFrame = Instance.new("Frame")
-    local Bar = Instance.new("Frame")
-    local Fill = Instance.new("Frame")
-    local Trigger = Instance.new("TextButton")
-    local Corner = Instance.new("UICorner")
-
-    SliderFrame.Size = UDim2.new(1, 0, 0, 18)
-    SliderFrame.BackgroundTransparency = 1
-    SliderFrame.Parent = parent
-
-    Bar.Size = UDim2.new(1, 0, 0, 6)
-    Bar.Position = UDim2.new(0, 0, 0.5, -3)
-    Bar.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
-    Bar.BorderSizePixel = 0
-    Bar.Parent = SliderFrame
-
-    Corner.CornerRadius = UDim.new(0.5, 0)
-    Corner.Parent = Bar
-
-    Fill.Size = UDim2.new((defaultVal - min) / (max - min), 0, 1, 0)
-    Fill.BackgroundColor3 = Cores.RoxoPrincipal
-    Fill.BorderSizePixel = 0
-    Fill.Parent = Bar
-
-    Trigger.Size = UDim2.new(1, 0, 1, 0)
-    Trigger.BackgroundTransparency = 1
-    Trigger.Text = ""
-    Trigger.Parent = SliderFrame
-
-    local function UpdateVal(input)
-        local scale = math.clamp((input.Position.X - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
-        Fill.Size = UDim2.new(scale, 0, 1, 0)
-        local val = math.round(min + (scale * (max - min)))
-        Label.Text = labelText .. ": " .. tostring(val)
-        callback(val)
-    end
-
-    local segurando = false
-    Trigger.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            segurando = true
-            UpdateVal(input)
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if segurando and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            UpdateVal(input)
-        end
-    end)
-
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            segurando = false
+    task.delay(3, function()
+        if NotifFrame and NotifFrame.Parent then
+            local t = TweenService:Create(NotifFrame, TweenInfo.new(0.3), {BackgroundTransparency = 1})
+            TweenService:Create(NStroke, TweenInfo.new(0.3), {Transparency = 1}):Play()
+            TweenService:Create(NText, TweenInfo.new(0.3), {TextTransparency = 1}):Play()
+            t:Play()
+            t.Completed:Connect(function() NotifFrame:Destroy() end)
         end
     end)
 end
 
--- =============================================================================
--- GERADOR DE ENTRADA DO MÓDULO (Toggle Switch)
--- =============================================================================
-local function CriarLinhaModulo(parent, titulo, configRef, layoutOrder, temConfig, customConfigCallback)
-    local Frame = Instance.new("Frame")
-    local Corner = Instance.new("UICorner")
-    local Stroke = Instance.new("UIStroke")
-    local Label = Instance.new("TextLabel")
-    local ControlGroup = Instance.new("Frame")
-
-    Frame.Name = "Mod_" .. titulo
-    Frame.Size = UDim2.new(1, -10, 0, 44)
-    Frame.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
-    Frame.BorderSizePixel = 0
-    Frame.LayoutOrder = layoutOrder
-    Frame.Parent = parent
-
-    Corner.CornerRadius = UDim.new(0, 6)
-    Corner.Parent = Frame
-
-    Stroke.Thickness = 1
-    Stroke.Color = Cores.Borda
-    Stroke.Parent = Frame
-
-    Label.Size = UDim2.new(0.5, 0, 1, 0)
-    Label.Position = UDim2.new(0, 15, 0, 0)
-    Label.BackgroundTransparency = 1
-    Label.Text = string.upper(titulo)
-    Label.TextColor3 = Cores.TextoClaro
-    Label.Font = Enum.Font.Code
-    Label.TextSize = 11
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = Frame
-
-    ControlGroup.Size = UDim2.new(0.5, -15, 1, 0)
-    ControlGroup.Position = UDim2.new(0.5, 0, 0, 0)
-    ControlGroup.BackgroundTransparency = 1
-    ControlGroup.Parent = Frame
-
-    local LayoutControle = Instance.new("UIListLayout")
-    LayoutControle.FillDirection = Enum.FillDirection.Horizontal
-    LayoutControle.HorizontalAlignment = Enum.HorizontalAlignment.Right
-    LayoutControle.VerticalAlignment = Enum.VerticalAlignment.Center
-    LayoutControle.Padding = UDim.new(0, 8)
-    LayoutControle.Parent = ControlGroup
-
-    local Switch = Instance.new("TextButton")
-    local SwitchCorner = Instance.new("UICorner")
-    local SwitchStroke = Instance.new("UIStroke")
-    local Knob = Instance.new("Frame")
-    local KnobCorner = Instance.new("UICorner")
-
-    Switch.Size = UDim2.new(0, 42, 0, 22)
-    Switch.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
-    Switch.BorderSizePixel = 0
-    Switch.Text = ""
-    Switch.Parent = ControlGroup
-
-    SwitchCorner.CornerRadius = UDim.new(0.5, 0)
-    SwitchCorner.Parent = Switch
-
-    SwitchStroke.Thickness = 1
-    SwitchStroke.Color = Cores.Borda
-    SwitchStroke.Parent = Switch
-
-    Knob.Size = UDim2.new(0, 16, 0, 16)
-    Knob.Position = UDim2.new(0, 3, 0.5, -8)
-    Knob.BackgroundColor3 = Cores.TextoEscuro
-    Knob.BorderSizePixel = 0
-    Knob.Parent = Switch
-
-    KnobCorner.CornerRadius = UDim.new(0.5, 0)
-    KnobCorner.Parent = Knob
-
-    local function RenderSwitch(anim)
-        local targetPos = configRef.Ativo and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)
-        local targetColor = configRef.Ativo and Cores.RoxoPrincipal or Color3.fromRGB(24, 24, 24)
-        local targetKnob = configRef.Ativo and Cores.TextoClaro or Cores.TextoEscuro
-
-        if anim then
-            TweenService:Create(Knob, TweenInfo.new(0.18, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = targetPos, BackgroundColor3 = targetKnob}):Play()
-            TweenService:Create(Switch, TweenInfo.new(0.18), {BackgroundColor3 = targetColor}):Play()
-        else
-            Knob.Position = targetPos
-            Knob.BackgroundColor3 = targetKnob
-            Switch.BackgroundColor3 = targetColor
-        end
-    end
-
-    Switch.MouseButton1Click:Connect(function()
-        SomClique:Play()
-        configRef.Ativo = not configRef.Ativo
-        RenderSwitch(true)
-        Notificar(titulo .. " " .. (configRef.Ativo and "Ativado" or "Desativado"), 2)
-    end)
-
-    RenderSwitch(false)
-
-    if temConfig and customConfigCallback then
-        local ConfigBtn = Instance.new("TextButton")
-        local ConfigCorner = Instance.new("UICorner")
-        local ConfigStroke = Instance.new("UIStroke")
-
-        ConfigBtn.Size = UDim2.new(0, 26, 0, 26)
-        ConfigBtn.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
-        ConfigBtn.BorderSizePixel = 0
-        ConfigBtn.Text = "≡"
-        ConfigBtn.TextColor3 = Cores.TextoClaro
-        ConfigBtn.Font = Enum.Font.Code
-        ConfigBtn.TextSize = 13
-        ConfigBtn.Parent = ControlGroup
-
-        ConfigCorner.CornerRadius = UDim.new(0, 4)
-        ConfigCorner.Parent = ConfigBtn
-
-        ConfigStroke.Thickness = 1
-        ConfigStroke.Color = Cores.Borda
-        ConfigStroke.Parent = ConfigBtn
-
-        local PainelCustom = customConfigCallback()
-
-        ConfigBtn.MouseButton1Click:Connect(function()
-            SomClique:Play()
-            PainelCustom.Visible = not PainelCustom.Visible
-        end)
-    end
+-- SISTEMA DE AUDIO PREMIUM
+local function playSound(id, vol, pitch)
+    local s = Instance.new("Sound", SoundService)
+    s.SoundId = "rbxassetid://" .. id
+    s.Volume = vol or 1
+    s.PlaybackSpeed = pitch or 1
+    s:Play()
+    s.Ended:Connect(function() s:Destroy() end)
 end
 
--- =============================================================================
--- INTERFACE DE CADA ABA DO MENU
--- =============================================================================
+local function somClick() playSound("6895086653", 0.6, 1.2) end
+local function somHover() playSound("6895063231", 0.15, 1.5) end
 
--- ----------------- ABA 1: MIRA -----------------
-local PaginaMira = PaginasInstanciadas["Mira"]
-local MiraScroll = Instance.new("ScrollingFrame")
-MiraScroll.Size = UDim2.new(1, -20, 1, -80)
-MiraScroll.Position = UDim2.new(0, 10, 0, 70)
-MiraScroll.BackgroundTransparency = 1
-MiraScroll.BorderSizePixel = 0
-MiraScroll.CanvasSize = UDim2.new(0, 0, 0, 300)
-MiraScroll.ScrollBarThickness = 3
-MiraScroll.ScrollBarImageColor3 = Cores.RoxoPrincipal
-MiraScroll.Parent = PaginaMira
+-- MARCA D'ÁGUA PREMIUM (WATERMARK FPS/PING)
+local Watermark = Instance.new("Frame", ScreenGui)
+Watermark.Name = "Watermark"
+Watermark.Size = UDim2.new(0, 240, 0, 26)
+Watermark.Position = UDim2.new(1, -255, 0, 15)
+Watermark.BackgroundColor3 = C_FundoBreu
+Watermark.ZIndex = 8
 
-local MiraLayout = Instance.new("UIListLayout")
-MiraLayout.SortOrder = Enum.SortOrder.LayoutOrder
-MiraLayout.Padding = UDim.new(0, 8)
-MiraLayout.Parent = MiraScroll
+local WCorner = Instance.new("UICorner", Watermark)
+WCorner.CornerRadius = UDim.new(0, 4)
+local WStroke = Instance.new("UIStroke", Watermark)
+WStroke.Color = C_RoxoNeon
+RegistrarElementoColorido(WStroke, "Color")
+WStroke.Thickness = 1
 
-local PainelAimbot = CriarPainelConfiguracao("Aimbot Config", nil, function(parent)
-    local BtnParte = Instance.new("TextButton")
-    local Corner = Instance.new("UICorner")
-    BtnParte.Size = UDim2.new(1, 0, 0, 24)
-    BtnParte.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
-    BtnParte.Text = "ALVO: CABEÇA"
-    BtnParte.TextColor3 = Cores.TextoClaro
-    BtnParte.Font = Enum.Font.Code
-    BtnParte.TextSize = 10
-    BtnParte.Parent = parent
-    Corner.CornerRadius = UDim.new(0, 4)
-    Corner.Parent = BtnParte
+local WLabel = Instance.new("TextLabel", Watermark)
+WLabel.Size = UDim2.new(1, 0, 1, 0)
+WLabel.BackgroundTransparency = 1
+WLabel.Font = Enum.Font.GothamBold
+WLabel.Text = "BK CLIENT V4.5 | FPS: -- | PING: --ms"
+WLabel.TextColor3 = C_TextoClaro
+WLabel.TextSize = 11
 
-    BtnParte.MouseButton1Click:Connect(function()
-        SomClique:Play()
-        if Opcoes.Aimbot.Parte == "Head" then
-            Opcoes.Aimbot.Parte = "Torso"
-            BtnParte.Text = "ALVO: PEITO (TORSO)"
-        else
-            Opcoes.Aimbot.Parte = "Head"
-            BtnParte.Text = "ALVO: CABEÇA"
-        end
-    end)
-
-    AdicionarSlider(parent, "Suavização (Força)", 1, 10, Opcoes.Aimbot.Forca, function(val)
-        Opcoes.Aimbot.Forca = val
-    end)
-end)
-
-CriarLinhaModulo(MiraScroll, "Aimbot Principal", Opcoes.Aimbot, 1, true, function() return PainelAimbot end)
-
-local PainelFOV = CriarPainelConfiguracao("FOV Config", nil, function(parent)
-    AdicionarSeletorCores(parent, "Cor do Circulo", function() return Opcoes.FOV.Cor end, function(cor) Opcoes.FOV.Cor = cor end)
-    AdicionarSlider(parent, "Tamanho (Raio)", 30, 300, Opcoes.FOV.Tamanho, function(val)
-        Opcoes.FOV.Tamanho = val
-    end)
-end)
-
-CriarLinhaModulo(MiraScroll, "Circulo FOV Visual", Opcoes.FOV, 2, true, function() return PainelFOV end)
-
--- ----------------- ABA 2: VISUAL -----------------
-local PaginaVisual = PaginasInstanciadas["Visual"]
-local VisualScroll = Instance.new("ScrollingFrame")
-VisualScroll.Size = UDim2.new(1, -20, 1, -80)
-VisualScroll.Position = UDim2.new(0, 10, 0, 70)
-VisualScroll.BackgroundTransparency = 1
-VisualScroll.BorderSizePixel = 0
-VisualScroll.CanvasSize = UDim2.new(0, 0, 0, 450)
-VisualScroll.ScrollBarThickness = 3
-VisualScroll.ScrollBarImageColor3 = Cores.RoxoPrincipal
-VisualScroll.Parent = PaginaVisual
-
-local VisualLayout = Instance.new("UIListLayout")
-VisualLayout.SortOrder = Enum.SortOrder.LayoutOrder
-VisualLayout.Padding = UDim.new(0, 8)
-VisualLayout.Parent = VisualScroll
-
-local PainelBox = CriarPainelConfiguracao("Box Config", nil, function(parent)
-    AdicionarSeletorCores(parent, "Cor da Caixa", function() return Opcoes.ESP_Box.Cor end, function(cor) Opcoes.ESP_Box.Cor = cor end)
-end)
-CriarLinhaModulo(VisualScroll, "ESP Box", Opcoes.ESP_Box, 1, true, function() return PainelBox end)
-
-CriarLinhaModulo(VisualScroll, "ESP Line", Opcoes.ESP_Line, 2, false)
-
-local PainelSkel = CriarPainelConfiguracao("Skeleton Config", nil, function(parent)
-    AdicionarSeletorCores(parent, "Cor das Articulações", function() return Opcoes.ESP_Skeleton.Cor end, function(cor) Opcoes.ESP_Skeleton.Cor = cor end)
-end)
-CriarLinhaModulo(VisualScroll, "ESP Esqueleto", Opcoes.ESP_Skeleton, 3, true, function() return PainelSkel end)
-
-local PainelDist = CriarPainelConfiguracao("Distance Config", nil, function(parent)
-    AdicionarSeletorCores(parent, "Cor do Texto", function() return Opcoes.ESP_Distance.Cor end, function(cor) Opcoes.ESP_Distance.Cor = cor end)
-    AdicionarSlider(parent, "Alcance Máximo (m)", 50, 380, Opcoes.ESP_Distance.MaxDist, function(val)
-        Opcoes.ESP_Distance.MaxDist = val
-    end)
-end)
-CriarLinhaModulo(VisualScroll, "ESP Distancia", Opcoes.ESP_Distance, 4, true, function() return PainelDist end)
-
-local PainelNome = CriarPainelConfiguracao("Name Config", nil, function(parent)
-    AdicionarSeletorCores(parent, "Cor do Painel", function() return Opcoes.ESP_Name.CorPainel end, function(cor) Opcoes.ESP_Name.CorPainel = cor end)
-    AdicionarSeletorCores(parent, "Cor do Texto", function() return Opcoes.ESP_Name.CorTexto end, function(cor) Opcoes.ESP_Name.CorTexto = cor end)
-    
-    local BtnRGB = Instance.new("TextButton")
-    local Corner = Instance.new("UICorner")
-    BtnRGB.Size = UDim2.new(1, 0, 0, 24)
-    BtnRGB.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
-    BtnRGB.Text = "EFEITO RGB: INATIVO"
-    BtnRGB.TextColor3 = Cores.TextoEscuro
-    BtnRGB.Font = Enum.Font.Code
-    BtnRGB.TextSize = 10
-    BtnRGB.Parent = parent
-    Corner.CornerRadius = UDim.new(0, 4)
-    Corner.Parent = BtnRGB
-
-    BtnRGB.MouseButton1Click:Connect(function()
-        Opcoes.ESP_Name.RGB = not Opcoes.ESP_Name.RGB
-        BtnRGB.Text = "EFEITO RGB: " .. (Opcoes.ESP_Name.RGB and "ATIVO" or "INATIVO")
-        BtnRGB.TextColor3 = Opcoes.ESP_Name.RGB and Cores.RoxoPrincipal or Cores.TextoEscuro
-    end)
-end)
-CriarLinhaModulo(VisualScroll, "ESP Nome", Opcoes.ESP_Name, 5, true, function() return PainelNome end)
-
-CriarLinhaModulo(VisualScroll, "ESP Vida", Opcoes.ESP_Health, 6, false)
-
-
--- ----------------- ABA 3: EXTRAS -----------------
-local PaginaExtras = PaginasInstanciadas["Extras"]
-local ExtrasScroll = Instance.new("ScrollingFrame")
-ExtrasScroll.Size = UDim2.new(1, -20, 1, -80)
-ExtrasScroll.Position = UDim2.new(0, 10, 0, 70)
-ExtrasScroll.BackgroundTransparency = 1
-ExtrasScroll.BorderSizePixel = 0
-ExtrasScroll.CanvasSize = UDim2.new(0, 0, 0, 300)
-ExtrasScroll.ScrollBarThickness = 3
-ExtrasScroll.ScrollBarImageColor3 = Cores.RoxoPrincipal
-ExtrasScroll.Parent = PaginaExtras
-
-local ExtrasLayout = Instance.new("UIListLayout")
-ExtrasLayout.SortOrder = Enum.SortOrder.LayoutOrder
-ExtrasLayout.Padding = UDim.new(0, 8)
-ExtrasLayout.Parent = ExtrasScroll
-
-local PainelSuperPulo = CriarPainelConfiguracao("Pulo Config", nil, function(parent)
-    AdicionarSlider(parent, "Altura do Impulso", 50, 220, 50, function(val)
-        Opcoes.Extras.PuloValor = val
-    end)
-end)
-
-local PainelSuperVel = CriarPainelConfiguracao("Velocidade Config", nil, function(parent)
-    AdicionarSlider(parent, "Velocidade CFrame", 16, 180, 16, function(val)
-        Opcoes.Extras.VelocidadeValor = val
-    end)
-end)
-
-CriarLinhaModulo(ExtrasScroll, "Super Velocidade", {
-    Ativo = false,
-    set = function(val) Opcoes.Extras.SuperVelocidade = val end
-}, 1, true, function() return PainelSuperVel end)
-
-local LinhaVel = ExtrasScroll:FindFirstChild("Mod_Super Velocidade")
-if LinhaVel then
-    local SwitchBtn = LinhaVel:FindFirstChildOfClass("Frame"):FindFirstChildOfClass("TextButton")
-    if SwitchBtn then
-        SwitchBtn.MouseButton1Click:Connect(function()
-            Opcoes.Extras.SuperVelocidade = not Opcoes.Extras.SuperVelocidade
-            Notificar("Super Velocidade: " .. (Opcoes.Extras.SuperVelocidade and "LIGADA (BYPASS)" or "DESLIGADA"), 2)
-        end)
-    end
-end
-
-CriarLinhaModulo(ExtrasScroll, "Super Pulo", {
-    Ativo = false,
-    set = function(val) Opcoes.Extras.SuperPulo = val end
-}, 2, true, function() return PainelSuperPulo end)
-
-local LinhaPulo = ExtrasScroll:FindFirstChild("Mod_Super Pulo")
-if LinhaPulo then
-    local SwitchBtn = LinhaPulo:FindFirstChildOfClass("Frame"):FindFirstChildOfClass("TextButton")
-    if SwitchBtn then
-        SwitchBtn.MouseButton1Click:Connect(function()
-            Opcoes.Extras.SuperPulo = not Opcoes.Extras.SuperPulo
-            Notificar("Super Pulo: " .. (Opcoes.Extras.SuperPulo and "LIGADO (BYPASS)" or "DESLIGADA"), 2)
-        end)
-    end
-end
-
-
--- ----------------- ABA 4: STATUS -----------------
-local PaginaStatus = PaginasInstanciadas["Status"]
-local StatusContent = Instance.new("Frame")
-StatusContent.Name = "StatusContent"
-StatusContent.Parent = PaginaStatus
-StatusContent.Size = UDim2.new(1, -40, 1, -80)
-StatusContent.Position = UDim2.new(0, 20, 0, 70)
-StatusContent.BackgroundTransparency = 1
-
-local StatusLayout = Instance.new("UIListLayout")
-StatusLayout.Parent = StatusContent
-StatusLayout.SortOrder = Enum.SortOrder.LayoutOrder
-StatusLayout.Padding = UDim.new(0, 8)
-
-local function CriarLinhaStatus(nome, valorInicial, layoutOrder)
-    local Linha = Instance.new("Frame")
-    local LinhaCorner = Instance.new("UICorner")
-    local LinhaStroke = Instance.new("UIStroke")
-    local TituloStatus = Instance.new("TextLabel")
-    local ValorStatus = Instance.new("TextLabel")
-
-    Linha.Name = "Status_" .. nome
-    Linha.Size = UDim2.new(1, 0, 0, 36)
-    Linha.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
-    Linha.BorderSizePixel = 0
-    Linha.LayoutOrder = layoutOrder
-    Linha.Parent = StatusContent
-
-    LinhaCorner.CornerRadius = UDim.new(0, 6)
-    LinhaCorner.Parent = Linha
-
-    LinhaStroke.Thickness = 1
-    LinhaStroke.Color = Cores.Borda
-    LinhaStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    LinhaStroke.Parent = Linha
-
-    TituloStatus.Parent = Linha
-    TituloStatus.Size = UDim2.new(0.5, -15, 1, 0)
-    TituloStatus.Position = UDim2.new(0, 15, 0, 0)
-    TituloStatus.BackgroundTransparency = 1
-    TituloStatus.Text = string.upper(nome)
-    TituloStatus.TextColor3 = Cores.TextoEscuro
-    TituloStatus.Font = Enum.Font.Code
-    TituloStatus.TextSize = 11
-    TituloStatus.TextXAlignment = Enum.TextXAlignment.Left
-
-    ValorStatus.Name = "Valor"
-    ValorStatus.Parent = Linha
-    ValorStatus.Size = UDim2.new(0.5, -15, 1, 0)
-    ValorStatus.Position = UDim2.new(0.5, 0, 0, 0)
-    ValorStatus.BackgroundTransparency = 1
-    ValorStatus.Text = valorInicial
-    ValorStatus.TextColor3 = Cores.TextoClaro
-    ValorStatus.Font = Enum.Font.Code
-    ValorStatus.TextSize = 11
-    ValorStatus.TextXAlignment = Enum.TextXAlignment.Right
-
-    return ValorStatus
-end
-
-local ValorFPS = CriarLinhaStatus("Taxa de Quadros (FPS)", "Calculando...", 1)
-local ValorPing = CriarLinhaStatus("Latência de Rede (Ping)", "Calculando...", 2)
-local ValorPlayers = CriarLinhaStatus("Jogadores no Servidor", "0/0", 3)
-local ValorVersao = CriarLinhaStatus("Status do Cliente", "V2.1 - BYPASS PASSIVO", 4)
-ValorVersao.TextColor3 = Cores.VerdeStatus
-
-task.spawn(function()
-    local LastIteration = os.clock()
-    local FrameHistory = {}
-    local FrameIndex = 1
-    local UpdateInterval = 0.5
-    local LastUIUpdate = 0
-
-    while true do
-        local CurrentTime = os.clock()
-        local TimeDelta = CurrentTime - LastIteration
-        LastIteration = CurrentTime
-
-        FrameHistory[FrameIndex] = TimeDelta
-        FrameIndex = (FrameIndex % 60) + 1
-
-        if CurrentTime - LastUIUpdate >= UpdateInterval then
-            LastUIUpdate = CurrentTime
-            
-            local TotalTime = 0
-            local Count = 0
-            for i = 1, #FrameHistory do
-                if FrameHistory[i] then
-                    TotalTime = TotalTime + FrameHistory[i]
-                    Count = Count + 1
-                end
-            end
-            local FPS = Count > 0 and math.round(Count / TotalTime) or 60
-            ValorFPS.Text = tostring(FPS) .. " FPS"
-
-            local Ping = math.round(Stats:GetNetworkStats().Ping)
-            ValorPing.Text = tostring(Ping) .. " ms"
-
-            local PlayerCount = #Players:GetPlayers()
-            local MaxPlayers = Players.MaxPlayers
-            ValorPlayers.Text = tostring(PlayerCount) .. " / " .. tostring(MaxPlayers)
-        end
-        RunService.RenderStepped:Wait()
-    end
-end)
-
-
--- =============================================================================
--- LOGICA DOS MECANISMOS DO AIMBOT E ESP (OTIMIZADO)
--- =============================================================================
-local Camera = workspace.CurrentCamera
-
-local function CriarEsqueletoDesenho()
-    local Linhas = {}
-    for i = 1, 15 do
-        local Linha = Drawing.new("Line")
-        Linha.Thickness = 1.5
-        Linha.Visible = false
-        Linhas[i] = Linha
-    end
-    return Linhas
-end
-
-local function LimparJogador(player)
-    if ElementosVisuais[player] then
-        for _, obj in pairs(ElementosVisuais[player]) do
-            if typeof(obj) == "table" then
-                for _, subObj in pairs(obj) do subObj:Destroy() end
-            else
-                obj:Destroy()
-            end
-        end
-        ElementosVisuais[player] = nil
-    end
-end
-
-local function EstaVisivel(personagem, parte)
-    if Opcoes.Aimbot.AtrasParede then return true end
-    if not personagem or not personagem:FindFirstChild(parte) then return false end
-    
-    local pontoOrigem = Camera.CFrame.Position
-    local pontoDestino = personagem[parte].Position
-    local direcao = (pontoDestino - pontoOrigem).Unit * (pontoDestino - pontoOrigem).Magnitude
-
-    local params = RaycastParams.new()
-    params.FilterType = Enum.RaycastFilterType.Exclude
-    params.FilterDescendantsInstances = {LocalPlayer.Character, Camera}
-    params.IgnoreWater = true
-
-    local resultado = workspace:Raycast(pontoOrigem, direcao, params)
-    if resultado then
-        return resultado.Instance:IsDescendantOf(personagem)
-    end
-    return true
-end
-
-local function ObterJogadorMaisProximo()
-    local menorDistancia = math.huge
-    local jogadorAlvo = nil
-    local centroTela = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            local char = player.Character
-            if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0 then
-                
-                local nomeParteAlvo = "Head"
-                if Opcoes.Aimbot.Parte == "Torso" then
-                    nomeParteAlvo = char:FindFirstChild("UpperTorso") and "UpperTorso" or "Torso"
-                end
-
-                local parteAlvo = char:FindFirstChild(nomeParteAlvo)
-                if parteAlvo then
-                    local pos, naTela = Camera:WorldToViewportPoint(parteAlvo.Position)
-
-                    if naTela then
-                        local distanciaFov = (Vector2.new(pos.X, pos.Y) - centroTela).Magnitude
-
-                        if distanciaFov <= Opcoes.FOV.Tamanho and distanciaFov < menorDistancia then
-                            if EstaVisivel(char, nomeParteAlvo) then
-                                menorDistancia = distanciaFov
-                                jogadorAlvo = parteAlvo
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-    return jogadorAlvo
-end
-
+local fpsCount = 0
+local lastUpdate = os.clock()
 RunService.RenderStepped:Connect(function()
-    if Opcoes.FOV.Ativo then
-        CirculoFOV.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-        CirculoFOV.Radius = Opcoes.FOV.Tamanho
-        CirculoFOV.Color = Opcoes.FOV.Cor
-        CirculoFOV.Visible = true
-    else
-        CirculoFOV.Visible = false
+    fpsCount = fpsCount + 1
+    local now = os.clock()
+    if now - lastUpdate >= 1 then
+        local ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
+        WLabel.Text = string.format("BK CLIENT V4.5  |  FPS: %d  |  PING: %dms", fpsCount, ping)
+        fpsCount = 0
+        lastUpdate = now
     end
+end)
 
-    if Opcoes.Aimbot.Ativo then
-        local alvo = ObterJogadorMaisProximo()
-        if alvo then
-            local smoothValue = math.clamp(Opcoes.Aimbot.Forca / 10, 0.05, 1)
-            local cframeAlvo = CFrame.lookAt(Camera.CFrame.Position, alvo.Position)
-            Camera.CFrame = Camera.CFrame:Lerp(cframeAlvo, smoothValue)
-        end
-    end
+-- PAINEL PRINCIPAL
+local MainPanel = Instance.new("Frame", ScreenGui)
+local PainelLarguraAlvo = 560
+local PainelAlturaAlvo = BK_Config.PainelAltura
 
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            local char = player.Character
-            if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0 then
-                local root = char.HumanoidRootPart
-                local hum = char.Humanoid
-                local pos, visivel = Camera:WorldToViewportPoint(root.Position)
+MainPanel.Size = UDim2.new(0, 0, 0, 0) 
+MainPanel.Position = UDim2.new(0.5, 0, 0.5, 0)
+MainPanel.AnchorPoint = Vector2.new(0.5, 0.5)
+MainPanel.BackgroundColor3 = C_FundoBreu
+MainPanel.ClipsDescendants = true
+MainPanel.ZIndex = 1 
+MainPanel.Visible = false
 
-                if visivel then
-                    local distanciaMetros = math.round((LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and (LocalPlayer.Character.HumanoidRootPart.Position - root.Position).Magnitude) or 0)
-                    
-                    if not ElementosVisuais[player] then
-                        ElementosVisuais[player] = {
-                            Box = Drawing.new("Square"),
-                            Line = Drawing.new("Line"),
-                            Skeleton = CriarEsqueletoDesenho(),
-                            Billboard = Instance.new("BillboardGui"),
-                            BillboardFrame = Instance.new("Frame"),
-                            BillboardLabel = Instance.new("TextLabel"),
-                            HealthBar = Instance.new("Frame")
-                        }
-                        
-                        local visual = ElementosVisuais[player]
-                        visual.Billboard.Adornee = root
-                        visual.Billboard.Size = UDim2.new(0, 110, 0, 45)
-                        visual.Billboard.AlwaysOnTop = true
-                        visual.Billboard.Parent = BK_Client_V2
-                        
-                        visual.BillboardFrame.Size = UDim2.new(1, 0, 0, 24)
-                        visual.BillboardFrame.BackgroundColor3 = Opcoes.ESP_Name.CorPainel
-                        visual.BillboardFrame.BorderSizePixel = 0
-                        visual.BillboardFrame.Parent = visual.Billboard
-                        local bCorner = Instance.new("UICorner")
-                        bCorner.CornerRadius = UDim.new(0, 4)
-                        bCorner.Parent = visual.BillboardFrame
+local MCorner = Instance.new("UICorner", MainPanel)
+MCorner.CornerRadius = UDim.new(0, 6)
+local MStroke = Instance.new("UIStroke", MainPanel)
+MStroke.Color = Color3.fromRGB(35, 35, 45)
+MStroke.Thickness = 1
 
-                        visual.BillboardLabel.Size = UDim2.new(1, 0, 1, 0)
-                        visual.BillboardLabel.BackgroundTransparency = 1
-                        visual.BillboardLabel.Font = Enum.Font.Code
-                        visual.BillboardLabel.TextColor3 = Opcoes.ESP_Name.CorTexto
-                        visual.BillboardLabel.TextSize = 10
-                        visual.BillboardLabel.Parent = visual.BillboardFrame
+-- TOP BAR
+local TopBar = Instance.new("Frame", MainPanel)
+TopBar.Size = UDim2.new(1, 0, 0, 45)
+TopBar.BackgroundColor3 = C_Painel
+TopBar.BorderSizePixel = 0
 
-                        visual.HealthBar.Size = UDim2.new(1, 0, 0, 4)
-                        visual.HealthBar.Position = UDim2.new(0, 0, 1, 3)
-                        visual.HealthBar.BorderSizePixel = 0
-                        visual.HealthBar.Parent = visual.BillboardFrame
-                        local hCorner = Instance.new("UICorner")
-                        hCorner.CornerRadius = UDim.new(0, 2)
-                        hCorner.Parent = visual.HealthBar
-                    end
+local DivisorTop = Instance.new("Frame", TopBar)
+DivisorTop.Size = UDim2.new(1, 0, 0, 1)
+DivisorTop.Position = UDim2.new(0, 0, 1, -1)
+DivisorTop.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+DivisorTop.BorderSizePixel = 0
 
-                    local visual = ElementosVisuais[player]
-                    local boxSize = Vector2.new(3000 / pos.Z, 4500 / pos.Z)
-                    local boxPos = Vector2.new(pos.X - boxSize.X / 2, pos.Y - boxSize.Y / 2)
+local BrandLabel = Instance.new("TextLabel", TopBar)
+BrandLabel.Position = UDim2.new(0, 15, 0, 0)
+BrandLabel.Size = UDim2.new(0, 200, 1, 0)
+BrandLabel.BackgroundTransparency = 1
+BrandLabel.Text = "BK CLIENT <font color='rgb(157,38,255)'>V4.5</font> †"
+BrandLabel.RichText = true
+BrandLabel.Font = Enum.Font.GothamBold
+BrandLabel.TextColor3 = C_TextoClaro
+BrandLabel.TextSize = 16
+BrandLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-                    if Opcoes.ESP_Box.Ativo then
-                        visual.Box.Size = boxSize
-                        visual.Box.Position = boxPos
-                        visual.Box.Color = Opcoes.ESP_Box.Cor
-                        visual.Box.Thickness = 1.2
-                        visual.Box.Filled = false
-                        visual.Box.Visible = true
-                    else
-                        visual.Box.Visible = false
-                    end
+local BadgeTag = Instance.new("TextLabel", TopBar)
+BadgeTag.Position = UDim2.new(0, 145, 0.5, -9)
+BadgeTag.Size = UDim2.new(0, 75, 0, 18)
+BadgeTag.BackgroundColor3 = Color3.fromRGB(35, 20, 50)
+BadgeTag.Text = "CLOUD SEC"
+BadgeTag.Font = Enum.Font.GothamBold
+BadgeTag.TextSize = 9
+BadgeTag.TextColor3 = C_RoxoNeon
+RegistrarElementoColorido(BadgeTag, "TextColor3")
+Instance.new("UICorner", BadgeTag).CornerRadius = UDim.new(0, 4)
 
-                    if Opcoes.ESP_Line.Ativo then
-                        visual.Line.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
-                        visual.Line.To = Vector2.new(pos.X, pos.Y)
-                        visual.Line.Color = Opcoes.ESP_Line.Cor
-                        visual.Line.Thickness = 1
-                        visual.Line.Visible = true
-                    else
-                        visual.Line.Visible = false
-                    end
+local BadgeStroke = Instance.new("UIStroke", BadgeTag)
+BadgeStroke.Color = C_RoxoNeon
+RegistrarElementoColorido(BadgeStroke, "Color")
 
-                    if Opcoes.ESP_Distance.Ativo and distanciaMetros <= Opcoes.ESP_Distance.MaxDist then
-                        visual.Billboard.Enabled = true
-                        visual.Billboard.ExtentsOffset = Vector3.new(0, 3.5, 0)
-                        
-                        if not Opcoes.ESP_Name.Ativo then
-                            visual.BillboardFrame.BackgroundTransparency = 1
-                            visual.BillboardLabel.Text = "[" .. tostring(distanciaMetros) .. "m]"
-                            visual.BillboardLabel.TextColor3 = Opcoes.ESP_Distance.Cor
-                        else
-                            visual.BillboardFrame.BackgroundTransparency = 0
-                        end
-                    end
+-- BARRA LATERAL (SIDEBAR)
+local Sidebar = Instance.new("Frame", MainPanel)
+Sidebar.Position = UDim2.new(0, 0, 0, 45)
+Sidebar.Size = UDim2.new(0, 150, 1, -45)
+Sidebar.BackgroundColor3 = C_Painel
+Sidebar.BorderSizePixel = 0
 
-                    if Opcoes.ESP_Name.Ativo then
-                        visual.Billboard.Enabled = true
-                        visual.BillboardFrame.BackgroundTransparency = 0
-                        
-                        if Opcoes.ESP_Name.RGB then
-                            local hue = (tick() % 4) / 4
-                            visual.BillboardFrame.BackgroundColor3 = Color3.fromHSV(hue, 0.8, 0.8)
-                        else
-                            visual.BillboardFrame.BackgroundColor3 = Opcoes.ESP_Name.CorPainel
-                        end
+local DivisorSide = Instance.new("Frame", Sidebar)
+DivisorSide.Size = UDim2.new(0, 1, 1, 0)
+DivisorSide.Position = UDim2.new(1, -1, 0, 0)
+DivisorSide.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+DivisorSide.BorderSizePixel = 0
 
-                        visual.BillboardLabel.TextColor3 = Opcoes.ESP_Name.CorTexto
-                        local textoExibir = string.upper(player.Name)
-                        if Opcoes.ESP_Distance.Ativo then
-                            textoExibir = textoExibir .. " (" .. tostring(distanciaMetros) .. "m)"
-                        end
-                        visual.BillboardLabel.Text = textoExibir
+-- PERFIL DO JOGADOR
+local ProfileCard = Instance.new("Frame", Sidebar)
+ProfileCard.Size = UDim2.new(1, -16, 0, 55)
+ProfileCard.Position = UDim2.new(0, 8, 1, -65)
+ProfileCard.BackgroundColor3 = C_Card
+Instance.new("UICorner", ProfileCard).CornerRadius = UDim.new(0, 4)
 
-                        if Opcoes.ESP_Health.Ativo then
-                            visual.HealthBar.Visible = true
-                            local percent = hum.Health / hum.MaxHealth
-                            visual.HealthBar.Size = UDim2.new(percent, 0, 0, 4)
-                            if percent > 0.5 then
-                                visual.HealthBar.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
-                            elseif percent > 0.2 then
-                                visual.HealthBar.BackgroundColor3 = Color3.fromRGB(241, 196, 15)
-                            else
-                                visual.HealthBar.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
-                            end
-                        else
-                            visual.HealthBar.Visible = false
-                        end
-                    else
-                        if not Opcoes.ESP_Distance.Ativo then visual.Billboard.Enabled = false end
-                    end
+local PAvatar = Instance.new("ImageLabel", ProfileCard)
+PAvatar.Size = UDim2.new(0, 36, 0, 36)
+PAvatar.Position = UDim2.new(0, 8, 0.5, -18)
+PAvatar.BackgroundColor3 = C_FundoBreu
+local userId = LocalPlayer.UserId
+PAvatar.Image = "https://www.roblox.com/headshot-thumbnail/image?userId="..userId.."&width=420&height=420&format=png"
+Instance.new("UICorner", PAvatar).CornerRadius = UDim.new(1, 0)
 
-                    if Opcoes.ESP_Skeleton.Ativo then
-                        local parts, connections = {}, {}
-                        local skeletonCor = Opcoes.ESP_Skeleton.Cor
+local PName = Instance.new("TextLabel", ProfileCard)
+PName.Position = UDim2.new(0, 50, 0, 12)
+PName.Size = UDim2.new(1, -55, 0, 15)
+PName.BackgroundTransparency = 1
+PName.Text = LocalPlayer.DisplayName
+PName.Font = Enum.Font.GothamBold
+PName.TextColor3 = C_TextoClaro
+PName.TextSize = 11
+PName.TextXAlignment = Enum.TextXAlignment.Left
+PName.ClipsDescendants = true
 
-                        if hum.RigType == Enum.HumanoidRigType.R15 then
-                            parts = {
-                                Head = char:FindFirstChild("Head"),
-                                UpperTorso = char:FindFirstChild("UpperTorso"),
-                                LowerTorso = char:FindFirstChild("LowerTorso"),
-                                LeftUpperArm = char:FindFirstChild("LeftUpperArm"),
-                                LeftLowerArm = char:FindFirstChild("LeftLowerArm"),
-                                RightUpperArm = char:FindFirstChild("RightUpperArm"),
-                                RightLowerArm = char:FindFirstChild("RightLowerArm"),
-                                LeftUpperLeg = char:FindFirstChild("LeftUpperLeg"),
-                                LeftLowerLeg = char:FindFirstChild("LeftLowerLeg"),
-                                RightUpperLeg = char:FindFirstChild("RightUpperLeg"),
-                                RightLowerLeg = char:FindFirstChild("RightLowerLeg")
-                            }
-                            connections = {
-                                {parts.Head, parts.UpperTorso},
-                                {parts.UpperTorso, parts.LowerTorso},
-                                {parts.UpperTorso, parts.LeftUpperArm},
-                                {parts.LeftUpperArm, parts.LeftLowerArm},
-                                {parts.UpperTorso, parts.RightUpperArm},
-                                {parts.RightUpperArm, parts.RightLowerArm},
-                                {parts.LowerTorso, parts.LeftUpperLeg},
-                                {parts.LeftUpperLeg, parts.LeftLowerLeg},
-                                {parts.LowerTorso, parts.RightUpperLeg},
-                                {parts.RightUpperLeg, parts.RightLowerLeg}
-                            }
-                        else
-                            parts = {
-                                Head = char:FindFirstChild("Head"),
-                                Torso = char:FindFirstChild("Torso"),
-                                LeftArm = char:FindFirstChild("Left Arm"),
-                                RightArm = char:FindFirstChild("Right Arm"),
-                                LeftLeg = char:FindFirstChild("Left Leg"),
-                                RightLeg = char:FindFirstChild("Right Leg")
-                            }
-                            connections = {
-                                {parts.Head, parts.Torso},
-                                {parts.Torso, parts.LeftArm},
-                                {parts.Torso, parts.RightArm},
-                                {parts.Torso, parts.LeftLeg},
-                                {parts.Torso, parts.RightLeg}
-                            }
-                        end
+local PStatus = Instance.new("TextLabel", ProfileCard)
+PStatus.Position = UDim2.new(0, 50, 0, 27)
+PStatus.Size = UDim2.new(1, -55, 0, 15)
+PStatus.BackgroundTransparency = 1
+PStatus.Text = "🪐 USER_VIP"
+PStatus.Font = Enum.Font.GothamSemibold
+PStatus.TextColor3 = C_RoxoNeon
+RegistrarElementoColorido(PStatus, "TextColor3")
+PStatus.TextSize = 10
+PStatus.TextXAlignment = Enum.TextXAlignment.Left
 
-                        local lineIdx = 1
-                        for _, conn in ipairs(connections) do
-                            local p1, p2 = conn[1], conn[2]
-                            if p1 and p2 then
-                                local v1, vis1 = Camera:WorldToViewportPoint(p1.Position)
-                                local v2, vis2 = Camera:WorldToViewportPoint(p2.Position)
-                                if vis1 and vis2 then
-                                    local lDraw = visual.Skeleton[lineIdx]
-                                    if lDraw then
-                                        lDraw.From = Vector2.new(v1.X, v1.Y)
-                                        lDraw.To = Vector2.new(v2.X, v2.Y)
-                                        lDraw.Color = skeletonCor
-                                        lDraw.Visible = true
-                                        lineIdx = lineIdx + 1
-                                    end
-                                end
-                            end
-                        end
-                        for i = lineIdx, #visual.Skeleton do visual.Skeleton[i].Visible = false end
-                    else
-                        for _, lDraw in ipairs(visual.Skeleton) do lDraw.Visible = false end
-                    end
-                else
-                    LimparJogador(player)
-                end
+-- CONTAINER DAS ABAS
+local TabContainer = Instance.new("Frame", MainPanel)
+TabContainer.Position = UDim2.new(0, 165, 0, 60)
+TabContainer.Size = UDim2.new(1, -180, 1, -75)
+TabContainer.BackgroundTransparency = 1
+
+-- GERERENCIADOR DE ABAS
+local ListaAbas = {"Visual", "Mira", "Status", "Configurações", "Extras", "Perfil"}
+local framesDeConteudo = {}
+local botoesDeAbas = {}
+local ySpacing = 10
+
+for idx, nomeAba in ipairs(ListaAbas) do
+    local TabBtn = Instance.new("TextButton", Sidebar)
+    TabBtn.Size = UDim2.new(1, -16, 0, 32)
+    TabBtn.Position = UDim2.new(0, 8, 0, ySpacing)
+    TabBtn.BackgroundColor3 = C_RoxoNeon
+    RegistrarElementoColorido(TabBtn, "BackgroundColor3")
+    TabBtn.BackgroundTransparency = 1
+    TabBtn.Text = "  " .. nomeAba
+    TabBtn.Font = Enum.Font.GothamSemibold
+    TabBtn.TextColor3 = C_TextoEscuro
+    TabBtn.TextSize = 13
+    TabBtn.TextXAlignment = Enum.TextXAlignment.Left
+    TabBtn.AutoButtonColor = false
+    Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 4)
+    
+    local IndicadorAtivo = Instance.new("Frame", TabBtn)
+    IndicadorAtivo.Name = "Indicador"
+    IndicadorAtivo.Size = UDim2.new(0, 3, 0, 16)
+    IndicadorAtivo.Position = UDim2.new(0, 0, 0.5, -8)
+    IndicadorAtivo.BackgroundColor3 = C_RoxoNeon
+    RegistrarElementoColorido(IndicadorAtivo, "BackgroundColor3")
+    IndicadorAtivo.BackgroundTransparency = 1
+    
+    botoesDeAbas[nomeAba] = TabBtn
+    
+    local ContentFrame = Instance.new("ScrollingFrame", TabContainer)
+    ContentFrame.Size = UDim2.new(1, 0, 1, 0)
+    ContentFrame.BackgroundTransparency = 1
+    ContentFrame.ScrollBarThickness = 3
+    ContentFrame.ScrollBarImageColor3 = C_RoxoNeon
+    RegistrarElementoColorido(ContentFrame, "ScrollBarImageColor3")
+    ContentFrame.Visible = (idx == 1)
+    
+    local UIList = Instance.new("UIListLayout", ContentFrame)
+    UIList.Padding = UDim.new(0, 8)
+    UIList.SortOrder = Enum.SortOrder.LayoutOrder
+    
+    framesDeConteudo[nomeAba] = ContentFrame
+    ySpacing = ySpacing + 36
+    
+    TabBtn.MouseButton1Click:Connect(function()
+        somClick()
+        for name, frame in pairs(framesDeConteudo) do frame.Visible = (name == nomeAba) end
+        for name, btn in pairs(botoesDeAbas) do
+            local ind = btn:FindFirstChild("Indicador")
+            if name == nomeAba then
+                TweenService:Create(btn, TweenInfo.new(0.2), {TextColor3 = C_TextoClaro, BackgroundTransparency = 0.92}):Play()
+                if ind then TweenService:Create(ind, TweenInfo.new(0.2), {BackgroundTransparency = 0}):Play() end
             else
-                LimparJogador(player)
+                TweenService:Create(btn, TweenInfo.new(0.2), {TextColor3 = C_TextoEscuro, BackgroundTransparency = 1}):Play()
+                if ind then TweenService:Create(ind, TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play() end
             end
         end
-    end
-end)
+    end)
+    TabBtn.MouseEnter:Connect(function() somHover() end)
+end
 
-Players.PlayerRemoving:Connect(LimparJogador)
+-- CRIAÇÃO DE CARDS
+local function CriarCardPremium(parent, titulo, sub)
+    local Card = Instance.new("Frame", parent)
+    Card.Size = UDim2.new(1, -5, 0, 50)
+    Card.BackgroundColor3 = C_Card
+    Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 4)
+    local CStroke = Instance.new("UIStroke", Card)
+    CStroke.Color = Color3.fromRGB(30, 30, 40)
+    
+    local Title = Instance.new("TextLabel", Card)
+    Title.Position = UDim2.new(0, 12, 0, 10)
+    Title.Size = UDim2.new(0, 200, 0, 15)
+    Title.BackgroundTransparency = 1
+    Title.Text = titulo
+    Title.Font = Enum.Font.GothamBold
+    Title.TextColor3 = C_TextoClaro
+    Title.TextSize = 13
+    Title.TextXAlignment = Enum.TextXAlignment.Left
 
--- =============================================================================
--- LOGICA DE ALTERNAR ABAS E MENUS
--- =============================================================================
-local function AlternarAba(nomeSelecionado)
-    SomClique:Play()
-    for nomeAba, botao in pairs(ElementosAbas) do
-        local animTime = 0.2
-        if nomeAba == nomeSelecionado then
-            TweenService:Create(botao, TweenInfo.new(animTime), {TextColor3 = Cores.TextoClaro, BackgroundColor3 = Color3.fromRGB(22, 17, 30)}):Play()
-            TweenService:Create(botao:FindFirstChildOfClass("UIStroke"), TweenInfo.new(animTime), {Color = Cores.RoxoPrincipal}):Play()
-            PaginasInstanciadas[nomeAba].Visible = true
+    local Sub = Instance.new("TextLabel", Card)
+    Sub.Position = UDim2.new(0, 12, 0, 26)
+    Sub.Size = UDim2.new(0, 300, 0, 15)
+    Sub.BackgroundTransparency = 1
+    Sub.Text = sub
+    Sub.Font = Enum.Font.Gotham
+    Sub.TextColor3 = C_TextoEscuro
+    Sub.TextSize = 11
+    Sub.TextXAlignment = Enum.TextXAlignment.Left
+    
+    return Card
+end
+
+-- LÓGICA DO TOGGLE COM MEMÓRIA CLOUD DE ESTADO
+local function AdicionarToggleVIP(parent, titulo, sub, callback)
+    local Card = CriarCardPremium(parent, titulo, sub)
+    local ToggleBtn = Instance.new("TextButton", Card)
+    ToggleBtn.Size = UDim2.new(0, 38, 0, 18)
+    ToggleBtn.Position = UDim2.new(1, -50, 0.5, -9)
+    ToggleBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+    ToggleBtn.Text = ""
+    Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(1, 0)
+    
+    local Indicator = Instance.new("Frame", ToggleBtn)
+    Indicator.Size = UDim2.new(0, 14, 0, 14)
+    Indicator.Position = UDim2.new(0, 2, 0.5, -7)
+    Indicator.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+    Instance.new("UICorner", Indicator).CornerRadius = UDim.new(1, 0)
+    
+    -- Carrega o estado que já estava salvo no arquivo
+    local estado = BK_Config.Toggles[titulo] or false
+    
+    local function AtualizarVisualToggle(animar)
+        local tempo = animar and 0.2 or 0
+        if estado then
+            ToggleBtn.BackgroundColor3 = C_RoxoNeon
+            TweenService:Create(Indicator, TweenInfo.new(tempo), {Position = UDim2.new(1, -16, 0.5, -7), BackgroundColor3 = C_TextoClaro}):Play()
         else
-            TweenService:Create(botao, TweenInfo.new(animTime), {TextColor3 = Cores.TextoEscuro, BackgroundColor3 = Color3.fromRGB(12, 12, 12)}):Play()
-            TweenService:Create(botao:FindFirstChildOfClass("UIStroke"), TweenInfo.new(animTime), {Color = Color3.fromRGB(18, 18, 18)}):Play()
-            PaginasInstanciadas[nomeAba].Visible = false
+            ToggleBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+            TweenService:Create(Indicator, TweenInfo.new(tempo), {Position = UDim2.new(0, 2, 0.5, -7), BackgroundColor3 = Color3.fromRGB(200, 200, 200)}):Play()
         end
     end
+    
+    -- Executa o visual inicial carregado
+    AtualizarVisualToggle(false)
+    if estado and callback then task.spawn(function() callback(true) end) end
+    
+    ToggleBtn.MouseButton1Click:Connect(function()
+        estado = not estado
+        somClick()
+        BK_Config.Toggles[titulo] = estado
+        SalvarConfiguracoes() -- Salva na hora!
+        AtualizarVisualToggle(true)
+        if callback then callback(estado) end
+    end)
 end
 
-for i, nomeAba in ipairs(AbasDefinidas) do
-    local BotaoAba = Instance.new("TextButton")
-    local BotaoCorner = Instance.new("UICorner")
-    local BotaoStroke = Instance.new("UIStroke")
+-- ADICIONANDO OS TOGGLES COM FUNÇÃO DE RETORNO (CALLBACK)
+AdicionarToggleVIP(framesDeConteudo["Visual"], "Chamber ESP Silhouette", "Renderiza o contorno dos alvos através das paredes", function(estado)
+    print("ESP Silhouette alterado para:", estado)
+end)
 
-    BotaoAba.Name = "Botao_" .. nomeAba
-    BotaoAba.Parent = ContainerBotoes
-    BotaoAba.Size = UDim2.new(1, 0, 0, 32)
-    BotaoAba.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
-    BotaoAba.BorderSizePixel = 0
-    BotaoAba.Text = "  " .. string.upper(nomeAba)
-    BotaoAba.TextColor3 = Cores.TextoEscuro
-    BotaoAba.Font = Enum.Font.Code
-    BotaoAba.TextSize = 11
-    BotaoAba.TextXAlignment = Enum.TextXAlignment.Left
-    BotaoAba.LayoutOrder = i
+AdicionarToggleVIP(framesDeConteudo["Visual"], "Streamer Mode Bypass", "Oculta suas informações para gravadores", function(estado)
+    print("Streamer Mode alterado para:", estado)
+end)
 
-    BotaoCorner.CornerRadius = UDim.new(0, 6)
-    BotaoCorner.Parent = BotaoAba
+AdicionarToggleVIP(framesDeConteudo["Mira"], "Silent Aim Method", "Redireciona os projéteis sem mover a sua câmera", function(estado)
+    print("Silent Aim alterado para:", estado)
+end)
 
-    BotaoStroke.Thickness = 1
-    BotaoStroke.Color = Color3.fromRGB(18, 18, 18)
-    BotaoStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    BotaoStroke.Parent = BotaoAba
-
-    ElementosAbas[nomeAba] = BotaoAba
-    BotaoAba.MouseButton1Click:Connect(function() AlternarAba(nomeAba) end)
+-- SELETOR DE VISUAL (CONFIGURAÇÕES)
+local VisualCard = CriarCardPremium(framesDeConteudo["Configurações"], "Trocar Visual", "Selecione a cor temática da interface global")
+VisualCard.Size = UDim2.new(1, -5, 0, 60)
+local CoresTema = {
+    {Cor = Color3.fromRGB(157, 38, 255), Nome = "Roxo"},
+    {Cor = Color3.fromRGB(255, 38, 38), Nome = "Vermelho"},
+    {Cor = Color3.fromRGB(38, 255, 120), Nome = "Verde"}
+}
+for i, obj in ipairs(CoresTema) do
+    local CorBtn = Instance.new("TextButton", VisualCard)
+    CorBtn.Size = UDim2.new(0, 65, 0, 22)
+    CorBtn.Position = UDim2.new(1, -225 + ((i-1) * 72), 0.5, -11)
+    CorBtn.BackgroundColor3 = obj.Cor
+    CorBtn.Text = obj.Nome
+    CorBtn.Font = Enum.Font.GothamBold
+    CorBtn.TextSize = 10
+    CorBtn.TextColor3 = (obj.Nome == "Verde") and Color3.fromRGB(10,10,15) or C_TextoClaro
+    Instance.new("UICorner", CorBtn).CornerRadius = UDim.new(0, 4)
+    
+    CorBtn.MouseButton1Click:Connect(function()
+        somClick()
+        MudarCorTema(obj.Cor)
+        EnviarNotificacao("Tema Visual", "Visual alterado para " .. obj.Nome)
+    end)
 end
 
-AlternarAba("Mira")
+-- SLIDER DE TAMANHO
+local SliderCard = CriarCardPremium(framesDeConteudo["Configurações"], "Tamanho do Painel", "Arraste para ajustar a escala vertical da interface")
+SliderCard.Size = UDim2.new(1, -5, 0, 60)
+local SliderTrack = Instance.new("Frame", SliderCard)
+SliderTrack.Size = UDim2.new(0, 180, 0, 4)
+SliderTrack.Position = UDim2.new(1, -200, 0.5, -2)
+SliderTrack.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+Instance.new("UICorner", SliderTrack)
 
--- Transição de Painel (Minimizar / Abrir) corrigido
-local PainelAberto, EmAnimacao = false, false
-local function AlternarPainel()
-    if EmAnimacao then return end
-    EmAnimacao = true
+local SliderFill = Instance.new("Frame", SliderTrack)
+SliderFill.Size = UDim2.new(0.5, 0, 1, 0)
+SliderFill.BackgroundColor3 = C_RoxoNeon
+RegistrarElementoColorido(SliderFill, "BackgroundColor3")
+Instance.new("UICorner", SliderFill)
 
-    if not PainelAberto then
-        SomAbrir:Play()
-        local tweenCapsula = TweenService:Create(Capsula, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
-            Size = UDim2.new(0, 0, 0, 38),
-            BackgroundTransparency = 1
-        })
-        tweenCapsula:Play()
-        tweenCapsula.Completed:Wait()
-        Capsula.Visible = false
+local SliderButton = Instance.new("TextButton", SliderTrack)
+SliderButton.Size = UDim2.new(0, 12, 0, 12)
+SliderButton.Position = UDim2.new(0.5, -6, 0.5, -6)
+SliderButton.BackgroundColor3 = C_TextoClaro
+SliderButton.Text = ""
+Instance.new("UICorner", SliderButton).CornerRadius = UDim.new(1, 0)
 
-        Painel.Size = UDim2.new(0, 520, 0, 320)
-        Painel.BackgroundTransparency = 1
-        Painel.Visible = true
+local SBtnStroke = Instance.new("UIStroke", SliderButton)
+SBtnStroke.Color = C_RoxoNeon
+RegistrarElementoColorido(SBtnStroke, "Color")
 
-        local tweenPainel = TweenService:Create(Painel, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 580, 0, 360),
-            BackgroundTransparency = 0
-        })
-        tweenPainel:Play()
-        tweenPainel.Completed:Wait()
-        PainelAberto = true
-    else
-        SomAbrir:Play()
-        local tweenPainel = TweenService:Create(Painel, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
-            Size = UDim2.new(0, 520, 0, 320),
-            BackgroundTransparency = 1
-        })
-        tweenPainel:Play()
-        tweenPainel.Completed:Wait()
-        Painel.Visible = false
+-- Aplica o tamanho inicial salvo do slider
+local percentInicial = math.clamp((BK_Config.PainelAltura - 280) / 220, 0, 1)
+SliderButton.Position = UDim2.new(percentInicial, -6, 0.5, -6)
+SliderFill.Size = UDim2.new(percentInicial, 0, 1, 0)
 
-        Capsula.Size = UDim2.new(0, 0, 0, 38)
-        Capsula.BackgroundTransparency = 1
-        Capsula.Visible = true
-
-        local tweenCapsula = TweenService:Create(Capsula, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 160, 0, 38),
-            BackgroundTransparency = 0
-        })
-        tweenCapsula:Play()
-        tweenCapsula.Completed:Wait()
-        PainelAberto = false
-    end
-    EmAnimacao = false
-end
-
--- Detecção segura de clique independente de bugs do Roblox
-local dragStartPos = nil
-CapsulaBotao.InputBegan:Connect(function(input)
+local arrastandoSlider = false
+SliderButton.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragStartPos = input.Position
+        arrastandoSlider = true
+    end
+end)
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        arrastandoSlider = false
+        BK_Config.PainelAltura = PainelAlturaAlvo
+        SalvarConfiguracoes() -- Salva quando o usuário solta o mouse
+    end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if arrastandoSlider and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local mousePos = input.Position.X
+        local trackPos = SliderTrack.AbsolutePosition.X
+        local trackWidth = SliderTrack.AbsoluteSize.X
+        local percent = math.clamp((mousePos - trackPos) / trackWidth, 0, 1)
+        
+        SliderButton.Position = UDim2.new(percent, -6, 0.5, -6)
+        SliderFill.Size = UDim2.new(percent, 0, 1, 0)
+        
+        PainelAlturaAlvo = math.floor(280 + (percent * 220))
+        if MainPanel.Visible and MainPanel.Size.Y.Offset > 0 then
+            MainPanel.Size = UDim2.new(0, PainelLarguraAlvo, 0, PainelAlturaAlvo)
+        end
     end
 end)
 
-CapsulaBotao.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        if dragStartPos then
-            local dist = (input.Position - dragStartPos).Magnitude
-            dragStartPos = nil
-            -- Se arrastou menos de 5 pixels, o jogador quis apenas Clicar para abrir/fechar
-            if dist < 5 then
-                AlternarPainel()
+-- SEÇÃO PERFIL & NOTA PREMIUM
+local InfoCard = CriarCardPremium(framesDeConteudo["Perfil"], "Licença do Script", "Validade: Vitalícia / Hardware ID Vinculado")
+
+local NotaPremiumCard = Instance.new("Frame", framesDeConteudo["Perfil"])
+NotaPremiumCard.Size = UDim2.new(1, -5, 0, 110)
+NotaPremiumCard.BackgroundColor3 = C_Card
+Instance.new("UICorner", NotaPremiumCard).CornerRadius = UDim.new(0, 4)
+
+local NoteStroke = Instance.new("UIStroke", NotaPremiumCard)
+NoteStroke.Color = Color3.fromRGB(40, 35, 55)
+local NotaLabel = Instance.new("TextLabel", NotaPremiumCard)
+NotaLabel.Size = UDim2.new(1, -24, 1, -16)
+NotaLabel.Position = UDim2.new(0, 12, 0, 8)
+NotaLabel.BackgroundTransparency = 1
+NotaLabel.Font = Enum.Font.GothamSemibold
+NotaLabel.TextSize = 11
+NotaLabel.TextColor3 = C_TextoClaro
+NotaLabel.TextXAlignment = Enum.TextXAlignment.Left
+NotaLabel.TextYAlignment = Enum.TextYAlignment.Top
+NotaLabel.LineHeight = 1.35
+NotaLabel.Text = "Olá cliente do bk ✓\nEstando felizes de ter você aqui usando nosso script\nQueremos a melhor experiência para você então aproveite\nUse a vontade e nos ajude a crescer\nEstando cada vez trazendo coisas novas e nunca vistas ❤️"
+
+local SuporteCard = Instance.new("Frame", framesDeConteudo["Perfil"])
+SuporteCard.Size = UDim2.new(1, -5, 0, 55)
+SuporteCard.BackgroundColor3 = C_Card
+Instance.new("UICorner", SuporteCard).CornerRadius = UDim.new(0, 4)
+
+local SStroke = Instance.new("UIStroke", SuporteCard)
+SStroke.Color = Color3.fromRGB(35, 30, 45)
+local STitle = Instance.new("TextLabel", SuporteCard)
+STitle.Position = UDim2.new(0, 12, 0, 11)
+STitle.Size = UDim2.new(0, 200, 0, 15)
+STitle.BackgroundTransparency = 1
+STitle.Text = "Central de Suporte VIP"
+STitle.Font = Enum.Font.GothamBold
+STitle.TextColor3 = C_TextoClaro
+STitle.TextSize = 13
+STitle.TextXAlignment = Enum.TextXAlignment.Left
+
+local SSub = Instance.new("TextLabel", SuporteCard)
+SSub.Position = UDim2.new(0, 12, 0, 27)
+SSub.Size = UDim2.new(0, 200, 0, 15)
+SSub.BackgroundTransparency = 1
+SSub.Text = "Copie o contato oficial para ajuda"
+SSub.Font = Enum.Font.Gotham
+SSub.TextColor3 = C_TextoEscuro
+SSub.TextSize = 11
+SSub.TextXAlignment = Enum.TextXAlignment.Left
+
+local CopiarBtn = Instance.new("TextButton", SuporteCard)
+CopiarBtn.Size = UDim2.new(0, 140, 0, 26)
+CopiarBtn.Position = UDim2.new(1, -152, 0.5, -13)
+CopiarBtn.BackgroundColor3 = Color3.fromRGB(30, 15, 50)
+CopiarBtn.Text = "COPIAR LINK DO WHATSAPP"
+CopiarBtn.Font = Enum.Font.GothamBold
+CopiarBtn.TextColor3 = C_TextoClaro
+CopiarBtn.TextSize = 9
+CopiarBtn.ZIndex = 2
+Instance.new("UICorner", CopiarBtn).CornerRadius = UDim.new(0, 4)
+
+local BtnStroke = Instance.new("UIStroke", CopiarBtn)
+BtnStroke.Color = C_RoxoNeon
+RegistrarElementoColorido(BtnStroke, "Color")
+
+CopiarBtn.MouseButton1Click:Connect(function()
+    somClick()
+    if setclipboard then setclipboard("49991510649") end
+    EnviarNotificacao("Suporte VIP", "Número copiado")
+end)
+
+-- CÁPSULA FLUTUANTE 
+local Bubble = Instance.new("TextButton", ScreenGui)
+Bubble.Name = "FloatingBubble"
+Bubble.BackgroundColor3 = C_FundoBreu
+Bubble.Position = UDim2.new(0.5, -75, 0, 20)
+Bubble.Size = UDim2.new(0, 150, 0, 40)
+Bubble.Font = Enum.Font.GothamBold
+Bubble.TextColor3 = Color3.fromRGB(255, 255, 255) 
+Bubble.TextSize = 14
+Bubble.AutoButtonColor = false
+Bubble.ZIndex = 5 
+Bubble.ClipsDescendants = true
+Instance.new("UICorner", Bubble).CornerRadius = UDim.new(1, 0) 
+
+local BubbleStroke = Instance.new("UIStroke", Bubble)
+BubbleStroke.Color = C_RoxoNeon 
+RegistrarElementoColorido(BubbleStroke, "Color")
+BubbleStroke.Thickness = 2
+
+local StarCanvas = Instance.new("Frame", Bubble)
+StarCanvas.Size = UDim2.new(1, 0, 1, 0)
+StarCanvas.BackgroundTransparency = 1
+
+local TextFix = Instance.new("TextLabel", Bubble)
+TextFix.Size = UDim2.new(1, 0, 1, 0)
+TextFix.BackgroundTransparency = 1
+TextFix.Font = Bubble.Font
+TextFix.Text = "BK CLIENT V4.5 †"
+TextFix.TextColor3 = Bubble.TextColor3
+TextFix.TextSize = Bubble.TextSize
+TextFix.ZIndex = 2
+Bubble.Text = ""
+
+-- SISTEMA DE ESTRELAS
+local MaxEstrelas = 10
+local EstrelasPool = {}
+local LinhasPool = {}
+
+for i = 1, MaxEstrelas do
+    local star = Instance.new("Frame", StarCanvas)
+    star.Size = UDim2.new(0, 3, 0, 3)
+    star.BackgroundColor3 = Color3.fromRGB(240, 240, 255)
+    star.BackgroundTransparency = 0.3
+    star.BorderSizePixel = 0
+    Instance.new("UICorner", star).CornerRadius = UDim.new(1, 0)
+    EstrelasPool[i] = {Frame = star, X = math.random(5, 145), Y = math.random(5, 35), VelX = (math.random() - 0.5) * 15, VelY = (math.random() - 0.5) * 15}
+end
+
+RunService.RenderStepped:Connect(function(deltaTime)
+    for i = 1, MaxEstrelas do
+        local s = EstrelasPool[i]
+        s.X = s.X + (s.VelX * deltaTime) s.Y = s.Y + (s.VelY * deltaTime)
+        if s.X < 2 or s.X > 148 then s.VelX = -s.VelX s.X = math.clamp(s.X, 2, 148) end
+        if s.Y < 2 or s.Y > 38 then s.VelY = -s.VelY s.Y = math.clamp(s.Y, 2, 38) end
+        s.Frame.Position = UDim2.new(0, s.X, 0, s.Y)
+    end
+    for _, l in ipairs(LinhasPool) do l.Visible = false end
+    local linhaIndex = 1
+    for i = 1, MaxEstrelas do
+        for j = i + 1, MaxEstrelas do
+            local s1 = EstrelasPool[i] local s2 = EstrelasPool[j]
+            local dist = math.sqrt((s1.X - s2.X)^2 + (s1.Y - s2.Y)^2)
+            if dist < 40 then
+                local line = LinhasPool[linhaIndex]
+                if not line then
+                    line = Instance.new("Frame", StarCanvas) line.BorderSizePixel = 0 table.insert(LinhasPool, line)
+                end
+                line.BackgroundColor3 = C_RoxoNeon line.BackgroundTransparency = math.clamp((dist / 40), 0.4, 1)
+                local origin = Vector2.new(s1.X, s1.Y) local target = Vector2.new(s2.X, s2.Y)
+                line.Size = UDim2.new(0, (target - origin).Magnitude, 0, 1)
+                line.AnchorPoint = Vector2.new(0.5, 0.5)
+                line.Position = UDim2.new(0, (origin.X + target.X)/2, 0, (origin.Y + target.Y)/2)
+                line.Rotation = math.deg(math.atan2(target.Y - origin.Y, target.X - origin.X))
+                line.Visible = true
+                linhaIndex = linhaIndex + 1
             end
         end
     end
 end)
 
-local BotaoMinimizar = Instance.new("TextButton")
-BotaoMinimizar.Parent = Painel
-BotaoMinimizar.Size = UDim2.new(0, 24, 0, 24)
-BotaoMinimizar.Position = UDim2.new(1, -34, 0, 10)
-BotaoMinimizar.BackgroundTransparency = 1
-BotaoMinimizar.Text = "—"
-BotaoMinimizar.TextColor3 = Cores.TextoEscuro
-BotaoMinimizar.Font = Enum.Font.Code
-BotaoMinimizar.TextSize = 14
+-- Arrastar Bolha
+local dragBubble, dragInput, dragStart, startPos
+Bubble.InputBegan:Connect(function(i)
+    if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+        dragBubble = true dragStart = i.Position startPos = Bubble.Position
+    end
+end)
+Bubble.InputChanged:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch then dragInput = i end end)
+UserInputService.InputChanged:Connect(function(i)
+    if i == dragInput and dragBubble then
+        local delta = i.Position - dragStart
+        Bubble.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
 
-BotaoMinimizar.MouseEnter:Connect(function() TweenService:Create(BotaoMinimizar, TweenInfo.new(0.15), {TextColor3 = Cores.RoxoPrincipal}):Play() end)
-BotaoMinimizar.MouseLeave:Connect(function() TweenService:Create(BotaoMinimizar, TweenInfo.new(0.15), {TextColor3 = Cores.TextoEscuro}):Play() end)
-BotaoMinimizar.MouseButton1Click:Connect(AlternarPainel)
+local painelAberto = false
+Bubble.MouseButton1Click:Connect(function()
+    if dragBubble then return end
+    somClick()
+    painelAberto = not painelAberto
+    if painelAberto then
+        Bubble.ZIndex = 10 MainPanel.Visible = true MainPanel.Size = UDim2.new(0, PainelLarguraAlvo, 0, 0)
+        TweenService:Create(MainPanel, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Size = UDim2.new(0, PainelLarguraAlvo, 0, PainelAlturaAlvo)}):Play()
+    else
+        Bubble.ZIndex = 5 local tween = TweenService:Create(MainPanel, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)})
+        tween:Play() tween.Completed:Connect(function() if not painelAberto then MainPanel.Visible = false end end)
+    end
+end)
 
--- [GC CLEAN] Limpeza final de rastros do script na memória
-if setgc then
-    for i, v in pairs(getgc(true)) do
-        if typeof(v) == "table" and rawget(v, "Aimbot") and rawget(v, "Extras") then
-            setreadonly(v, true)
+-- ========================================================
+-- SISTEMA DE CARREGAMENTO INICIAL DO SAVE (BOOT)
+-- ========================================================
+if readfile and isfile and isfile(ArquivoSave) then
+    local sucesso, conteudo = pcall(function() return readfile(ArquivoSave) end)
+    if sucesso then
+        local sucessoDecode, dadosSalvos = pcall(function() return HttpService:JSONDecode(conteudo) end)
+        if sucessoDecode then
+            -- Restaura Altura do Painel
+            if dadosSalvos.PainelAltura then
+                BK_Config.PainelAltura = dadosSalvos.PainelAltura
+                PainelAlturaAlvo = dadosSalvos.PainelAltura
+            end
+            -- Restaura a Cor do Tema
+            if dadosSalvos.TemaCor then
+                BK_Config.TemaCor = dadosSalvos.TemaCor
+                local corSalva = Color3.fromRGB(dadosSalvos.TemaCor[1], dadosSalvos.TemaCor[2], dadosSalvos.TemaCor[3])
+                MudarCorTema(corSalva, true)
+            end
+            -- Restaura os Toggles salvos
+            if dadosSalvos.Toggles then
+                for k, v in pairs(dadosSalvos.Toggles) do
+                    BK_Config.Toggles[k] = v
+                end
+            end
+            EnviarNotificacao("Cloud Sec", "Configurações sincronizadas!")
         end
     end
+else
+    SalvarConfiguracoes() -- Cria o primeiro arquivo padrão caso não exista
 end
 
-task.spawn(function()
-    task.wait(1)
-    Notificar("BK CLIENT v2.1 Carregado!", 4)
-    Notificar("Interface e Bypasses Ativados com Segurança.", 3)
-end)
+-- Ativa visual padrão na primeira aba
+TweenService:Create(botoesDeAbas["Visual"], TweenInfo.new(0.1), {TextColor3 = C_TextoClaro, BackgroundTransparency = 0.92}):Play()
+if botoesDeAbas["Visual"]:FindFirstChild("Indicador") then botoesDeAbas["Visual"].Indicador.BackgroundTransparency = 0 end
